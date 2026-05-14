@@ -28,6 +28,7 @@ export default function Profile({ onNavigate, onLogout }) {
     telepon: storedUser.telepon || "",
   });
   const [pwForm, setPwForm] = useState({ old: "", newPw: "", confirm: "" });
+  const [showPw, setShowPw] = useState({ old: false, new: false, confirm: false });
 
   // Camera refs
   const videoRef = useRef(null);
@@ -70,7 +71,8 @@ export default function Profile({ onNavigate, onLogout }) {
     if (!storedUser.nomorInduk) return;
     setIsSaving(true);
     try {
-      await apiClient.patch(`/api/users/${storedUser.nomorInduk}`, formData);
+      // Gunakan endpoint /api/profile/me untuk update data sendiri
+      await apiClient.patch('/api/profile/me', formData);
       
       const updatedUser = { ...storedUser, ...formData };
       localStorage.setItem("user", JSON.stringify(updatedUser));
@@ -78,7 +80,7 @@ export default function Profile({ onNavigate, onLogout }) {
       setEditMode(false);
       showToast("success", "Data profil berhasil diperbarui.");
     } catch (error) {
-      showToast("error", "Gagal memperbarui profil.");
+      showToast("error", error.message || "Gagal memperbarui profil.");
     } finally {
       setIsSaving(false);
     }
@@ -106,6 +108,7 @@ export default function Profile({ onNavigate, onLogout }) {
       });
       setShowPasswordModal(false);
       setPwForm({ old: "", newPw: "", confirm: "" });
+      setShowPw({ old: false, new: false, confirm: false });
       showToast("success", "Kata sandi berhasil diubah.");
     } catch (error) {
       showToast("error", error.message || "Gagal mengubah kata sandi.");
@@ -222,35 +225,62 @@ export default function Profile({ onNavigate, onLogout }) {
               </button>
             </div>
             <form onSubmit={handlePwSubmit} className="prf-modal-body">
-              <div className="prf-field">
+              <div className="prf-field prf-field--pw">
                 <label className="prf-label">Kata Sandi Lama</label>
-                <input
-                  className="prf-input"
-                  type="password"
-                  placeholder="••••••••"
-                  value={pwForm.old}
-                  onChange={(e) => setPwForm({ ...pwForm, old: e.target.value })}
-                />
+                <div className="prf-pw-input-wrap">
+                  <input
+                    className="prf-input prf-input--pw"
+                    type={showPw.old ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={pwForm.old}
+                    onChange={(e) => setPwForm({ ...pwForm, old: e.target.value })}
+                  />
+                  <button
+                    type="button"
+                    className="prf-pw-toggle"
+                    onClick={() => setShowPw({ ...showPw, old: !showPw.old })}
+                  >
+                    <span className="material-symbols-outlined">{showPw.old ? 'visibility_off' : 'visibility'}</span>
+                  </button>
+                </div>
               </div>
-              <div className="prf-field">
+              <div className="prf-field prf-field--pw">
                 <label className="prf-label">Kata Sandi Baru</label>
-                <input
-                  className="prf-input"
-                  type="password"
-                  placeholder="••••••••"
-                  value={pwForm.newPw}
-                  onChange={(e) => setPwForm({ ...pwForm, newPw: e.target.value })}
-                />
+                <div className="prf-pw-input-wrap">
+                  <input
+                    className="prf-input prf-input--pw"
+                    type={showPw.new ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={pwForm.newPw}
+                    onChange={(e) => setPwForm({ ...pwForm, newPw: e.target.value })}
+                  />
+                  <button
+                    type="button"
+                    className="prf-pw-toggle"
+                    onClick={() => setShowPw({ ...showPw, new: !showPw.new })}
+                  >
+                    <span className="material-symbols-outlined">{showPw.new ? 'visibility_off' : 'visibility'}</span>
+                  </button>
+                </div>
               </div>
-              <div className="prf-field">
+              <div className="prf-field prf-field--pw">
                 <label className="prf-label">Konfirmasi Kata Sandi</label>
-                <input
-                  className="prf-input"
-                  type="password"
-                  placeholder="••••••••"
-                  value={pwForm.confirm}
-                  onChange={(e) => setPwForm({ ...pwForm, confirm: e.target.value })}
-                />
+                <div className="prf-pw-input-wrap">
+                  <input
+                    className="prf-input prf-input--pw"
+                    type={showPw.confirm ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={pwForm.confirm}
+                    onChange={(e) => setPwForm({ ...pwForm, confirm: e.target.value })}
+                  />
+                  <button
+                    type="button"
+                    className="prf-pw-toggle"
+                    onClick={() => setShowPw({ ...showPw, confirm: !showPw.confirm })}
+                  >
+                    <span className="material-symbols-outlined">{showPw.confirm ? 'visibility_off' : 'visibility'}</span>
+                  </button>
+                </div>
               </div>
               <div className="prf-modal-actions">
                 <button type="button" className="prf-btn-cancel" onClick={() => setShowPasswordModal(false)}>
@@ -376,45 +406,21 @@ export default function Profile({ onNavigate, onLogout }) {
                   </span>
                   <h2>Data Pribadi</h2>
                 </div>
-                {editMode ? (
-                  <div className="prf-edit-actions">
-                    <button className="prf-btn-cancel-sm" onClick={() => setEditMode(false)} disabled={isSaving}>Batal</button>
-                    <button className="prf-btn-save-sm" onClick={handleSave} disabled={isSaving}>
-                      {isSaving ? "Menyimpan..." : "Simpan"}
-                    </button>
-                  </div>
-                ) : (
-                  <button className="prf-sunting-btn" onClick={() => setEditMode(true)}>
-                    Sunting Data
-                  </button>
-                )}
               </div>
 
               <div className="prf-data-grid">
                 <div className="prf-data-field">
                   <p className="prf-field-label">EMAIL MAHASISWA</p>
-                  {editMode ? (
-                    <input
-                      className="prf-input"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    />
-                  ) : (
-                    <p className="prf-field-value">{formData.email}</p>
-                  )}
+                  <p className="prf-field-value">{formData.email}</p>
                 </div>
                 <div className="prf-data-field">
                   <p className="prf-field-label">NOMOR TELEPON</p>
-                  {editMode ? (
-                    <input
-                      className="prf-input"
-                      value={formData.telepon}
-                      onChange={(e) => setFormData({ ...formData, telepon: e.target.value })}
-                    />
-                  ) : (
-                    <p className="prf-field-value">{formData.telepon}</p>
-                  )}
+                  <p className="prf-field-value">{formData.telepon}</p>
                 </div>
+              </div>
+              <div className="prf-admin-notice">
+                <span className="material-symbols-outlined" style={{ fontSize: "1rem", color: "#7c5800" }}>info</span>
+                <p>Untuk mengubah data pribadi, ajukan permintaan ke <strong>administrator akademik</strong>.</p>
               </div>
 
               <div className="prf-data-field prf-fullwidth">
@@ -451,39 +457,9 @@ export default function Profile({ onNavigate, onLogout }) {
                 <span className="material-symbols-outlined">lock_reset</span>
                 Ubah Kata Sandi
               </button>
-              <p className="prf-last-changed">Terakhir diubah 3 bulan yang lalu</p>
             </div>
           </div>
 
-          {/* Bottom Cards */}
-          <div className="prf-bottom-row">
-            <div className="prf-status-card">
-              <div className="prf-status-bg-icon">
-                <span className="material-symbols-outlined">school</span>
-              </div>
-              <h3 className="prf-status-title">Status Akademik</h3>
-              <p className="prf-status-desc">
-                Anda telah menyelesaikan 64 SKS dari total 144 SKS yang direncanakan.
-              </p>
-              <div className="prf-status-bar-track">
-                <div className="prf-status-bar-fill" style={{ width: "44%" }}></div>
-              </div>
-              <p className="prf-status-pct">44% Terpenuhi · 64 / 144 SKS</p>
-            </div>
-
-            <div className="prf-notif-card">
-              <div className="prf-notif-bg-icon">
-                <span className="material-symbols-outlined">notifications_active</span>
-              </div>
-              <h3 className="prf-notif-title">Notifikasi Penting</h3>
-              <p className="prf-notif-desc">
-                Pengisian KRS Semester Ganjil 2024/2025 akan segera dibuka.
-              </p>
-              <button className="prf-notif-link" onClick={() => onNavigate && onNavigate("nilai")}>
-                Lihat Detail →
-              </button>
-            </div>
-          </div>
         </div>
       </main>
     </div>

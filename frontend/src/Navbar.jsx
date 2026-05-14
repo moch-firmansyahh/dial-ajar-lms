@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import "./shared.css";
 import "./pages/mahasiswa/dashboard/notifikasi.css";
+import { apiClient } from "./utils/apiClient";
 
 const AVATAR_MAHASISWA =
   "https://lh3.googleusercontent.com/aida-public/AB6AXuBLlRblArhYvkrSWfEx3UWaIaP5bdg8OpReWzF-sc4sB_2K3sC4IYv7Q4-lWy6VUtGhc5esYpVi12_HYjLZdjx6ILoT60xad1GfsEtHStVQIigk44gnAXnpEAjWrPWVYNa_AKdaDPqXQwdlJDbcccdQ96CZrZ6btx50rBBy3LvfY-eINJ1MtiJWLJpWBAo2nnbaNr3i-_Yn3B_BsVkOxpG3hVSKt38J2-NxnAah9LFYcNLvZARv4lzr86P24cdV4haCMW80Nudw5Lku";
@@ -8,24 +9,14 @@ const AVATAR_MAHASISWA =
 const AVATAR_DOSEN =
   "https://lh3.googleusercontent.com/aida-public/AB6AXuBjoXu55KCdSSPl-2t0t7d2EH6gux6Xz8nZaCdXHePrj-gGn1ZWZyBoOucWc2yVgrhmNFyy8cKbxWH8i9Wm5VKkpqX9jraXjkHTr8PVU1oN3V4nkzLWUUm6nyAIS3hGDic_uY0YoNLNNZluKTKqFwJb2gYlRl9eATGdlXClTx6IXpYvk-2u1qqvfUGTzs-QJPlXTouWTyNYzTe8j8mS09evVA_aHTYfHxneVwUsb2jUygYzuAIDU5KwqO2kISzLvnzaTentePscoGoo";
 
-const mhsNotifications = [
-  { id: 1, title: "Tugas PBO - Praktikum 7", desc: "Tenggat waktu besok, 23:59", time: "1 jam lalu", read: false, type: "tugas" },
-  { id: 2, title: "Kuis Algoritma", desc: "Kuis akan dibuka dalam 3 hari", time: "2 jam lalu", read: false, type: "kuis" },
-  { id: 3, title: "Materi Baru", desc: "Modul 5 telah diupload", time: "5 jam lalu", read: true, type: "materi" },
-  { id: 4, title: "Presensi", desc: "Jangan lupa presensi kelas hari ini", time: "1 hari lalu", read: true, type: "presensi" },
-];
-
-const dosenNotifications = [
-  { id: 1, title: "Tugas Baru Terkumpul", desc: "Kelompok 3 mengirim Tugas PBO", time: "10 menit lalu", read: false, type: "tugas" },
-  { id: 2, title: "Diskusi Baru", desc: "Ada pertanyaan baru di Forum PBO", time: "2 jam lalu", read: false, type: "forum" },
-  { id: 3, title: "Presensi Selesai", desc: "Sesi presensi untuk PBO telah ditutup", time: "1 hari lalu", read: true, type: "presensi" },
-];
-
 export default function Navbar({ role, onOpenSidebar, onNavigate }) {
   const [notifOpen, setNotifOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const isDosen = role === "Dosen";
+  const isMahasiswa = role === "Mahasiswa";
   const defaultAvatar = isDosen ? AVATAR_DOSEN : AVATAR_MAHASISWA;
 
   const storedUserStr = localStorage.getItem("user");
@@ -43,10 +34,39 @@ export default function Navbar({ role, onOpenSidebar, onNavigate }) {
     }
   }, [storedUser.fotoUrl, API_BASE, defaultAvatar]);
 
+  useEffect(() => {
+    if (!isMahasiswa) return;
+
+    const fetchNotifications = async () => {
+      try {
+        const res = await apiClient.get('/api/notifikasi');
+        console.log('Notifikasi response:', res);
+        const notifList = Array.isArray(res) ? res : (res.data || []);
+        
+        setNotifications(notifList.slice(0, 10).map(n => ({
+          id: n.idNotifikasi || Date.now(),
+          title: n.judul || '',
+          desc: n.pesan || '',
+          time: n.createdAt ? new Date(n.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Baru',
+          read: n.isRead || false,
+          type: n.tipe || 'info'
+        })));
+
+        const unreadRes = await apiClient.get('/api/notifikasi/unread-count');
+        setUnreadCount(unreadRes?.count || 0);
+      } catch (error) {
+        console.error("Failed to fetch notifications:", error);
+      }
+    };
+    fetchNotifications();
+    
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
+  }, [isMahasiswa]);
+
   const name = isDosen ? `Halo, ${userName}` : `Halo, ${userName}`;
-  const subtitle = isDosen ? "Dosen Tetap" : "Mahasiswa";
+  const subtitle = isDosen ? "Dosen" : "Mahasiswa";
   const placeholder = isDosen ? "Cari materi atau mahasiswa..." : "Cari materi atau tugas...";
-  const notifications = isDosen ? dosenNotifications : mhsNotifications;
 
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
@@ -162,23 +182,54 @@ export default function Navbar({ role, onOpenSidebar, onNavigate }) {
       <div className="navbar__right">
         <button className="navbar__bell" onClick={() => setNotifOpen(!notifOpen)} style={{ position: "relative" }}>
           <span className="material-symbols-outlined">notifications</span>
-          <span className="navbar__bell-dot"></span>
+          {unreadCount > 0 && (
+            <span className="navbar__bell-dot" style={{
+              position: 'absolute', top: '0', right: '0',
+              minWidth: '16px', height: '16px', borderRadius: '8px',
+              background: '#ef4444', color: 'white', fontSize: '10px',
+              fontWeight: 700, display: 'flex', alignItems: 'center',
+              justifyContent: 'center', padding: '0 4px',
+              transform: 'translate(25%, -25%)'
+            }}>{unreadCount > 99 ? '99+' : unreadCount}</span>
+          )}
         </button>
 
         {notifOpen && (
           <div className="notif-dropdown">
             <div className="notif-header">
               <h3>Notifikasi</h3>
-              <button className="notif-close" onClick={() => setNotifOpen(false)}>
-                <span className="material-symbols-outlined">close</span>
-              </button>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                {isMahasiswa && notifications.length > 0 && (
+                  <button className="notif-close" onClick={async () => {
+                    try {
+                      await apiClient.put('/api/notifikasi/read-all');
+                      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+                      setUnreadCount(0);
+                    } catch (e) {
+                      console.error('Gagal menandai semua:', e);
+                    }
+                  }} title="Tandai semua telah dibaca">
+                    <span className="material-symbols-outlined">done_all</span>
+                  </button>
+                )}
+                <button className="notif-close" onClick={() => setNotifOpen(false)}>
+                  <span className="material-symbols-outlined">close</span>
+                </button>
+              </div>
             </div>
             <div className="notif-list">
-              {notifications.map((notif) => (
+              {notifications.length > 0 ? notifications.map((notif) => (
                 <div
                   key={notif.id}
                   className={`notif-item ${notif.read ? "notif-read" : "notif-unread"}`}
-                  onClick={() => {
+                  onClick={async () => {
+                    if (!notif.read && isMahasiswa) {
+                      try {
+                        await apiClient.put(`/api/notifikasi/${notif.id}/read`);
+                        setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, read: true } : n));
+                        setUnreadCount(prev => Math.max(0, prev - 1));
+                      } catch (e) {}
+                    }
                     setNotifOpen(false);
                     if (onNavigate) {
                       if (isDosen) {
@@ -190,6 +241,7 @@ export default function Navbar({ role, onOpenSidebar, onNavigate }) {
                         else if (notif.type === "kuis") onNavigate("daftarTugas");
                         else if (notif.type === "materi") onNavigate("daftarMataKuliah");
                         else if (notif.type === "presensi") onNavigate("presensiMahasiswa");
+                        else if (notif.type === "forum") onNavigate("forumDiskusi");
                       }
                     }
                   }}
@@ -208,7 +260,12 @@ export default function Navbar({ role, onOpenSidebar, onNavigate }) {
                     <p className="notif-time">{notif.time}</p>
                   </div>
                 </div>
-              ))}
+              )) : (
+                <div style={{ padding: "1.5rem", textAlign: "center", color: "var(--slate-400)" }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: "2rem", display: "block", marginBottom: "0.5rem" }}>notifications_off</span>
+                  <p style={{ fontSize: "0.875rem" }}>Tidak ada notifikasi</p>
+                </div>
+              )}
             </div>
           </div>
         )}

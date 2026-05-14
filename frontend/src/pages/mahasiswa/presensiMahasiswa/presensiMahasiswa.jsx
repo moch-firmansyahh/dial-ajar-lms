@@ -33,6 +33,7 @@ export default function PresensiMahasiswa({ onNavigate, onLogout }) {
   const [scanCode, setScanCode]     = useState("");
   const [upcoming, setUpcoming]     = useState([]);
   const [history, setHistory]       = useState([]);
+  const [dateFilter, setDateFilter] = useState("semua"); // semua | minggu | bulan
   const scanTimeoutRef              = useRef(null);
   const html5QrCodeRef              = useRef(null);
   const scannerContainerId          = "pmh-qr-reader";
@@ -60,35 +61,61 @@ export default function PresensiMahasiswa({ onNavigate, onLogout }) {
   // Cleanup on unmount
   useEffect(() => () => clearTimeout(scanTimeoutRef.current), []);
 
-  useEffect(() => {
-    const fetchHistory = async () => {
-      if (upcoming.length > 0 && upcoming[selectedClass]) {
-        try {
-          const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
-          const myNim = storedUser.nomorInduk || "";
+  const fetchHistory = useCallback(async () => {
+    if (upcoming.length > 0 && upcoming[selectedClass]) {
+      try {
+        const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+        const myNim = storedUser.nomorInduk || "";
 
-          const res = await apiClient.get(`/api/presensi/mata-kuliah/${upcoming[selectedClass].id}`);
-          const allData = res.data || res || [];
-          const myRecords = Array.isArray(allData) ? allData : [];
+        // Add cache-busting to get fresh data
+        const res = await apiClient.get(`/api/presensi/mahasiswa/${upcoming[selectedClass].id}?_t=${Date.now()}`);
+        console.log("DEBUG - fetchHistory response:", res);
+        const allData = res.data || res || [];
+        const myRecords = Array.isArray(allData) ? allData : [];
+        console.log("DEBUG - myRecords:", myRecords);
 
-          // Format respons untuk UI
-          const formattedHist = myRecords.map(h => ({
-            date: h.tanggalPertemuan
-              ? new Date(h.tanggalPertemuan).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short' })
-              : "-",
-            code: upcoming[selectedClass].code,
-            name: upcoming[selectedClass].name,
-            status: (h.statusKehadiran || "Hadir").charAt(0).toUpperCase() + (h.statusKehadiran || "Hadir").slice(1).toLowerCase(),
-            time: h.waktuPresensi ? new Date(h.waktuPresensi).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : "-"
-          }));
-          setHistory(formattedHist);
-        } catch (error) {
-          setHistory([]);
-        }
+        // Format respons untuk UI - handle timezone correctly
+        const formattedHist = myRecords
+          .sort((a, b) => {
+            // Sort by tanggalPertemuan descending (paling baru di atas)
+            const dateA = new Date(a.tanggalPertemuan || 0);
+            const dateB = new Date(b.tanggalPertemuan || 0);
+            return dateB - dateA;
+          })
+          .map(h => {
+            // Convert UTC to local time
+            const localDate = h.tanggalPertemuan ? new Date(h.tanggalPertemuan) : null;
+            const localWaktu = h.waktuPresensi ? new Date(h.waktuPresensi) : null;
+            
+            // Format status: Alpha -> Alpa for UI
+            const rawStatus = h.statusKehadiran || "Alpha";
+            const displayStatus = rawStatus === "Alpha" ? "Alpa" : rawStatus;
+            
+            return {
+              rawDate: h.tanggalPertemuan,
+              date: localDate
+                ? localDate.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short' })
+                : "-",
+              code: upcoming[selectedClass].code,
+              name: upcoming[selectedClass].name,
+              status: displayStatus,
+              time: localWaktu ? localWaktu.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : "-",
+              rawStatus: h.statusKehadiran,
+              rawWaktu: h.waktuPresensi
+            };
+          });
+        console.log("DEBUG - formattedHist:", formattedHist);
+        setHistory(formattedHist);
+      } catch (error) {
+        console.error("DEBUG - fetchHistory error:", error);
+        setHistory([]);
       }
-    };
-    fetchHistory();
+    }
   }, [selectedClass, upcoming]);
+
+  useEffect(() => {
+    fetchHistory();
+  }, [fetchHistory]);
 
   const showToast = (type, msg) => {
     setToast({ type, msg });
@@ -120,12 +147,14 @@ export default function PresensiMahasiswa({ onNavigate, onLogout }) {
       });
       setScanState("success");
       showToast("success", `Absen berhasil! ${upcoming[selectedClass].name}`);
+      // Refresh riwayat untuk update waktu presensi
+      await fetchHistory();
     } catch (error) {
       setScanState("error");
       showToast("error", error.message || "Gagal melakukan presensi");
       setTimeout(() => setScanState("idle"), 2000);
     }
-  }, [upcoming, selectedClass, stopCamera]);
+  }, [upcoming, selectedClass, stopCamera, fetchHistory]);
 
   const startScan = async () => {
     if (!upcoming[selectedClass]) {
@@ -170,6 +199,8 @@ export default function PresensiMahasiswa({ onNavigate, onLogout }) {
       });
       setScanState("success");
       showToast("success", `Absen berhasil! ${upcoming[selectedClass].name}`);
+      // Refresh riwayat untuk update waktu presensi
+      await fetchHistory();
     } catch (error) {
       setScanState("error");
       showToast("error", error.message || "Kode QR tidak valid. Silakan coba lagi.");
@@ -401,9 +432,39 @@ export default function PresensiMahasiswa({ onNavigate, onLogout }) {
 
               {/* History */}
               <div className="pmh-history-card">
-                <h4 className="pmh-history-title">Riwayat Kehadiran</h4>
+                <div className="pmh-history-header">
+                  <h4 className="pmh-history-title">Riwayat Kehadiran</h4>
+                  <div className="pmh-date-filter">
+                    <button 
+                      className={`pmh-filter-chip ${dateFilter === 'semua' ? 'pmh-filter-chip--active' : ''}`}
+                      onClick={() => setDateFilter('semua')}
+                    >Semua</button>
+                    <button 
+                      className={`pmh-filter-chip ${dateFilter === 'minggu' ? 'pmh-filter-chip--active' : ''}`}
+                      onClick={() => setDateFilter('minggu')}
+                    >Minggu Ini</button>
+                    <button 
+                      className={`pmh-filter-chip ${dateFilter === 'bulan' ? 'pmh-filter-chip--active' : ''}`}
+                      onClick={() => setDateFilter('bulan')}
+                    >Bulan Ini</button>
+                  </div>
+                </div>
                 <div className="pmh-history-list">
-                  {history.length > 0 ? history.map((h, i) => (
+                  {(() => {
+                    const filtered = history.filter(h => {
+                      if (dateFilter === 'semua') return true;
+                      const hDate = new Date(h.rawDate || Date.now());
+                      const now = new Date();
+                      if (dateFilter === 'minggu') {
+                        const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+                        return hDate >= weekAgo;
+                      }
+                      if (dateFilter === 'bulan') {
+                        return hDate.getMonth() === now.getMonth() && hDate.getFullYear() === now.getFullYear();
+                      }
+                      return true;
+                    });
+                    return filtered.length > 0 ? filtered.map((h, i) => (
                     <div key={i} className="pmh-history-item">
                       <div className="pmh-history-left">
                         <p className="pmh-history-course">{h.code} — {h.name}</p>
@@ -412,8 +473,12 @@ export default function PresensiMahasiswa({ onNavigate, onLogout }) {
                       <StatusBadge status={h.status} />
                     </div>
                   )) : (
-                    <p style={{ color: "var(--slate-500)", textAlign: "center", padding: "1rem" }}>Belum ada riwayat kehadiran.</p>
-                  )}
+                    <p style={{ color: "var(--slate-500)", textAlign: "center", padding: "1rem" }}>
+                      {dateFilter === 'semua' ? 'Belum ada riwayat kehadiran.' : 
+                       dateFilter === 'minggu' ? 'Tidak ada kehadiran minggu ini.' :
+                       'Tidak ada kehadiran bulan ini.'}
+                    </p>
+                  )})()}
                 </div>
               </div>
             </div>

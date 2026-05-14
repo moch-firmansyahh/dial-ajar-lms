@@ -35,7 +35,7 @@ const DAYS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
 export default function DosenPresensi({ onNavigate, onLogout }) {
   const { sidebarOpen, openSidebar, closeSidebar } = useSidebar();
   const [toast, setToast]     = useState(null);
-  const [token, setToken]     = useState(generateToken);
+  const [token, setToken]     = useState("");
   const [timeLeft, setTimeLeft] = useState(QR_TTL);
   const [qrLoaded, setQrLoaded] = useState(false);
   const [students, setStudents] = useState(INITIAL_STUDENTS);
@@ -55,32 +55,63 @@ export default function DosenPresensi({ onNavigate, onLogout }) {
     setTimeout(() => setToast(null), 3000);
   };
 
-  const fetchStudents = useCallback(async () => {
+  // Fetch semua tanggal yang tersedia untuk matkul ini
+  const fetchDates = useCallback(async () => {
     if (!selectedMatkul?.id) return;
     try {
-      // Add cache-busting query param
-      const res = await apiClient.get(`/api/dosen/presensi/matkul/${selectedMatkul.id}/daftar-hadir?_t=${Date.now()}`);
-      const data = res.data || res || [];
-      const allStudents = Array.isArray(data) ? data : [];
-      setStudents(allStudents);
-      
-      // Extract unique dates for filter - handle both string and Date formats
-      const dates = [...new Set(allStudents.map(s => {
-        if (!s.tanggalPertemuan) return null;
-        // Fix timezone issue by matching local date string if possible
-        if (typeof s.tanggalPertemuan === 'string' && s.tanggalPertemuan.includes('T')) {
-           return s.tanggalPertemuan.split('T')[0];
+      const res = await apiClient.get(`/api/dosen/presensi/dates/${selectedMatkul.id}`);
+      console.log("DEBUG - Available dates:", res);
+      const dates = res.dates || [];
+      // Format tanggal ke YYYY-MM-DD
+      const formattedDates = dates.map(d => {
+        if (typeof d === 'string' && d.includes('T')) {
+          return d.split('T')[0];
         }
-        const d = new Date(s.tanggalPertemuan);
-        return isNaN(d.getTime()) ? null : d.toISOString().split('T')[0];
-      }))].filter(Boolean).sort().reverse();
-      setAvailableDates(dates);
+        return new Date(d).toISOString().split('T')[0];
+      }).filter(Boolean).sort().reverse();
+      setAvailableDates(formattedDates);
+    } catch (error) {
+      console.error("Error fetching dates:", error);
+    }
+  }, [selectedMatkul?.id]);
+
+  const fetchStudents = useCallback(async (overrideDate = null) => {
+    if (!selectedMatkul?.id) return;
+    try {
+      let res;
+      
+      const cacheBuster = `_t=${Date.now()}`;
+      // Gunakan overrideDate kalau ada, kalau tidak pakai selectedDateFilter
+      const dateToUse = overrideDate || selectedDateFilter;
+      
+      // Jika ada tanggal yang dipilih (bukan "semua"), fetch by tanggal
+      if (dateToUse && dateToUse !== "semua") {
+        res = await apiClient.get(`/api/dosen/presensi/daftar-hadir/${selectedMatkul.id}/${dateToUse}?${cacheBuster}`);
+        console.log("DEBUG - Daftar hadir by tanggal:", dateToUse, res);
+      } else {
+        // Fetch semua (default ke hari ini)
+        res = await apiClient.get(`/api/dosen/presensi/matkul/${selectedMatkul.id}/daftar-hadir?${cacheBuster}`);
+        console.log("DEBUG - Daftar hadir default:", res);
+      }
+      
+      // Handle different response structures
+      let data = [];
+      if (res.data && Array.isArray(res.data)) {
+        data = res.data;
+      } else if (res.data?.data && Array.isArray(res.data.data)) {
+        data = res.data.data;
+      } else if (Array.isArray(res)) {
+        data = res;
+      }
+      
+      console.log("DEBUG - Extracted students data:", data);
+      console.log("DEBUG - Number of students:", data.length);
+      setStudents(data);
     } catch (error) {
       console.error("Error fetching students:", error);
       setStudents([]);
-      setAvailableDates([]);
     }
-  }, [selectedMatkul?.id]);
+  }, [selectedMatkul?.id, selectedDateFilter]);
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -91,7 +122,7 @@ export default function DosenPresensi({ onNavigate, onLogout }) {
           id: c.idMataKuliah,
           name: c.namaMataKuliah,
           room: c.ruang || "Ruang Kelas",
-          time: c.jadwal || "08:00 - 10:30",
+          time: c.waktu || "08:00 - 10:30",
           jadwal: c.jadwal || ""
         }));
         setMataKuliahList(formatted);
@@ -131,18 +162,38 @@ export default function DosenPresensi({ onNavigate, onLogout }) {
 
   useEffect(() => {
     if (selectedMatkul?.id) {
+      console.log("DEBUG - selectedMatkul changed, fetching dates and students for:", selectedMatkul.id);
+      fetchDates();
       fetchStudents();
     }
-  }, [selectedMatkul?.id, fetchStudents]);
+  }, [selectedMatkul?.id, fetchDates, fetchStudents]);
+  
+  // Fetch students saat tanggal berubah
+  useEffect(() => {
+    if (selectedMatkul?.id && selectedDateFilter) {
+      console.log("DEBUG - selectedDateFilter changed:", selectedDateFilter);
+      fetchStudents();
+    }
+  }, [selectedDateFilter, selectedMatkul?.id, fetchStudents]);
+  
+  // Log students data for debugging
+  useEffect(() => {
+    console.log("DEBUG - students state changed:", students);
+    console.log("DEBUG - students.length:", students.length);
+    console.log("DEBUG - availableDates:", availableDates);
+  }, [students, availableDates]);
 
-  // Auto-refresh daftar hadir setiap 1 detik saat sesi aktif
+  // Auto-refresh daftar hadir setiap 2 detik saat sesi aktif atau ada tanggal yang dipilih
   useEffect(() => {
     if (!selectedMatkul?.id) return;
+    // Refresh selalu jalan kalau ada matkul dipilih, tapi lebih cepat saat sessionActive
+    const intervalTime = sessionActive ? 2000 : 5000;
     const interval = setInterval(() => {
+      console.log("DEBUG - Auto-refresh triggered, sessionActive:", sessionActive);
       fetchStudents();
-    }, 1000);
+    }, intervalTime);
     return () => clearInterval(interval);
-  }, [selectedMatkul?.id]);
+  }, [selectedMatkul?.id, sessionActive, selectedDateFilter, fetchStudents]);
 
   useEffect(() => {
     if (!sessionActive || timeLeft <= 0) return;
@@ -156,17 +207,23 @@ export default function DosenPresensi({ onNavigate, onLogout }) {
 
   const handleRefresh = useCallback(() => {
     setQrLoaded(false);
-    setToken(generateToken());
+    setToken("");
     setTimeLeft(QR_TTL);
     showToast("QR Code diperbarui!");
   }, []);
 
-  const handleStatusChange = async (id, newStatus) => {
-    setStudents((prev) => prev.map((s) => s.id === id ? { ...s, status: newStatus } : s));
+  const handleStatusChange = async (nim, newStatus) => {
+    if (!selectedMatkul?.id) {
+      showToast("Pilih mata kuliah terlebih dahulu", "error");
+      return;
+    }
+    setStudents((prev) => prev.map((s) => s.nim === nim ? { ...s, status: newStatus } : s));
     try {
-      await apiClient.put(`/api/dosen/presensi/${id}/status`, { status: newStatus });
+      // Gunakan API baru berdasarkan NIM dan mata kuliah
+      await apiClient.put(`/api/dosen/presensi/nim/${nim}/matkul/${selectedMatkul.id}/status`, { status: newStatus });
       showToast("Status diperbarui");
     } catch (error) {
+      console.error(error);
       showToast("Gagal memperbarui status", "error");
     }
   };
@@ -177,6 +234,60 @@ export default function DosenPresensi({ onNavigate, onLogout }) {
   const endSession = () => {
     setSessionActive(false);
     showToast("Sesi presensi telah ditutup.");
+  };
+
+  const downloadReport = () => {
+    if (!selectedMatkul?.id || students.length === 0) {
+      showToast("Tidak ada data presensi untuk diunduh", "error");
+      return;
+    }
+
+    // Header CSV
+    const headers = ["No", "NIM", "Nama Mahasiswa", "Status", "Tanggal Pertemuan", "Waktu Presensi"];
+    
+    // Data rows
+    const rows = students.map((s, index) => [
+      index + 1,
+      s.nim || "-",
+      s.nama || "-",
+      s.status || "Alpa",
+      s.tanggalPertemuan ? new Date(s.tanggalPertemuan).toLocaleDateString('id-ID') : "-",
+      s.waktuPresensi ? new Date(s.waktuPresensi).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : "-"
+    ]);
+
+    // Summary
+    const hadir = students.filter(s => s.status === "Hadir").length;
+    const sakit = students.filter(s => s.status === "Sakit").length;
+    const izin = students.filter(s => s.status === "Izin").length;
+    const alpa = students.filter(s => s.status === "Alpa" || !s.status).length;
+
+    const csvContent = [
+      ["LAPORAN PRESENSI"],
+      ["Mata Kuliah:", selectedMatkul.name],
+      ["Tanggal:", new Date().toLocaleDateString('id-ID')],
+      [],
+      headers,
+      ...rows,
+      [],
+      ["RINGKASAN"],
+      ["Hadir:", hadir],
+      ["Sakit:", sakit],
+      ["Izin:", izin],
+      ["Alpa:", alpa],
+      ["Total:", students.length]
+    ].map(row => row.map(cell => `"${cell}"`).join(",")).join("\n");
+
+    // Download
+    const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Laporan_Presensi_${selectedMatkul.name}_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    showToast("Laporan berhasil diunduh!");
   };
 
   return (
@@ -238,17 +349,32 @@ export default function DosenPresensi({ onNavigate, onLogout }) {
                     className="dp-btn-save-jadwal"
                     onClick={async () => {
                       if (tempDate) {
+                        // Tambahkan tanggal ke dropdown filter
+                        setAvailableDates(prev => [...new Set([...prev, tempDate])].sort().reverse());
                         setSelectedDateFilter(tempDate);
                         setShowJadwal(false);
                         setSessionActive(true);
                         try {
-                          await apiClient.post(`/api/dosen/presensi/matkul/${selectedMatkul.id}/generate`, { tanggal: tempDate });
+                          const res = await apiClient.post(`/api/dosen/presensi/matkul/${selectedMatkul.id}/generate`, { tanggal: tempDate });
+                          console.log("DEBUG - Generate sesi response:", res);
+                          if (res.token) {
+                            setToken(res.token);
+                            setTimeLeft(QR_TTL);
+                            setQrLoaded(false);
+                          }
                           showToast(`Sesi dibuat untuk tanggal ${new Date(tempDate).toLocaleDateString('id-ID')}`);
-                          setTimeout(() => fetchStudents(), 500);
+                          // Fetch dengan tanggal yang baru dipilih
+                          setTimeout(() => fetchStudents(tempDate), 500);
                         } catch (err) {
                           if (err.message.includes('sudah ada')) {
-                            showToast(`Menampilkan data tanggal ${new Date(tempDate).toLocaleDateString('id-ID')}`);
-                            setTimeout(() => fetchStudents(), 500);
+                            // Generate new token for existing session
+                            const newToken = `LeMaS-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+                            setToken(newToken);
+                            setTimeLeft(QR_TTL);
+                            setQrLoaded(false);
+                            showToast(`Sesi tanggal ${new Date(tempDate).toLocaleDateString('id-ID')} sudah ada - Token baru dibuat`);
+                            // Fetch dengan tanggal yang dipilih
+                            setTimeout(() => fetchStudents(tempDate), 500);
                           } else {
                             showToast(err.message || "Gagal membuat sesi", "error");
                           }
@@ -264,7 +390,7 @@ export default function DosenPresensi({ onNavigate, onLogout }) {
                   </button>
                 </div>
               )}
-              <button className="dp-btn-outline" onClick={() => showToast("Laporan diunduh!")}>
+              <button className="dp-btn-outline" onClick={downloadReport}>
                 <span className="material-symbols-outlined">download</span>
                 Unduh Laporan
               </button>
@@ -280,15 +406,41 @@ export default function DosenPresensi({ onNavigate, onLogout }) {
                     return;
                   }
                   try {
-                    await apiClient.post(`/api/dosen/presensi/matkul/${selectedMatkul.id}/generate`);
+                    const res = await apiClient.post(`/api/dosen/presensi/matkul/${selectedMatkul.id}/generate`);
+                    console.log("DEBUG - Generate sesi response:", res);
+                    console.log("DEBUG - res.token:", res.token);
+                    if (res.token) {
+                      console.log("DEBUG - Setting token:", res.token);
+                      setToken(res.token);
+                      setTimeLeft(QR_TTL);
+                      setQrLoaded(false);
+                      console.log("DEBUG - Token set, sessionActive set to true");
+                    } else {
+                      console.log("DEBUG - No token in response!");
+                    }
                     setSessionActive(true);
-                    handleRefresh();
+                    // Tambahkan tanggal hari ini ke filter
+                    const today = new Date().toISOString().split('T')[0];
+                    setAvailableDates(prev => [...new Set([...prev, today])].sort().reverse());
+                    setSelectedDateFilter(today);
+                    // Fetch dengan tanggal hari ini
+                    setTimeout(() => fetchStudents(today), 500);
                     showToast("Sesi presensi berhasil dibuat!");
                   } catch (error) {
                     if (error.message.includes('sudah ada')) {
                       setSessionActive(true);
-                      handleRefresh();
-                      showToast("Sesi hari ini sudah ada");
+                      // Generate new token for existing session
+                      const newToken = `LeMaS-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+                      setToken(newToken);
+                      setTimeLeft(QR_TTL);
+                      setQrLoaded(false);
+                      // Tambahkan tanggal hari ini ke filter
+                      const today = new Date().toISOString().split('T')[0];
+                      setAvailableDates(prev => [...new Set([...prev, today])].sort().reverse());
+                      setSelectedDateFilter(today);
+                      showToast("Sesi hari ini sudah ada - Token baru dibuat");
+                      // Fetch dengan tanggal hari ini
+                      setTimeout(() => fetchStudents(today), 500);
                     } else {
                       showToast(error.message || "Gagal membuat sesi", "error");
                     }
@@ -310,30 +462,41 @@ export default function DosenPresensi({ onNavigate, onLogout }) {
                 <p>Tampilkan ke kelas atau bagikan ke mahasiswa</p>
               </div>
               <div className="dp-qr-frame">
-                {!qrLoaded && (
+                {!token ? (
                   <div className="dp-qr-skeleton">
-                    <span className="material-symbols-outlined">qr_code_2</span>
-                    <span>Memuat QR...</span>
+                    <span className="material-symbols-outlined">qr_code</span>
+                    <span>Buat sesi presensi terlebih dahulu</span>
                   </div>
+                ) : (
+                  <>
+                    {!qrLoaded && (
+                      <div className="dp-qr-skeleton">
+                        <span className="material-symbols-outlined">qr_code_2</span>
+                        <span>Memuat QR...</span>
+                      </div>
+                    )}
+                    <img
+                      key={token}
+                      src={qrUrl(token)}
+                      alt="QR Code Presensi"
+                      className={`dp-qr-img ${qrLoaded ? "dp-qr-img--visible" : ""} ${!sessionActive ? "dp-qr-img--expired" : ""}`}
+                      onLoad={() => setQrLoaded(true)}
+                    />
+                  </>
                 )}
-                <img
-                  key={token}
-                  src={qrUrl(token)}
-                  alt="QR Code Presensi"
-                  className={`dp-qr-img ${qrLoaded ? "dp-qr-img--visible" : ""} ${!sessionActive ? "dp-qr-img--expired" : ""}`}
-                  onLoad={() => setQrLoaded(true)}
-                />
-                {!sessionActive && (
+                {!sessionActive && token && (
                   <div className="dp-qr-overlay">
                     <span className="material-symbols-outlined">lock</span>
                     <span>Sesi Ditutup</span>
                   </div>
                 )}
               </div>
-              <div className="dp-qr-token">
-                <span className="dp-token-label">Token (untuk input manual)</span>
-                <code className="dp-token-value">{token}</code>
-              </div>
+              {token && (
+                <div className="dp-qr-token">
+                  <span className="dp-token-label">Token (untuk input manual)</span>
+                  <code className="dp-token-value">{token}</code>
+                </div>
+              )}
               <div className="dp-qr-footer">
                 <div className="dp-ttl-info">
                   <span className="dp-ttl-label">Masa Berlaku</span>
@@ -426,7 +589,7 @@ export default function DosenPresensi({ onNavigate, onLogout }) {
             <div className="dp-table-header">
               <div>
                 <h3>Daftar Hadir Mahasiswa</h3>
-                <p>{students.filter(s => selectedDateFilter === "semua" || (s.tanggalPertemuan && new Date(s.tanggalPertemuan).toISOString().split('T')[0] === selectedDateFilter)).length} mahasiswa</p>
+                <p>{students.length} mahasiswa terdaftar</p>
               </div>
               <div className="dp-table-actions">
                 <button className="dp-icon-btn" onClick={() => { fetchStudents(); showToast("Data diperbarui!"); }}>
@@ -454,24 +617,53 @@ export default function DosenPresensi({ onNavigate, onLogout }) {
                     <th>NIM</th>
                     <th>WAKTU PRESENSI</th>
                     <th>STATUS KEHADIRAN</th>
-                    <th>AKSI</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {students
-                    .filter(s => {
-                      if (selectedDateFilter === "semua") return true;
-                      let sDate = null;
-                      if (s.tanggalPertemuan) {
-                        if (typeof s.tanggalPertemuan === 'string' && s.tanggalPertemuan.includes('T')) {
-                          sDate = s.tanggalPertemuan.split('T')[0];
-                        } else {
-                          sDate = new Date(s.tanggalPertemuan).toISOString().split('T')[0];
-                        }
-                      }
-                      return sDate === selectedDateFilter;
-                    })
-                    .map((s) => (
+                  {(() => {
+                    console.log("DEBUG RENDER - students.length:", students.length);
+                    console.log("DEBUG RENDER - selectedDateFilter:", selectedDateFilter);
+                    console.log("DEBUG RENDER - availableDates:", availableDates);
+                    if (students.length > 0) {
+                      const firstStudent = students[0];
+                      console.log("DEBUG RENDER - First student:", firstStudent);
+                      console.log("DEBUG RENDER - First student tanggalPertemuan:", firstStudent?.tanggalPertemuan);
+                    }
+                    return null;
+                  })()}
+                  {students.length === 0 ? (
+                    <tr>
+                      <td colSpan="4" style={{ textAlign: 'center', padding: '20px' }}>
+                        Tidak ada data mahasiswa. Klik "Buka Sesi" untuk membuat sesi presensi.
+                      </td>
+                    </tr>
+                  ) : (() => {
+                    // Jika semua student punya tanggalPertemuan null, tampilkan semua (sesi belum dibuat)
+                    const allNullTanggal = students.every(s => !s.tanggalPertemuan);
+                    console.log("DEBUG FILTER - allNullTanggal:", allNullTanggal);
+                    
+                    const filtered = selectedDateFilter === "semua" || allNullTanggal
+                      ? students 
+                      : students.filter(s => {
+                          if (!s.tanggalPertemuan) {
+                            console.log("DEBUG FILTER - Student without tanggalPertemuan:", s.nim);
+                            return false;
+                          }
+                          let sDate = null;
+                          if (typeof s.tanggalPertemuan === 'string' && s.tanggalPertemuan.includes('T')) {
+                            sDate = s.tanggalPertemuan.split('T')[0];
+                          } else {
+                            try {
+                              sDate = new Date(s.tanggalPertemuan).toISOString().split('T')[0];
+                            } catch (e) {
+                              return false;
+                            }
+                          }
+                          console.log("DEBUG FILTER - Comparing:", sDate, "vs", selectedDateFilter, "=", sDate === selectedDateFilter);
+                          return sDate === selectedDateFilter;
+                        });
+                    console.log("DEBUG RENDER - Filtered count:", filtered.length);
+                    return filtered.map((s) => (
                     <tr key={s.id}>
                       <td>
                         <div className="dp-student-cell">
@@ -493,7 +685,7 @@ export default function DosenPresensi({ onNavigate, onLogout }) {
                             className="dp-status-select"
                             style={{ color: statusColor(s.status) }}
                             value={s.status}
-                            onChange={(e) => handleStatusChange(s.id, e.target.value)}
+                            onChange={(e) => handleStatusChange(s.nim, e.target.value)}
                           >
                             {STATUS_OPTS.map((opt) => (
                               <option key={opt} value={opt}>{opt}</option>
@@ -502,23 +694,29 @@ export default function DosenPresensi({ onNavigate, onLogout }) {
                           <span className="material-symbols-outlined dp-select-icon" style={{ color: statusColor(s.status) }}>expand_more</span>
                         </div>
                       </td>
-                      <td>
-                        <button className="dp-action-btn" onClick={() => showToast(`Aksi untuk ${s.name}`)}>
-                          <span className="material-symbols-outlined">more_horiz</span>
-                        </button>
-                      </td>
                     </tr>
-                  ))}
+                  ));})()}
                 </tbody>
               </table>
             </div>
             <div className="dp-pagination-row">
-              <p className="dp-pagination-info">Menampilkan {students.length} mahasiswa terdaftar</p>
-              <div className="dp-pagination">
-                {[1,2,3].map((n) => (
-                  <button key={n} className={`dp-page-btn ${page === n ? "dp-page-btn--active" : ""}`} onClick={() => setPage(n)}>{n}</button>
-                ))}
-              </div>
+              <p className="dp-pagination-info">
+                {selectedDateFilter === "semua" 
+                  ? `Menampilkan semua ${students.length} mahasiswa`
+                  : `Menampilkan ${students.filter(s => {
+                      if (!s.tanggalPertemuan) return false;
+                      let sDate = null;
+                      if (typeof s.tanggalPertemuan === 'string' && s.tanggalPertemuan.includes('T')) {
+                        sDate = s.tanggalPertemuan.split('T')[0];
+                      } else {
+                        try {
+                          sDate = new Date(s.tanggalPertemuan).toISOString().split('T')[0];
+                        } catch (e) { return false; }
+                      }
+                      return sDate === selectedDateFilter;
+                    }).length} mahasiswa untuk tanggal ${new Date(selectedDateFilter).toLocaleDateString('id-ID')}`
+                }
+              </p>
             </div>
           </div>
         </div>

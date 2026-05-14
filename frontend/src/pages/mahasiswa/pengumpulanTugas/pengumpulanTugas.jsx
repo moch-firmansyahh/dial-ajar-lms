@@ -58,13 +58,24 @@ export default function PengumpulanTugas({ onNavigate, onLogout, taskId }) {
     }
   };
 
+  const isDeadlinePassed = () => {
+    if (!task?.deadlineTugas) return false;
+    return new Date(task.deadlineTugas) < new Date();
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     console.log("Submitting task:", taskId);
     console.log("User NIM:", nim);
     console.log("File selected:", file);
     console.log("Existing submission:", submission);
-    
+
+    // Cek deadline - tidak bisa submit jika sudah lewat
+    if (isDeadlinePassed() && !submission) {
+      showToast("Deadline tugas telah lewat. Anda tidak dapat mengumpulkan tugas ini.", "error");
+      return;
+    }
+
     if (!file && !submission?.fileJawaban) {
       showToast("Harap pilih file untuk diunggah.", "error");
       return;
@@ -162,6 +173,32 @@ export default function PengumpulanTugas({ onNavigate, onLogout, taskId }) {
             </div>
           )}
 
+          {/* Warning jika deadline lewat dan belum kumpul */}
+          {isDeadlinePassed() && !submission && (
+            <div style={{
+              backgroundColor: "#fef2f2",
+              border: "1px solid #fecaca",
+              borderRadius: "0.75rem",
+              padding: "1rem",
+              marginBottom: "1rem",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.75rem"
+            }}>
+              <span className="material-symbols-outlined" style={{ color: "#dc2626", fontSize: "1.5rem" }}>
+                lock
+              </span>
+              <div>
+                <p style={{ margin: 0, fontWeight: 600, color: "#dc2626" }}>
+                  Deadline Telah Lewat
+                </p>
+                <p style={{ margin: 0, fontSize: "0.875rem", color: "#7f1d1d", marginTop: "0.25rem" }}>
+                  Anda tidak dapat mengumpulkan tugas ini karena sudah melewati batas waktu pengumpulan.
+                </p>
+              </div>
+            </div>
+          )}
+
           <div className="pt-card">
             <h4 className="pt-section-title">
               {submission ? "Perbarui Pengumpulan" : "Unggah Jawaban"}
@@ -173,6 +210,7 @@ export default function PengumpulanTugas({ onNavigate, onLogout, taskId }) {
                   type="file"
                   className="pt-file-input"
                   onChange={handleFileChange}
+                  disabled={isDeadlinePassed() && !submission}
                 />
                 {file && (
                   <p className="pt-file-name">
@@ -196,6 +234,7 @@ export default function PengumpulanTugas({ onNavigate, onLogout, taskId }) {
                   value={detailTugas}
                   onChange={(e) => setDetailTugas(e.target.value)}
                   placeholder="Tulis catatan tambahan untuk tugas ini..."
+                  disabled={isDeadlinePassed() && !submission}
                 />
               </div>
 
@@ -210,7 +249,11 @@ export default function PengumpulanTugas({ onNavigate, onLogout, taskId }) {
                 <button
                   type="submit"
                   className="pt-btn pt-btn--primary"
-                  disabled={loading}
+                  disabled={loading || (isDeadlinePassed() && !submission)}
+                  style={{
+                    backgroundColor: (isDeadlinePassed() && !submission) ? "var(--slate-400)" : undefined,
+                    cursor: (isDeadlinePassed() && !submission) ? "not-allowed" : undefined
+                  }}
                 >
                   {loading ? (
                     <>
@@ -221,6 +264,11 @@ export default function PengumpulanTugas({ onNavigate, onLogout, taskId }) {
                     <>
                       <span className="material-symbols-outlined">update</span>
                       Perbarui
+                    </>
+                  ) : isDeadlinePassed() ? (
+                    <>
+                      <span className="material-symbols-outlined">lock</span>
+                      Deadline Lewat
                     </>
                   ) : (
                     <>

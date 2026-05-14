@@ -17,6 +17,9 @@ export default function MataKuliah({ onNavigate, onLogout, idMataKuliah = 1 }) {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ pdf: 0, video: 0, tugas: 0, kuis: 0 });
 
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const nim = user.nomorInduk || "";
+
   useEffect(() => {
     const fetchCourseData = async () => {
       try {
@@ -25,27 +28,24 @@ export default function MataKuliah({ onNavigate, onLogout, idMataKuliah = 1 }) {
         const courseData = courseRes.data || courseRes;
         setCourse(courseData);
 
-        // Fetch modul ajar — backend returns mapped fields: id, judul, tipe, matkul, url, deskripsi
-        const modulRes = await apiClient.get('/api/modul-ajar');
-        const allModuls = Array.isArray(modulRes) ? modulRes : (modulRes.data || []);
-        // Filter berdasarkan idMataKuliah (backend field: matkul)
-        const courseModules = allModuls.filter(m => 
-          m.matkul === idMataKuliah || m.idMataKuliah === idMataKuliah || m.matkul === parseInt(idMataKuliah)
-        );
+        // Fetch materi dengan progress dari API baru
+        const materiRes = await apiClient.get(`/api/materi/mata-kuliah/${idMataKuliah}?nim=${nim}`);
+        const materiData = Array.isArray(materiRes) ? materiRes : (materiRes.data || []);
         
-        const formattedModules = courseModules.map((m, index) => ({
-          id: m.id || m.idModulAjar || index + 1,
+        const formattedModules = materiData.map((m, index) => ({
+          id: m.id || index + 1,
           title: m.judul || "Materi Tanpa Judul",
-          meta: (m.tipe || m.tipe_modul) === "Video" ? "Video Pembelajaran" : "Dokumen PDF",
-          type: (m.tipe || m.tipe_modul)?.toLowerCase() === "video" ? "video" : "pdf",
-          action: (m.tipe || m.tipe_modul)?.toLowerCase() === "video" ? "play" : "download",
+          meta: m.tipe === "Video" ? "Video Pembelajaran" : "Dokumen PDF",
+          type: m.tipe?.toLowerCase() === "video" ? "video" : "pdf",
+          action: m.tipe?.toLowerCase() === "video" ? "play" : "download",
           status: "active",
-          url: m.url || m.fileUrl || "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-          deskripsi: m.deskripsi || "Tidak ada deskripsi untuk modul ini."
+          url: m.url || m.fileUrl || "",
+          deskripsi: m.deskripsi || "Tidak ada deskripsi untuk modul ini.",
+          sudahAkses: m.sudahAkses || false
         }));
 
         setModules(formattedModules.length > 0 ? formattedModules : [
-          { id: 1, title: "Belum ada materi", meta: "-", type: "pdf", action: "none", status: "", deskripsi: "Dosen belum mengunggah materi." }
+          { id: 1, title: "Belum ada materi", meta: "-", type: "pdf", action: "none", status: "", deskripsi: "Dosen belum mengunggah materi.", sudahAkses: false }
         ]);
         if (formattedModules.length > 0) setActiveModule(formattedModules[0].id);
 
@@ -78,7 +78,7 @@ export default function MataKuliah({ onNavigate, onLogout, idMataKuliah = 1 }) {
       }
     };
     fetchCourseData();
-  }, [idMataKuliah]);
+  }, [idMataKuliah, nim]);
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
 
@@ -167,8 +167,20 @@ export default function MataKuliah({ onNavigate, onLogout, idMataKuliah = 1 }) {
                           src={activeData?.type === "video" ? "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&auto=format&fit=crop" : "https://images.unsplash.com/photo-1516321497487-e288fb19713f?w=800&auto=format&fit=crop"}
                           alt={activeData?.title}
                         />
-                        <div className="mk-video-overlay" onClick={() => {
-                          if (activeData?.action === "play") setVideoOpen(true);
+                        <div className="mk-video-overlay" onClick={async () => {
+                          if (activeData?.action === "play") {
+                            // Mark video as accessed
+                            try {
+                              await apiClient.post(`/api/materi/${activeData.id}/access`, { nim });
+                              // Update local state
+                              setModules(prev => prev.map(mod => 
+                                mod.id === activeData.id ? { ...mod, sudahAkses: true } : mod
+                              ));
+                            } catch (err) {
+                              console.error("Failed to mark video access:", err);
+                            }
+                            setVideoOpen(true);
+                          }
                           else if (activeData?.action === "download") window.open(`http://localhost:3000${activeData.url}`, '_blank');
                         }} style={{ cursor: "pointer" }}>
                           <button className="mk-play-btn">
@@ -221,9 +233,19 @@ export default function MataKuliah({ onNavigate, onLogout, idMataKuliah = 1 }) {
                       <div
                         key={m.id}
                         className={`mk-mod-item ${isActive ? "mk-mod-active" : ""}`}
-                        onClick={() => {
+                        onClick={async () => {
                           setActiveModule(m.id);
                           if (m.type === "video") {
+                            // Mark video as accessed
+                            try {
+                              await apiClient.post(`/api/materi/${m.id}/access`, { nim });
+                              // Update local state
+                              setModules(prev => prev.map(mod => 
+                                mod.id === m.id ? { ...mod, sudahAkses: true } : mod
+                              ));
+                            } catch (err) {
+                              console.error("Failed to mark video access:", err);
+                            }
                             setVideoOpen(true);
                           }
                         }}
@@ -234,11 +256,46 @@ export default function MataKuliah({ onNavigate, onLogout, idMataKuliah = 1 }) {
                           </span>
                         </div>
                         <div className="mk-mod-info">
-                          <p className={`mk-mod-title ${isActive ? "mk-mod-title--active" : ""}`}>{m.title}</p>
+                          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                            <p className={`mk-mod-title ${isActive ? "mk-mod-title--active" : ""}`}>{m.title}</p>
+                            {/* Green checkmark for accessed materials */}
+                            {m.sudahAkses && (
+                              <span 
+                                className="material-symbols-outlined" 
+                                style={{ 
+                                  color: "#059669", 
+                                  fontSize: "1.1rem",
+                                  background: "#ecfdf5",
+                                  borderRadius: "50%",
+                                  padding: "2px"
+                                }}
+                              >
+                                check_circle
+                              </span>
+                            )}
+                          </div>
                           <p className={`mk-mod-meta  ${isActive ? "mk-mod-meta--active"  : ""}`}>{m.meta}</p>
-                          {isActive && <div className="mk-bar-track"><div className="mk-bar-fill"></div></div>}
                           {m.action === "download" && (
-                            <button className="mk-dl-btn" onClick={() => showToast(`Mengunduh: ${m.title}`)}>
+                            <button 
+                              className="mk-dl-btn" 
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                // Mark as accessed
+                                try {
+                                  await apiClient.post(`/api/materi/${m.id}/access`, { nim });
+                                  // Update local state
+                                  setModules(prev => prev.map(mod => 
+                                    mod.id === m.id ? { ...mod, sudahAkses: true } : mod
+                                  ));
+                                } catch (err) {
+                                  console.error("Failed to mark access:", err);
+                                }
+                                showToast(`Mengunduh: ${m.title}`);
+                                // Use absolute URL if provided, otherwise prepend base URL
+                                const fileUrl = m.url?.startsWith('http') ? m.url : `http://localhost:3000${m.url}`;
+                                window.open(fileUrl, '_blank');
+                              }}
+                            >
                               <span className="material-symbols-outlined">download</span>
                               Unduh Modul
                             </button>
@@ -261,9 +318,6 @@ export default function MataKuliah({ onNavigate, onLogout, idMataKuliah = 1 }) {
                     <p className="mk-inst-name">{course?.dosen?.user?.nama || course?.dosenNama || "Dosen"}</p>
                     <p className="mk-inst-role">Dosen {course?.namaMataKuliah || course?.nama || ""}</p>
                   </div>
-                  <button className="mk-contact-btn" onClick={() => showToast(`Email ke: ${course?.dosen?.user?.email || "dosen@kampus.ac.id"}`)} title="Hubungi Dosen">
-                    <span className="material-symbols-outlined">mail</span>
-                  </button>
                 </div>
               </div>
             </div>

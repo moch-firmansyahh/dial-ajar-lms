@@ -124,7 +124,7 @@ export default function DosenMateri({ onNavigate, onLogout }) {
     matkulList.find((m) => m.id === id)?.name || id;
 
   const filtered = materi.filter((m) => {
-    const mk = filterMatkul === "Semua" || m.matkul === filterMatkul;
+    const mk = filterMatkul === "Semua" || String(m.matkul) === String(filterMatkul);
     const tp = filterTipe === "Semua" || m.tipe === filterTipe;
     return mk && tp;
   });
@@ -474,36 +474,32 @@ export default function DosenMateri({ onNavigate, onLogout }) {
               </div>
 
               {/* Filters */}
-              <div className="dm-filter-row">
-                <div className="dm-filter-group">
+              <div className="dm-filter-row" style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap" }}>
+                <div className="dm-filter-group--select">
                   <label className="dm-filter-label">Mata Kuliah:</label>
-                  <div className="dm-filter-pills">
-                    {["Semua", ...matkulList.map((m) => m.id)].map((id) => (
-                      <button
-                        key={id}
-                        className={`dm-pill ${filterMatkul === id ? "dm-pill--active" : ""}`}
-                        onClick={() => setFilterMatkul(id)}
-                      >
-                        {id === "Semua"
-                          ? "Semua"
-                          : matkulList.find((m) => m.id === id)?.name}
-                      </button>
+                  <select
+                    className="dm-filter-select"
+                    value={filterMatkul}
+                    onChange={(e) => setFilterMatkul(e.target.value)}
+                  >
+                    <option value="Semua">Semua Mata Kuliah</option>
+                    {matkulList.map((m) => (
+                      <option key={m.id} value={m.id}>{m.name}</option>
                     ))}
-                  </div>
+                  </select>
                 </div>
-                <div className="dm-filter-group">
+                <div className="dm-filter-group--select">
                   <label className="dm-filter-label">Tipe:</label>
-                  <div className="dm-filter-pills">
-                    {["Semua", ...TIPE_LIST].map((t) => (
-                      <button
-                        key={t}
-                        className={`dm-pill ${filterTipe === t ? "dm-pill--active" : ""}`}
-                        onClick={() => setFilterTipe(t)}
-                      >
-                        {t}
-                      </button>
+                  <select
+                    className="dm-filter-select"
+                    value={filterTipe}
+                    onChange={(e) => setFilterTipe(e.target.value)}
+                  >
+                    <option value="Semua">Semua Tipe</option>
+                    {TIPE_LIST.map((t) => (
+                      <option key={t} value={t}>{t}</option>
                     ))}
-                  </div>
+                  </select>
                 </div>
               </div>
 

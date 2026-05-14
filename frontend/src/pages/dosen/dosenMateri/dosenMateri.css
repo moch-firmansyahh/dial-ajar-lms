@@ -441,6 +441,73 @@
   border-color: var(--color-secondary);
 }
 
+/* Custom Dropdown Styling */
+.dm-filter-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-color: white;
+  border: 1.5px solid var(--slate-300);
+  border-radius: 0.625rem;
+  padding: 0.625rem 2.5rem 0.625rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--slate-700);
+  cursor: pointer;
+  min-width: 200px;
+  transition: all 0.2s ease;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1rem;
+}
+
+.dm-filter-select:hover {
+  border-color: var(--color-secondary);
+  background-color: var(--slate-50);
+}
+
+.dm-filter-select:focus {
+  outline: none;
+  border-color: var(--color-secondary);
+  box-shadow: 0 0 0 3px rgba(47, 150, 150, 0.15);
+  background-color: white;
+}
+
+.dm-filter-select option {
+  padding: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--slate-700);
+  background-color: white;
+}
+
+.dm-filter-select option:hover,
+.dm-filter-select option:focus {
+  background-color: var(--color-secondary) !important;
+  color: white !important;
+}
+
+.dm-filter-select option:checked {
+  background-color: var(--color-secondary);
+  color: white;
+  font-weight: 600;
+}
+
+/* Filter group with select */
+.dm-filter-group--select {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.dm-filter-group--select .dm-filter-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--slate-600);
+  white-space: nowrap;
+}
+
 /* Empty state */
 .dm-empty {
   display: flex;
@@ -705,6 +772,33 @@
     border-color 0.2s,
     box-shadow 0.2s;
 }
+
+/* Custom styling for dm-select dropdown */
+.dm-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding-right: 2.5rem;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%234b53bc' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1rem;
+}
+
+.dm-select option {
+  padding: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--color-on-surface);
+  background-color: white;
+}
+
+.dm-select option:checked {
+  background-color: var(--color-secondary);
+  color: white;
+  font-weight: 600;
+}
+
 .dm-input:focus,
 .dm-select:focus,
 .dm-textarea:focus {

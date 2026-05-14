@@ -109,6 +109,39 @@
   box-shadow: 0 0 0 3px rgba(75,83,188,0.12);
 }
 
+/* Password field with toggle */
+.prf-field--pw { position: relative; }
+.prf-pw-input-wrap {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+.prf-input--pw {
+  padding-right: 2.5rem;
+  width: 100%;
+}
+.prf-pw-toggle {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  padding: 0.25rem;
+  cursor: pointer;
+  color: var(--slate-400);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+.prf-pw-toggle:hover {
+  color: var(--color-secondary);
+}
+.prf-pw-toggle .material-symbols-outlined {
+  font-size: 1.125rem;
+}
+
 /* Buttons */
 .prf-btn-cancel, .prf-btn-cancel-sm {
   padding: 0.5rem 1.25rem;
@@ -257,6 +290,22 @@
 }
 .prf-sunting-btn:hover { background: rgba(75,83,188,0.08); }
 .prf-edit-actions { display: flex; gap: 0.5rem; }
+.prf-admin-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  background: #fff8e1;
+  border: 1px solid #ffe082;
+  border-radius: 0.625rem;
+  padding: 0.65rem 0.875rem;
+  margin-top: 1rem;
+}
+.prf-admin-notice p {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: #5a3e00;
+  line-height: 1.5;
+}
 
 .prf-data-grid {
   display: grid;

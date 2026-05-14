@@ -294,9 +294,7 @@ export default function DosenForum({ onNavigate, onLogout }) {
               <div className="fd-topbar">
                 <div>
                   <nav className="fd-breadcrumb">
-                    <span>LMS</span>
-                    <span className="material-symbols-outlined">chevron_right</span>
-                    <span className="fd-breadcrumb--active">FORUM DISKUSI</span>
+                    <span className="fd-breadcrumb--active">Forum Diskusi</span>
                   </nav>
                   <h2 className="fd-page-title">Forum Diskusi</h2>
                   <p className="fd-page-sub">

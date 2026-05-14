@@ -1,0 +1,314 @@
+import { useState } from "react";
+import "./faq.css";
+
+const FAQ_DATA = {
+  umum: {
+    label: "Umum",
+    icon: "info",
+    items: [
+      {
+        icon: "school",
+        question: "Apa itu LeMaS (Learning Management System)?",
+        answer: (
+          <>
+            <p>
+              LeMaS adalah platform pengelolaan pembelajaran digital yang digunakan oleh dosen dan mahasiswa untuk
+              mendukung kegiatan akademik, meliputi:
+            </p>
+            <ul>
+              <li>Pengelolaan materi perkuliahan</li>
+              <li>Pemberian dan pengumpulan tugas</li>
+              <li>Presensi digital berbasis QR Code</li>
+              <li>Forum diskusi kelas</li>
+              <li>Penilaian dan rekap nilai</li>
+            </ul>
+          </>
+        ),
+      },
+      {
+        icon: "person",
+        question: "Siapa saja yang bisa menggunakan LeMaS?",
+        answer: (
+          <p>
+            LeMaS dapat digunakan oleh <strong>Dosen</strong> dan <strong>Mahasiswa</strong> yang terdaftar di
+            sistem akademik kampus. Akun dibuat oleh administrator dan tidak dapat didaftarkan sendiri.
+          </p>
+        ),
+      },
+      {
+        icon: "lock",
+        question: "Bagaimana cara login ke LeMaS?",
+        answer: (
+          <>
+            <p>Untuk login ke LeMaS:</p>
+            <ol>
+              <li>Buka halaman login LeMaS.</li>
+              <li>Pilih peran: <strong>Mahasiswa</strong> atau <strong>Dosen</strong>.</li>
+              <li>Masukkan <strong>Nomor Induk</strong> (NIM untuk mahasiswa / NIP/ID untuk dosen).</li>
+              <li>Masukkan <strong>Kata Sandi</strong> yang diberikan oleh administrator.</li>
+              <li>Klik tombol <strong>Masuk</strong>.</li>
+            </ol>
+          </>
+        ),
+      },
+    ],
+  },
+  mahasiswa: {
+    label: "Mahasiswa",
+    icon: "menu_book",
+    items: [
+      {
+        icon: "assignment",
+        question: "Bagaimana cara mengumpulkan tugas?",
+        answer: (
+          <>
+            <p>Langkah-langkah mengumpulkan tugas:</p>
+            <ol>
+              <li>Masuk ke menu <strong>Tugas</strong> di sidebar.</li>
+              <li>Pilih mata kuliah dan tugas yang ingin dikumpulkan.</li>
+              <li>Klik tombol <strong>Kumpulkan</strong>.</li>
+              <li>Unggah file atau isi jawaban sesuai instruksi.</li>
+              <li>Klik <strong>Kirim</strong> untuk mengonfirmasi pengumpulan.</li>
+            </ol>
+            <p>Pastikan pengumpulan dilakukan sebelum batas waktu yang ditentukan dosen.</p>
+          </>
+        ),
+      },
+      {
+        icon: "qr_code_scanner",
+        question: "Bagaimana cara melakukan presensi dengan QR Code?",
+        answer: (
+          <>
+            <ol>
+              <li>Masuk ke menu <strong>Presensi</strong>.</li>
+              <li>Pilih mata kuliah yang sedang berlangsung.</li>
+              <li>Klik <strong>Pindai QR Code</strong> dan izinkan akses kamera.</li>
+              <li>Arahkan kamera ke QR Code yang ditampilkan dosen.</li>
+              <li>Atau masukkan kode secara manual jika tidak bisa memindai.</li>
+            </ol>
+            <p>
+              <strong>Catatan:</strong> QR Code hanya valid selama sesi berlangsung (15 menit). Pastikan kamu
+              terdaftar di mata kuliah tersebut.
+            </p>
+          </>
+        ),
+      },
+      {
+        icon: "grade",
+        question: "Di mana saya bisa melihat nilai saya?",
+        answer: (
+          <p>
+            Nilai dapat dilihat di menu <strong>Nilai</strong> pada sidebar. Pilih mata kuliah untuk melihat
+            rincian nilai tugas, kuis, dan nilai akhir yang sudah diinputkan dosen.
+          </p>
+        ),
+      },
+      {
+        icon: "forum",
+        question: "Bagaimana cara berpartisipasi di Forum Diskusi?",
+        answer: (
+          <>
+            <p>Untuk berpartisipasi di forum:</p>
+            <ol>
+              <li>Masuk ke menu <strong>Forum Diskusi</strong>.</li>
+              <li>Pilih mata kuliah dan topik diskusi.</li>
+              <li>Klik <strong>Balas</strong> untuk merespons atau <strong>Buat Post</strong> untuk topik baru.</li>
+            </ol>
+          </>
+        ),
+      },
+    ],
+  },
+  dosen: {
+    label: "Dosen",
+    icon: "co_present",
+    items: [
+      {
+        icon: "upload_file",
+        question: "Bagaimana cara mengunggah materi perkuliahan?",
+        answer: (
+          <>
+            <ol>
+              <li>Masuk ke menu <strong>Materi</strong>.</li>
+              <li>Pilih mata kuliah yang ingin ditambahkan materi.</li>
+              <li>Klik tombol <strong>Tambah Materi</strong>.</li>
+              <li>Isi judul, deskripsi, dan unggah file (PDF, PPT, dll).</li>
+              <li>Klik <strong>Simpan</strong>.</li>
+            </ol>
+          </>
+        ),
+      },
+      {
+        icon: "qr_code",
+        question: "Bagaimana cara membuka sesi presensi?",
+        answer: (
+          <>
+            <ol>
+              <li>Masuk ke menu <strong>Presensi</strong>.</li>
+              <li>Pilih mata kuliah.</li>
+              <li>Klik <strong>Buka Sesi</strong> atau <strong>Pilih Tanggal</strong> untuk tanggal tertentu.</li>
+              <li>QR Code akan otomatis muncul dan berlaku selama <strong>15 menit</strong>.</li>
+              <li>Tampilkan QR Code kepada mahasiswa untuk dipindai.</li>
+            </ol>
+            <p>Status kehadiran mahasiswa akan diperbarui secara real-time setelah mereka memindai.</p>
+          </>
+        ),
+      },
+      {
+        icon: "fact_check",
+        question: "Bagaimana cara mengubah status kehadiran mahasiswa secara manual?",
+        answer: (
+          <>
+            <p>
+              Di halaman Presensi, pada tabel daftar hadir, setiap baris mahasiswa memiliki
+              dropdown <strong>Status</strong>. Klik dropdown tersebut dan pilih status yang sesuai:
+              <strong> Hadir, Sakit, Izin, atau Alpa</strong>. Perubahan langsung tersimpan.
+            </p>
+          </>
+        ),
+      },
+      {
+        icon: "assignment_turned_in",
+        question: "Bagaimana cara memberi nilai tugas mahasiswa?",
+        answer: (
+          <>
+            <ol>
+              <li>Masuk ke menu <strong>Tugas</strong>.</li>
+              <li>Pilih tugas yang ingin dinilai.</li>
+              <li>Klik nama mahasiswa untuk melihat file pengumpulan.</li>
+              <li>Masukkan nilai pada kolom yang tersedia.</li>
+              <li>Klik <strong>Simpan Nilai</strong>.</li>
+            </ol>
+          </>
+        ),
+      },
+    ],
+  },
+  teknis: {
+    label: "Teknis",
+    icon: "build",
+    items: [
+      {
+        icon: "password",
+        question: "Bagaimana jika saya lupa kata sandi?",
+        answer: (
+          <p>
+            Hubungi <strong>administrator akademik</strong> kampus untuk melakukan reset kata sandi. Administrator
+            akan memberikan kata sandi baru yang dapat kamu ganti setelah login.
+          </p>
+        ),
+      },
+      {
+        icon: "browser_not_supported",
+        question: "Browser apa yang direkomendasikan untuk LeMaS?",
+        answer: (
+          <p>
+            LeMaS direkomendasikan menggunakan browser versi terbaru dari <strong>Google Chrome</strong>,
+            <strong> Mozilla Firefox</strong>, atau <strong>Microsoft Edge</strong>. Aktifkan JavaScript dan izinkan
+            akses kamera untuk fitur QR Code.
+          </p>
+        ),
+      },
+      {
+        icon: "phone_android",
+        question: "Apakah LeMaS bisa diakses melalui ponsel?",
+        answer: (
+          <p>
+            Ya, LeMaS dapat diakses melalui browser di ponsel. Fitur pemindaian QR Code pada halaman presensi
+            mahasiswa membutuhkan izin kamera di browser.
+          </p>
+        ),
+      },
+    ],
+  },
+};
+
+const ALL_CATEGORIES = ["semua", ...Object.keys(FAQ_DATA)];
+
+export default function FAQ() {
+  const [activeTab, setActiveTab] = useState("semua");
+  const [openIndex, setOpenIndex] = useState(null);
+
+  const getCategories = () => {
+    if (activeTab === "semua") return Object.entries(FAQ_DATA);
+    return [[activeTab, FAQ_DATA[activeTab]]];
+  };
+
+  const toggle = (key) => setOpenIndex(openIndex === key ? null : key);
+
+  return (
+    <main className="faq-main">
+      <div className="faq-container">
+        {/* Header */}
+        <div className="faq-header">
+          <div className="faq-badge">
+            <span className="material-symbols-outlined" style={{ fontSize: "1rem" }}>help</span>
+            Pusat Bantuan
+          </div>
+          <h1 className="faq-title">Pertanyaan yang Sering Diajukan</h1>
+          <p className="faq-subtitle">
+            Temukan jawaban atas pertanyaan umum seputar penggunaan LeMaS.
+          </p>
+        </div>
+
+        {/* Tabs */}
+        <div className="faq-tabs">
+          {ALL_CATEGORIES.map((cat) => {
+            const info = cat === "semua" ? { label: "Semua", icon: "apps" } : FAQ_DATA[cat];
+            return (
+              <button
+                key={cat}
+                className={`faq-tab ${activeTab === cat ? "active" : ""}`}
+                onClick={() => { setActiveTab(cat); setOpenIndex(null); }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: "1rem" }}>{info.icon}</span>
+                {info.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Accordion */}
+        {getCategories().map(([catKey, catData]) => (
+          <div key={catKey}>
+            {activeTab === "semua" && (
+              <p className="faq-section-title">{catData.label}</p>
+            )}
+            <div className="faq-list">
+              {catData.items.map((item, i) => {
+                const key = `${catKey}-${i}`;
+                const isOpen = openIndex === key;
+                return (
+                  <div key={key} className={`faq-item ${isOpen ? "open" : ""}`}>
+                    <button className="faq-question" onClick={() => toggle(key)}>
+                      <span className="faq-q-left">
+                        <span className="faq-q-icon">
+                          <span className="material-symbols-outlined" style={{ fontSize: "1rem" }}>{item.icon}</span>
+                        </span>
+                        {item.question}
+                      </span>
+                      <span className="material-symbols-outlined faq-chevron">expand_more</span>
+                    </button>
+                    <div className="faq-answer">
+                      {item.answer}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+
+        {/* Contact */}
+        <div className="faq-contact">
+          <h3>Masih butuh bantuan?</h3>
+          <p>Jika pertanyaanmu belum terjawab, hubungi administrator akademik kampus.</p>
+          <a className="faq-contact-btn" href="https://wa.me/628112222136" target="_blank" rel="noopener noreferrer">
+            <span className="material-symbols-outlined" style={{ fontSize: "1rem" }}>chat</span>
+            Hubungi Admin via WhatsApp
+          </a>
+        </div>
+      </div>
+    </main>
+  );
+}

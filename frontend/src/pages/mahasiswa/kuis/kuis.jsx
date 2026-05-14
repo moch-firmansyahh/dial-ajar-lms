@@ -51,32 +51,31 @@ function formatTime(seconds) {
 
 import { apiClient } from "../../../utils/apiClient";
 
-export default function QuizKuis({ onNavigate, onLogout, idKuis = 1 }) {
+export default function QuizKuis({ onNavigate, onLogout, idKuis }) {
   const { sidebarOpen, openSidebar, closeSidebar } = useSidebar();
   const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [questions, setQuestions] = useState(QUIZ_QUESTIONS);
+  const [questions, setQuestions] = useState([]);
   const [answers, setAnswers] = useState([]);
   const [timeLeft, setTimeLeft] = useState(TIME_LIMIT);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [score, setScore] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [quizTitle, setQuizTitle] = useState("Kuis");
 
   useEffect(() => {
     const fetchQuiz = async () => {
+      if (!idKuis) {
+        setLoading(false);
+        return;
+      }
       try {
         const res = await apiClient.get(`/api/kuis/${idKuis}/soal`);
-        // If the backend returns actual array of questions, use it. Otherwise fallback to static.
-        if (Array.isArray(res)) {
+        if (Array.isArray(res) && res.length > 0) {
           setQuestions(res);
           setAnswers(Array(res.length).fill(null));
-        } else {
-          // Backend not fully implemented yet, use static fallback
-          setQuestions(QUIZ_QUESTIONS);
-          setAnswers(Array(QUIZ_QUESTIONS.length).fill(null));
         }
       } catch (error) {
-        setQuestions(QUIZ_QUESTIONS);
-        setAnswers(Array(QUIZ_QUESTIONS.length).fill(null));
+        console.error("Gagal memuat kuis:", error);
       } finally {
         setLoading(false);
       }

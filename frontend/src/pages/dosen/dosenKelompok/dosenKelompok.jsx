@@ -51,6 +51,7 @@ export default function DosenKelompok({ onNavigate, onLogout }) {
   const [addMemberModal, setAddMemberModal] = useState(null);
   const [createModal, setCreateModal] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
+  const [newGroupTask, setNewGroupTask] = useState("");
   const [allStudents, setAllStudents] = useState([]);
   const [mataKuliahList, setMataKuliahList] = useState([]);
   const [selectedMkId, setSelectedMkId] = useState("");
@@ -128,7 +129,7 @@ export default function DosenKelompok({ onNavigate, onLogout }) {
     try {
       await apiClient.delete(`/api/kelompok/${groupId}/members/${studentId}`);
       showToast("Anggota dikeluarkan.");
-      fetchGroups();
+      await fetchGroups();
     } catch (error) {
       showToast("Gagal mengeluarkan", "error");
     }
@@ -140,10 +141,9 @@ export default function DosenKelompok({ onNavigate, onLogout }) {
         nim: nim
       });
       showToast("Anggota berhasil ditambahkan!");
-      fetchGroups();
-      setAddMemberModal(null);
+      await fetchGroups();
     } catch (error) {
-      showToast("Gagal menambahkan", "error");
+      showToast(error.message || "Gagal menambahkan anggota", "error");
     }
   };
 
@@ -159,9 +159,11 @@ export default function DosenKelompok({ onNavigate, onLogout }) {
     try {
       await apiClient.post('/api/kelompok', {
         name: newGroupName.trim(),
-        idMataKuliah: parseInt(selectedMkId)
+        idMataKuliah: parseInt(selectedMkId),
+        task: newGroupTask.trim() || null
       });
       setNewGroupName("");
+      setNewGroupTask("");
       setSelectedMkId("");
       setCreateModal(false);
       showToast("Kelompok berhasil dibuat!");
@@ -177,8 +179,14 @@ export default function DosenKelompok({ onNavigate, onLogout }) {
   };
 
   const availableStudents = (groupId) => {
-    const inAnyGroup = new Set(groups.flatMap((g) => g.members.map(m => m.nim)));
-    return allStudents.filter((s) => !inAnyGroup.has(s.nim));
+    const targetGroup = groups.find(g => g.id === groupId);
+    if (!targetGroup) return allStudents;
+    // Exclude mahasiswa yang sudah ada di kelompok manapun dalam matkul yang sama
+    const sameMkGroups = groups.filter(g => g.idMataKuliah === targetGroup.idMataKuliah);
+    const alreadyInAnyGroup = new Set(
+      sameMkGroups.flatMap(g => g.members.map(m => m.nim))
+    );
+    return allStudents.filter((s) => !alreadyInAnyGroup.has(s.nim));
   };
 
   return (
@@ -362,6 +370,15 @@ export default function DosenKelompok({ onNavigate, onLogout }) {
                   placeholder="Kelompok Delta..."
                   value={newGroupName}
                   onChange={(e) => setNewGroupName(e.target.value)}
+                />
+              </div>
+              <div className="dk-field">
+                <label className="dk-label">Nama Tugas <span style={{ color: "#94a3b8", fontWeight: 400 }}>(opsional)</span></label>
+                <input
+                  className="dk-input"
+                  placeholder="Misal: Proyek Akhir Semester..."
+                  value={newGroupTask}
+                  onChange={(e) => setNewGroupTask(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && createGroup()}
                 />
               </div>
@@ -597,13 +614,22 @@ export default function DosenKelompok({ onNavigate, onLogout }) {
                       >
                         {group.submitted ? "check_circle" : "pending"}
                       </span>
-                      <span
-                        className={group.submitted ? "dk-sub-yes" : "dk-sub-no"}
-                      >
-                        {group.submitted
-                          ? "Sudah Dikumpulkan"
-                          : "Belum Dikumpulkan"}
-                      </span>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "0.15rem" }}>
+                        <span className={group.submitted ? "dk-sub-yes" : "dk-sub-no"}>
+                          {group.submitted ? "Sudah Dikumpulkan" : "Belum Dikumpulkan"}
+                        </span>
+                        {group.submitted && group.fileKumpulan && (
+                          <a
+                            href={`http://localhost:3000${group.fileKumpulan}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ fontSize: "0.75rem", color: "#4b53bc", display: "flex", alignItems: "center", gap: "0.25rem", textDecoration: "none" }}
+                          >
+                            <span className="material-symbols-outlined" style={{ fontSize: "0.875rem" }}>download</span>
+                            Lihat File
+                          </a>
+                        )}
+                      </div>
                     </div>
                     <button
                       className="dk-grade-btn"

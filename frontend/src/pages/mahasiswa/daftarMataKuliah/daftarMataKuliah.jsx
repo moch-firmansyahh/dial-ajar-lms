@@ -11,23 +11,43 @@ export default function DaftarMataKuliah({ onNavigate, onLogout }) {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const nim = user.nomorInduk || "";
+
   useEffect(() => {
     const fetchCourses = async () => {
       try {
         const res = await apiClient.get("/api/mata-kuliah/mahasiswa/me");
         const data = Array.isArray(res) ? res : (res.data || []);
-        // Format data mata kuliah untuk tampilan UI
-        const formattedData = data.map(course => ({
-          id: course.idMataKuliah,
-          name: course.namaMataKuliah,
-          category: "Mata Kuliah",
-          icon: "menu_book",
-          dosen: course.dosen?.user?.nama || "Belum ditentukan",
-          jadwal: course.jadwal || "-",
-          desc: "Materi dan tugas untuk mata kuliah " + course.namaMataKuliah,
-          progress: 0
-        }));
-        setCourses(formattedData);
+        
+        // Fetch progress untuk setiap mata kuliah
+        const coursesWithProgress = await Promise.all(
+          data.map(async (course) => {
+            let progress = 0;
+            try {
+              const progressRes = await apiClient.get(
+                `/api/materi/mata-kuliah/${course.idMataKuliah}/progress?nim=${nim}`
+              );
+              const progressData = progressRes.data || progressRes;
+              progress = progressData.percentage || 0;
+            } catch (e) {
+              console.error(`Error fetching progress for ${course.idMataKuliah}:`, e);
+            }
+            
+            return {
+              id: course.idMataKuliah,
+              name: course.namaMataKuliah,
+              category: "Mata Kuliah",
+              icon: "menu_book",
+              dosen: course.dosen?.user?.nama || "Belum ditentukan",
+              jadwal: course.jadwal || "-",
+              desc: "Materi dan tugas untuk mata kuliah " + course.namaMataKuliah,
+              progress: progress
+            };
+          })
+        );
+        
+        setCourses(coursesWithProgress);
       } catch (error) {
         console.error("Gagal memuat mata kuliah", error);
       } finally {
@@ -35,7 +55,7 @@ export default function DaftarMataKuliah({ onNavigate, onLogout }) {
       }
     };
     fetchCourses();
-  }, []);
+  }, [nim]);
 
   if (loading) {
     return (
@@ -73,7 +93,7 @@ export default function DaftarMataKuliah({ onNavigate, onLogout }) {
           <div className="dm-hero-overlay"></div>
           <div className="dm-hero-content">
             <h2 className="dm-hero-title">Daftar Mata Kuliah Saya</h2>
-            <p className="dm-hero-subtitle">Selamat Belajar – Tetap Semangat!</p>
+            <p className="dm-hero-subtitle">Selamat Belajar</p>
           </div>
         </div>
 

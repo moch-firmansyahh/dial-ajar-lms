@@ -10,6 +10,8 @@ import {
   generateQuizFromText,
 } from "../../../utils/extractor";
 
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
 const AVATAR =
   "https://lh3.googleusercontent.com/aida-public/AB6AXuBjoXu55KCdSSPl-2t0t7d2EH6gux6Xz8nZaCdXHePrj-gGn1ZWZyBoOucWc2yVgrhmNFyy8cKbxWH8i9Wm5VKkpqX9jraXjkHTr8PVU1oN3V4nkzLWUUm6nyAIS3hGDic_uY0YoNLNNZluKTKqFwJb2gYlRl9eATGdlXClTx6IXpYvk-2u1qqvfUGTzs-QJPlXTouWTyNYzTe8j8mS09evVA_aHTYfHxneVwUsb2jUygYzuAIDU5KwqO2kISzLvnzaTentePscoGoo";
 
@@ -22,6 +24,21 @@ function daysLeft(deadline) {
   return diff;
 }
 
+function formatDeadlineDisplay(deadline) {
+  if (!deadline) return "-";
+  const date = new Date(deadline);
+  const dateStr = date.toLocaleDateString('id-ID', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric'
+  });
+  const timeStr = date.toLocaleTimeString('id-ID', {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+  return `${dateStr}, ${timeStr}`;
+}
+
 export default function DosenTugas({ onNavigate, onLogout }) {
   const { sidebarOpen, openSidebar, closeSidebar } = useSidebar();
   const [tasks, setTasks] = useState(INITIAL_TASKS);
@@ -31,10 +48,6 @@ export default function DosenTugas({ onNavigate, onLogout }) {
   const [editId, setEditId] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
   const [filter, setFilter] = useState("Semua");
-  const [gradeModal, setGradeModal] = useState(null);
-  const [gradeInputs, setGradeInputs] = useState({});
-  const [gradeStudents, setGradeStudents] = useState([]);
-  const [savingGrades, setSavingGrades] = useState(false);
 
   const [form, setForm] = useState({
     title: "",
@@ -43,8 +56,9 @@ export default function DosenTugas({ onNavigate, onLogout }) {
     desc: "",
     type: "Kelompok",
     deadline: "",
-    total: 41,
+    deadlineTime: "23:59",
   });
+  const [fileTugas, setFileTugas] = useState(null); // File upload untuk tugas
 
   const fetchMatkulList = async () => {
     try {
@@ -118,7 +132,7 @@ export default function DosenTugas({ onNavigate, onLogout }) {
         await apiClient.post('/api/kuis', {
           idMataKuliah: parseInt(form.matkulId),
           judul: form.title,
-          deadlineKuis: new Date(form.deadline).toISOString(),
+          deadlineKuis: new Date(`${form.deadline}T${form.deadlineTime || "23:59"}:00`).toISOString(),
           soal: quizData.map(q => ({
             pertanyaan: q.text,
             kunciJawaban: ['A','B','C','D'][q.correctIndex] || 'A',
@@ -127,13 +141,19 @@ export default function DosenTugas({ onNavigate, onLogout }) {
           }))
         });
       } else {
-        // Buat tugas biasa
-        await apiClient.post('/api/dosen/tugas', {
-          judul: form.title,
-          idMataKuliah: parseInt(form.matkulId),
-          detailTugas: form.desc,
-          tipe: form.type,
-          deadlineTugas: new Date(form.deadline).toISOString(),
+        // Buat tugas dengan file upload (gunakan FormData)
+        const formData = new FormData();
+        formData.append('judul', form.title);
+        formData.append('idMataKuliah', parseInt(form.matkulId));
+        formData.append('detailTugas', form.desc);
+        formData.append('tipe', form.type);
+        formData.append('deadlineTugas', new Date(`${form.deadline}T${form.deadlineTime || "23:59"}:00`).toISOString());
+        if (fileTugas) {
+          formData.append('fileTugas', fileTugas);
+        }
+
+        await apiClient.post('/api/dosen/tugas', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
         });
       }
       const first = matkulList[0];
@@ -144,8 +164,9 @@ export default function DosenTugas({ onNavigate, onLogout }) {
         desc: "",
         type: "Kelompok",
         deadline: "",
-        total: 41,
+        deadlineTime: "23:59",
       });
+      setFileTugas(null);
       setQuizData([]);
       setQuizQuestions(0);
       setView("list");
@@ -157,15 +178,27 @@ export default function DosenTugas({ onNavigate, onLogout }) {
   };
 
   const handleEdit = (task) => {
+    // Extract date and time from deadline (format: YYYY-MM-DD or ISO string)
+    const deadlineDate = task.deadline ? task.deadline.split('T')[0] : "";
+    const deadlineTime = task.deadline && task.deadline.includes('T')
+      ? task.deadline.split('T')[1].substring(0, 5)
+      : "23:59";
+
     setForm({
       title: task.title,
       matkulId: task.matkulId,
       matkulName: task.matkul,
       desc: task.desc,
       type: task.type,
-      deadline: task.deadline,
-      total: task.total,
+      deadline: deadlineDate,
+      deadlineTime: deadlineTime,
+      existingFile: task.fileTugas ? {
+        url: task.fileTugas,
+        name: task.namaFileTugas,
+        size: task.ukuranFile
+      } : null
     });
+    setFileTugas(null); // Reset file upload saat edit
     setEditId(task.id);
     setView("edit");
   };
@@ -177,13 +210,21 @@ export default function DosenTugas({ onNavigate, onLogout }) {
       return;
     }
     try {
-      await apiClient.put(`/api/dosen/tugas/${editId}`, {
-        judul: form.title,
-        idMataKuliah: parseInt(form.matkulId),
-        deskripsi: form.desc,
-        tipeTugas: form.type,
-        deadlineTugas: new Date(form.deadline).toISOString(),
+      // Update dengan FormData untuk support file upload
+      const formData = new FormData();
+      formData.append('judul', form.title);
+      formData.append('idMataKuliah', parseInt(form.matkulId));
+      formData.append('deskripsi', form.desc);
+      formData.append('tipeTugas', form.type);
+      formData.append('deadlineTugas', new Date(`${form.deadline}T${form.deadlineTime || "23:59"}:00`).toISOString());
+      if (fileTugas) {
+        formData.append('fileTugas', fileTugas);
+      }
+
+      await apiClient.put(`/api/dosen/tugas/${editId}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
       });
+      setFileTugas(null);
       setView("list");
       showToast("Tugas berhasil diperbarui!");
       fetchTasks();
@@ -205,51 +246,11 @@ export default function DosenTugas({ onNavigate, onLogout }) {
     setDeleteId(null);
   };
 
-  const handleGradeTask = async (task) => {
+  const handleViewSubmissions = (task) => {
     if (task.type === "Kelompok") {
       if (onNavigate) onNavigate("dosenKelompok");
-      return;
-    }
-    setGradeModal(task);
-    setGradeInputs({});
-    setGradeStudents([]);
-    try {
-      const res = await apiClient.get('/api/kelompok/mahasiswa/all');
-      const list = Array.isArray(res) ? res : (res?.data || []);
-      // Format: { nim, nama } - normalisasi field
-      const normalized = list.map(s => ({
-        nim: s.nim || s.mahasiswa?.nim,
-        nomorInduk: s.nomorInduk || s.user?.nomorInduk || s.mahasiswa?.nomorInduk,
-        nama: s.name || s.nama || s.user?.nama || s.mahasiswa?.user?.nama || "-"
-      })).filter(s => s.nim);
-      setGradeStudents(normalized);
-    } catch (error) {
-      showToast("Gagal memuat daftar mahasiswa", "error");
-    }
-  };
-
-  const saveGrades = async () => {
-    if (!gradeModal) return;
-    const filled = Object.fromEntries(
-      Object.entries(gradeInputs).filter(([, v]) => v !== "" && v !== null && v !== undefined)
-    );
-    if (Object.keys(filled).length === 0) {
-      showToast("Belum ada nilai yang diisi.", "error");
-      return;
-    }
-    setSavingGrades(true);
-    try {
-      await apiClient.post('/api/dosen/tugas/grades', {
-        idMataKuliah: gradeModal.matkulId,
-        idTugas: gradeModal.id,
-        gradeInputs: filled
-      });
-      showToast("Nilai berhasil disimpan!");
-      setGradeModal(null);
-    } catch (error) {
-      showToast(error.message || "Gagal menyimpan nilai", "error");
-    } finally {
-      setSavingGrades(false);
+    } else {
+      if (onNavigate) onNavigate("dosenNilaiIndividu");
     }
   };
 
@@ -265,8 +266,9 @@ export default function DosenTugas({ onNavigate, onLogout }) {
       desc: "",
       type: "Kelompok",
       deadline: "",
-      total: 41,
+      deadlineTime: "23:59",
     });
+    setFileTugas(null);
     setEditId(null);
     setView("create");
   }
@@ -349,7 +351,7 @@ export default function DosenTugas({ onNavigate, onLogout }) {
             </div>
             <div className="dt-field">
               <label className="dt-label">
-                Deadline <span>*</span>
+                Deadline Tanggal <span>*</span>
               </label>
               <input
                 className="dt-input"
@@ -359,13 +361,14 @@ export default function DosenTugas({ onNavigate, onLogout }) {
               />
             </div>
             <div className="dt-field">
-              <label className="dt-label">Total Mahasiswa</label>
+              <label className="dt-label">
+                Waktu Deadline <span>*</span>
+              </label>
               <input
                 className="dt-input"
-                type="number"
-                min={1}
-                value={form.total}
-                onChange={(e) => setForm({ ...form, total: +e.target.value })}
+                type="time"
+                value={form.deadlineTime || "23:59"}
+                onChange={(e) => setForm({ ...form, deadlineTime: e.target.value })}
               />
             </div>
 
@@ -651,6 +654,81 @@ export default function DosenTugas({ onNavigate, onLogout }) {
               </div>
             )}
 
+            {/* File Upload untuk Tugas (bukan Kuis) */}
+            {form.type !== "Kuis" && (
+              <div className="dt-field dt-field--full">
+                <label className="dt-label">Lampiran File Tugas (Opsional)</label>
+                <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.jpg,.jpeg,.png"
+                    onChange={(e) => setFileTugas(e.target.files[0])}
+                    style={{ display: "none" }}
+                    id="file-tugas-upload"
+                  />
+                  <label
+                    htmlFor="file-tugas-upload"
+                    className="dt-btn-primary"
+                    style={{
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "0.5rem",
+                      padding: "0.5rem 1rem",
+                      fontSize: "0.875rem",
+                      background: "var(--blue-50)",
+                      color: "var(--blue-700)",
+                      border: "1px solid var(--blue-200)",
+                      borderRadius: "var(--radius-md)"
+                    }}
+                  >
+                    <span className="material-symbols-outlined">upload_file</span>
+                    {fileTugas ? "Ganti File" : "Pilih File"}
+                  </label>
+                  {fileTugas ? (
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                      <span className="material-symbols-outlined" style={{ color: "var(--green-600)" }}>check_circle</span>
+                      <span style={{ fontSize: "0.875rem", color: "var(--slate-600)" }}>
+                        {fileTugas.name} ({(fileTugas.size / 1024).toFixed(1)} KB)
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setFileTugas(null)}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          color: "var(--red-500)",
+                          cursor: "pointer",
+                          padding: "0.25rem"
+                        }}
+                      >
+                        <span className="material-symbols-outlined">close</span>
+                      </button>
+                    </div>
+                  ) : form.existingFile ? (
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                      <span className="material-symbols-outlined" style={{ color: "var(--blue-600)" }}>description</span>
+                      <a
+                        href={`${API_BASE}${form.existingFile.url}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        download={form.existingFile.name}
+                        style={{ fontSize: "0.875rem", color: "var(--blue-600)", textDecoration: "underline" }}
+                      >
+                        {form.existingFile.name} {form.existingFile.size && `(${form.existingFile.size})`}
+                      </a>
+                      <span style={{ fontSize: "0.75rem", color: "var(--slate-400)", marginLeft: "0.5rem" }}>
+                        (File yang sudah diupload)
+                      </span>
+                    </div>
+                  ) : null}
+                </div>
+                <p style={{ fontSize: "0.75rem", color: "var(--slate-500)", marginTop: "0.5rem" }}>
+                  Format yang didukung: PDF, DOC, DOCX, XLS, XLSX, TXT, JPG, PNG (Max 10MB)
+                </p>
+              </div>
+            )}
+
             <div className="dt-field dt-field--full">
               <label className="dt-label">Deskripsi / Instruksi</label>
               <textarea
@@ -716,121 +794,6 @@ export default function DosenTugas({ onNavigate, onLogout }) {
               </button>
               <button className="dt-btn-delete" onClick={handleDelete}>
                 Ya, Hapus
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-      {gradeModal && (
-        <div className="dt-modal-overlay" onClick={() => setGradeModal(null)}>
-          <div
-            className="dt-modal"
-            onClick={(e) => e.stopPropagation()}
-            style={{ maxWidth: "560px", textAlign: "left", padding: "1.75rem" }}
-          >
-            <div
-              className="dt-modal-header"
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: "1rem",
-              }}
-            >
-              <h3 style={{ color: "var(--blue-900)", margin: 0 }}>
-                Penilaian Individu: {gradeModal.title}
-              </h3>
-              <button
-                className="dt-btn-cancel"
-                style={{ padding: "0.25rem 0.5rem" }}
-                onClick={() => setGradeModal(null)}
-              >
-                X
-              </button>
-            </div>
-            <p style={{ fontSize: "0.85rem", color: "var(--slate-500)", marginTop: 0 }}>
-              Mata Kuliah: <strong>{gradeModal.matkul}</strong> · {gradeStudents.length} mahasiswa
-            </p>
-            <div
-              className="dt-modal-body"
-              style={{ maxHeight: "360px", overflowY: "auto" }}
-            >
-              {gradeStudents.length === 0 ? (
-                <p style={{ textAlign: "center", color: "var(--slate-500)", padding: "1rem" }}>
-                  Memuat daftar mahasiswa...
-                </p>
-              ) : (
-                gradeStudents.map((s, idx) => {
-                  const initial = (s.nama || "?").charAt(0).toUpperCase();
-                  const palette = ["var(--blue-100)", "var(--color-primary)", "#fde68a", "#bbf7d0"];
-                  const textPalette = ["var(--blue-700)", "white", "#92400e", "#065f46"];
-                  const bg = palette[idx % palette.length];
-                  const fg = textPalette[idx % textPalette.length];
-                  const key = s.nomorInduk || s.nim;
-                  return (
-                    <div
-                      key={key}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "1rem",
-                        marginBottom: "0.75rem",
-                        paddingBottom: "0.75rem",
-                        borderBottom: "1px solid var(--color-border)",
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: "40px",
-                          height: "40px",
-                          borderRadius: "50%",
-                          backgroundColor: bg,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontWeight: "bold",
-                          color: fg,
-                        }}
-                      >
-                        {initial}
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <p style={{ margin: 0, fontWeight: 600 }}>{s.nama}</p>
-                        <p style={{ margin: 0, fontSize: "0.875rem", color: "var(--slate-500)" }}>
-                          NIM: {s.nim}
-                        </p>
-                      </div>
-                      <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        placeholder="0-100"
-                        className="dt-input"
-                        style={{ width: "80px", textAlign: "center" }}
-                        value={gradeInputs[key] ?? ""}
-                        onChange={(e) =>
-                          setGradeInputs({ ...gradeInputs, [key]: e.target.value })
-                        }
-                      />
-                    </div>
-                  );
-                })
-              )}
-            </div>
-            <div className="dt-modal-actions" style={{ marginTop: "1rem" }}>
-              <button
-                className="dt-btn-cancel"
-                onClick={() => setGradeModal(null)}
-                disabled={savingGrades}
-              >
-                Batal
-              </button>
-              <button
-                className="dt-btn-submit"
-                onClick={saveGrades}
-                disabled={savingGrades || gradeStudents.length === 0}
-              >
-                {savingGrades ? "Menyimpan..." : "Simpan Nilai"}
               </button>
             </div>
           </div>
@@ -927,9 +890,9 @@ export default function DosenTugas({ onNavigate, onLogout }) {
                     color: "#2f9696",
                   },
                   {
-                    label: "Belum Dinilai",
-                    value: tasks.filter((t) => t.status === "Aktif" && t.submitted < t.total).length,
-                    icon: "rate_review",
+                    label: "Total Pengumpulan",
+                    value: tasks.reduce((sum, t) => sum + (t.submitted || 0), 0),
+                    icon: "upload_file",
                     color: "#dc2626",
                   },
                 ].map((s) => (
@@ -1005,6 +968,57 @@ export default function DosenTugas({ onNavigate, onLogout }) {
                         {task.matkul}
                       </p>
                       <p className="dt-task-desc">{task.desc}</p>
+                      {/* File Lampiran Tugas */}
+                      {task.fileTugas && (
+                        <div style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "0.5rem",
+                          padding: "0.75rem",
+                          backgroundColor: "var(--blue-50)",
+                          borderRadius: "var(--radius-md)",
+                          marginTop: "0.75rem",
+                          marginBottom: "0.75rem"
+                        }}>
+                          <span className="material-symbols-outlined" style={{ color: "var(--blue-600)", fontSize: "1.25rem" }}>
+                            {task.tipeFileTugas?.includes('pdf') ? 'picture_as_pdf' :
+                             task.tipeFileTugas?.includes('image') ? 'image' :
+                             task.tipeFileTugas?.includes('word') || task.namaFileTugas?.endsWith('.doc') || task.namaFileTugas?.endsWith('.docx') ? 'description' :
+                             'attach_file'}
+                          </span>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{
+                              margin: 0,
+                              fontSize: "0.875rem",
+                              fontWeight: 500,
+                              color: "var(--blue-900)",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap"
+                            }}>
+                              {task.namaFileTugas}
+                            </p>
+                            <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--slate-500)" }}>
+                              {task.ukuranFile}
+                            </p>
+                          </div>
+                          <a
+                            href={`${API_BASE}${task.fileTugas}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            download={task.namaFileTugas}
+                            className="dt-btn-primary"
+                            style={{
+                              padding: "0.375rem 0.75rem",
+                              fontSize: "0.75rem",
+                              textDecoration: "none"
+                            }}
+                          >
+                            <span className="material-symbols-outlined" style={{ fontSize: "1rem" }}>download</span>
+                            Unduh
+                          </a>
+                        </div>
+                      )}
                       <div className="dt-task-progress">
                         <div className="dt-progress-info">
                           <span className="dt-progress-label">Pengumpulan</span>
@@ -1022,24 +1036,24 @@ export default function DosenTugas({ onNavigate, onLogout }) {
                       <div className="dt-task-footer">
                         <div
                           className={`dt-deadline ${dl < 0 ? "dt-deadline--late" : dl < 3 ? "dt-deadline--soon" : ""}`}
+                          title={formatDeadlineDisplay(task.deadline)}
                         >
                           <span className="material-symbols-outlined">
                             event
                           </span>
-                          {dl < 0
-                            ? `Lewat ${Math.abs(dl)} hari`
-                            : dl === 0
-                              ? "Hari ini"
-                              : `${dl} hari lagi`}
+                          <span style={{ display: "flex", flexDirection: "column", lineHeight: "1.2" }}>
+                            <span>{dl < 0 ? `Lewat ${Math.abs(dl)} hari` : dl === 0 ? "Hari ini" : `${dl} hari lagi`}</span>
+                            <span style={{ fontSize: "0.75rem", opacity: 0.8 }}>{formatDeadlineDisplay(task.deadline)}</span>
+                          </span>
                         </div>
                         <button
                           className="dt-grade-btn"
-                          onClick={() => handleGradeTask(task)}
+                          onClick={() => handleViewSubmissions(task)}
                         >
                           <span className="material-symbols-outlined">
-                            grade
+                            visibility
                           </span>
-                          Nilai
+                          Lihat Pengumpulan
                         </button>
                       </div>
                     </div>

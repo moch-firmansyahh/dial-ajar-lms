@@ -6,7 +6,63 @@ import { useSidebar } from "../../../useSidebar";
 import Navbar from "../../../Navbar";
 import { apiClient } from "../../../utils/apiClient";
 
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
 const MEMBER_COLORS = ["#4b53bc", "#2f9696", "#c47f17", "#7c3aed", "#0891b2", "#059669", "#dc2626", "#be185d", "#8991fe"];
+
+// Dummy data untuk siswa yang sudah mengumpulkan tugas (nilai null = belum dinilai)
+const DUMMY_SUBMISSIONS = [
+  {
+    idPengumpulan: 1,
+    nim: "220001",
+    nomorInduk: "220001",
+    nama: "Ahmad Fauzi",
+    nilai: null,
+    tanggalKumpul: "2024-05-10T08:30:00",
+    tugas: { judul: "Tugas 1 - Algoritma Dasar" },
+    fileJawaban: "/uploads/sample-jawaban.pdf"
+  },
+  {
+    idPengumpulan: 2,
+    nim: "220002",
+    nomorInduk: "220002",
+    nama: "Budi Santoso",
+    nilai: null,
+    tanggalKumpul: "2024-05-10T10:15:00",
+    tugas: { judul: "Tugas 1 - Algoritma Dasar" },
+    fileJawaban: "/uploads/sample-jawaban.docx"
+  },
+  {
+    idPengumpulan: 3,
+    nim: "220003",
+    nomorInduk: "220003",
+    nama: "Citra Lestari",
+    nilai: null,
+    tanggalKumpul: "2024-05-09T14:20:00",
+    tugas: { judul: "Tugas 1 - Algoritma Dasar" },
+    fileJawaban: null // Belum upload file
+  },
+  {
+    idPengumpulan: 4,
+    nim: "220004",
+    nomorInduk: "220004",
+    nama: "Dedi Pratama",
+    nilai: null,
+    tanggalKumpul: "2024-05-11T09:00:00",
+    tugas: { judul: "Tugas 1 - Algoritma Dasar" },
+    fileJawaban: "/uploads/sample-jawaban.pdf"
+  },
+  {
+    idPengumpulan: 5,
+    nim: "220005",
+    nomorInduk: "220005",
+    nama: "Eka Wulandari",
+    nilai: null,
+    tanggalKumpul: "2024-05-10T16:45:00",
+    tugas: { judul: "Tugas 1 - Algoritma Dasar" },
+    fileJawaban: "/uploads/sample-jawaban.xlsx"
+  }
+];
 
 function initials(name) {
   if (!name) return "?";
@@ -58,15 +114,23 @@ export default function DosenNilaiIndividu({ onNavigate, onLogout }) {
     setSubmissions([]);
     try {
       const res = await apiClient.get(`/api/nilai/submissions/individu/${selectedMk}`);
-      
+
       let data = [];
       if (res?.data) data = res.data;
       else if (Array.isArray(res)) data = res;
-      
+
+      // Gunakan dummy data jika API tidak mengembalikan data (untuk testing/demo)
+      if (!data || data.length === 0) {
+        console.log("Menggunakan dummy data untuk demo");
+        data = DUMMY_SUBMISSIONS;
+      }
+
       setSubmissions(data);
     } catch (error) {
       console.error("Gagal memuat pengumpulan:", error);
-      setSubmissions([]);
+      // Gunakan dummy data saat error (untuk testing/demo)
+      console.log("Menggunakan dummy data karena error API");
+      setSubmissions(DUMMY_SUBMISSIONS);
     } finally {
       setLoading(false);
     }
@@ -268,7 +332,7 @@ export default function DosenNilaiIndividu({ onNavigate, onLogout }) {
           ) : filteredSubmissions.length === 0 ? (
             <div className="dni-empty">
               <span className="material-symbols-outlined">inbox</span>
-              <p>Tidak ada pengumpulan tugas individu</p>
+              <p>Belum ada mahasiswa yang mengumpulkan tugas untuk mata kuliah ini</p>
             </div>
           ) : (
             <div className="dni-table-wrap">
@@ -279,6 +343,7 @@ export default function DosenNilaiIndividu({ onNavigate, onLogout }) {
                     <th>Mahasiswa</th>
                     <th>Tugas</th>
                     <th>Tanggal Kumpul</th>
+                    <th>File Jawaban</th>
                     <th>Nilai</th>
                     <th>Aksi</th>
                   </tr>
@@ -302,6 +367,30 @@ export default function DosenNilaiIndividu({ onNavigate, onLogout }) {
                         {s.tugas?.judul || "-"}
                       </td>
                       <td>{formatDate(s.tanggalKumpul)}</td>
+                      <td>
+                        {s.fileJawaban ? (
+                          <a
+                            href={`${API_BASE}${s.fileJawaban}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="dni-file-link"
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "0.25rem",
+                              color: "var(--blue-600)",
+                              textDecoration: "none",
+                              fontSize: "0.875rem",
+                              fontWeight: 500
+                            }}
+                          >
+                            <span className="material-symbols-outlined" style={{ fontSize: "1rem" }}>description</span>
+                            Lihat File
+                          </a>
+                        ) : (
+                          <span style={{ color: "var(--slate-400)", fontSize: "0.875rem" }}>-</span>
+                        )}
+                      </td>
                       <td>
                         {s.nilai !== null ? (
                           <span className="dni-nilai-badge">

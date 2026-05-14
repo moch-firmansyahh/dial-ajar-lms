@@ -13,15 +13,18 @@ const getAuthHeaders = (isFormData = false) => {
   return headers;
 };
 
-const handleResponse = async (response) => {
-  if (response.status === 401) {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    window.location.reload();
-    throw new Error("Sesi telah habis, silakan login kembali.");
-  }
-  
+const handleResponse = async (response, skipAuthRedirect = false) => {
   const data = await response.json().catch(() => ({}));
+  
+  if (response.status === 401) {
+    // Don't redirect if explicitly skipped (e.g., login request)
+    if (!skipAuthRedirect) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      window.location.reload();
+    }
+    throw new Error(data.message || data.error || "Sesi telah habis, silakan login kembali.");
+  }
 
   if (!response.ok) {
     throw new Error(data.message || data.error || `HTTP error! status: ${response.status}`);
@@ -39,14 +42,14 @@ export const apiClient = {
     return handleResponse(response);
   },
   
-  post: async (endpoint, body) => {
+  post: async (endpoint, body, options = {}) => {
     const isFormData = body instanceof FormData;
     const response = await fetch(`${API_URL}${endpoint}`, {
       method: "POST",
       headers: getAuthHeaders(isFormData),
       body: isFormData ? body : JSON.stringify(body),
     });
-    return handleResponse(response);
+    return handleResponse(response, options.skipAuthRedirect);
   },
   
   put: async (endpoint, body) => {

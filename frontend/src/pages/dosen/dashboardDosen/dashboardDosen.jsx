@@ -14,18 +14,17 @@ const API_BASE = import.meta.env.VITE_API_URL || "";
 export default function DashboardDosen({ onNavigate, onLogout }) {
   const { sidebarOpen, openSidebar, closeSidebar } = useSidebar();
   const [toast, setToast] = useState(null);
-  const [detailMatkul, setDetailMatkul] = useState(null);
+  const [selectedMateri, setSelectedMateri] = useState(null);
   const [avatarUrl, setAvatarUrl] = useState(AVATAR_DOSEN);
 
   const [dashboardData, setDashboardData] = useState({
     lecturerName: "Dosen",
     stats: {
       totalMahasiswa: 0,
-      tugasPending: 0,
-      rataPresensi: "0%"
+      tugasIndividu: 0,
+      tugasKelompok: 0
     },
-    pendingTasks: [],
-    jadwal: []
+    daftarMateri: []
   });
   const [loading, setLoading] = useState(true);
 
@@ -78,40 +77,6 @@ export default function DashboardDosen({ onNavigate, onLogout }) {
         </div>
       )}
 
-      {/* Jadwal detail mini-modal */}
-      {detailMatkul && (
-        <div className="dd-mini-overlay" onClick={() => setDetailMatkul(null)}>
-          <div className="dd-mini-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="dd-mini-modal-hdr">
-              <div className="dd-mini-time-box" style={{ background: detailMatkul.color }}>
-                <span>{detailMatkul.time}</span>
-                <span style={{ fontSize: "0.5rem" }}>WIB</span>
-              </div>
-              <div>
-                <p className="dd-mini-title">{detailMatkul.subject}</p>
-                <p className="dd-mini-sub">{detailMatkul.room}</p>
-              </div>
-              <button className="dd-mini-close" onClick={() => setDetailMatkul(null)}>
-                <span className="material-symbols-outlined">close</span>
-              </button>
-            </div>
-            <div className="dd-mini-actions">
-              <button className="dd-mini-btn dd-mini-btn--amber" onClick={() => { setDetailMatkul(null); nav("dosenPresensi"); }}>
-                <span className="material-symbols-outlined">qr_code_2</span>
-                Buka Presensi QR
-              </button>
-              <button className="dd-mini-btn dd-mini-btn--blue" onClick={() => { setDetailMatkul(null); nav("dosenMateri"); }}>
-                <span className="material-symbols-outlined">menu_book</span>
-                Kelola Materi
-              </button>
-              <button className="dd-mini-btn dd-mini-btn--teal" onClick={() => { setDetailMatkul(null); nav("dosenForum"); }}>
-                <span className="material-symbols-outlined">forum</span>
-                Buka Forum
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ─── Sidebar ─── */}
       <SidebarDosen onNavigate={onNavigate} onLogout={onLogout} activePage="dosenDashboard" mobileOpen={sidebarOpen} onClose={closeSidebar} />
@@ -145,125 +110,94 @@ export default function DashboardDosen({ onNavigate, onLogout }) {
             </div>
           </div>
 
-          {/* Stats Grid */}
-          <div className="dd-stats-grid">
-            <div className="dd-stat-card" style={{ cursor: "pointer" }} onClick={() => nav("dosenKelompok")}>
+          {/* Stats Grid - 3 Card Utama */}
+          <div className="dd-stats-grid" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
+            <div className="dd-stat-card">
               <div className="dd-stat-top">
                 <div className="dd-stat-icon dd-icon--blue">
                   <span className="material-symbols-outlined">group</span>
                 </div>
-                <span className="dd-badge dd-badge--green">Bulan ini</span>
+                <span className="dd-badge dd-badge--green">Aktif</span>
               </div>
               <p className="dd-stat-label">Total Mahasiswa Aktif</p>
               <p className="dd-stat-value">{dashboardData.stats.totalMahasiswa}</p>
             </div>
 
-            <div className="dd-stat-card" style={{ cursor: "pointer" }} onClick={() => nav("dosenNilaiIndividu")}>
+            <div className="dd-stat-card">
               <div className="dd-stat-top">
                 <div className="dd-stat-icon dd-icon--orange">
                   <span className="material-symbols-outlined">person</span>
                 </div>
-                <span className="dd-badge dd-badge--orange">Butuh Perhatian</span>
+                <span className="dd-badge dd-badge--blue">Total</span>
               </div>
-              <p className="dd-stat-label">Tugas Individu Pending</p>
-              <p className="dd-stat-value">{dashboardData.stats.tugasPending}</p>
+              <p className="dd-stat-label">Pengumpulan Tugas Individu</p>
+              <p className="dd-stat-value">{dashboardData.stats.tugasIndividu}</p>
             </div>
 
-            <div className="dd-stat-card" style={{ cursor: "pointer" }} onClick={() => nav("dosenKelompok")}>
+            <div className="dd-stat-card">
               <div className="dd-stat-top">
                 <div className="dd-stat-icon dd-icon--purple">
                   <span className="material-symbols-outlined">groups</span>
                 </div>
-                <span className="dd-badge dd-badge--purple">Butuh Perhatian</span>
+                <span className="dd-badge dd-badge--purple">Total</span>
               </div>
-              <p className="dd-stat-label">Tugas Kelompok Pending</p>
-              <p className="dd-stat-value">{dashboardData.stats.tugasPending}</p>
-            </div>
-
-            <div className="dd-stat-card" style={{ cursor: "pointer" }} onClick={() => nav("dosenPresensi")}>
-              <div className="dd-stat-top">
-                <div className="dd-stat-icon dd-icon--teal">
-                  <span className="material-symbols-outlined">auto_graph</span>
-                </div>
-                <span className="dd-badge dd-badge--teal">Sangat Baik</span>
-              </div>
-              <p className="dd-stat-label">Rata-rata Presensi</p>
-              <p className="dd-stat-value">{dashboardData.stats.rataPresensi}</p>
+              <p className="dd-stat-label">Pengumpulan Tugas Kelompok</p>
+              <p className="dd-stat-value">{dashboardData.stats.tugasKelompok}</p>
             </div>
           </div>
 
-          {/* Quick Nav Tiles */}
-          <div className="dd-quick-nav">
-            {[
-              { icon: "assignment", label: "Manajemen Tugas", page: "dosenTugas", color: "var(--color-secondary)" },
-              { icon: "groups", label: "Nilai Kelompok", page: "dosenKelompok", color: "#2f9696" },
-              { icon: "assignment_ind", label: "Nilai Individu", page: "dosenNilaiIndividu", color: "#c47f17" },
-              { icon: "menu_book", label: "Manajemen Materi", page: "dosenMateri", color: "#c47f17" },
-              { icon: "how_to_reg", label: "Presensi & QR", page: "dosenPresensi", color: "#7c3aed" },
-              { icon: "forum", label: "Forum Diskusi", page: "dosenForum", color: "#0891b2" },
-              { icon: "account_circle", label: "Profil Dosen", page: "dosenProfile", color: "#059669" },
-            ].map((tile) => (
-              <button key={tile.page} className="dd-quick-tile" onClick={() => nav(tile.page)}>
-                <div className="dd-quick-icon" style={{ background: `${tile.color}18`, color: tile.color }}>
-                  <span className="material-symbols-outlined">{tile.icon}</span>
-                </div>
-                <span className="dd-quick-label">{tile.label}</span>
-                <span className="material-symbols-outlined dd-quick-arrow">arrow_forward</span>
-              </button>
-            ))}
-          </div>
-
-          {/* Data Table */}
-          <div className="dd-table-card">
+          {/* Daftar Materi */}
+          <div className="dd-table-card" style={{ marginTop: "2rem" }}>
             <div className="dd-table-head-row">
               <div>
-                <h3 className="dd-table-title">Tugas Menunggu Penilaian</h3>
-                <p className="dd-table-sub">Prioritas penilaian berdasarkan tenggat waktu pengumpulan.</p>
+                <h3 className="dd-table-title">Daftar Materi</h3>
+                <p className="dd-table-sub">Materi yang tersedia untuk mahasiswa</p>
               </div>
-              <button className="dd-table-link" onClick={() => nav("dosenNilaiIndividu")}>Lihat Tugas Individu →</button>
-                <button className="dd-table-link" onClick={() => nav("dosenKelompok")} style={{ marginLeft: '1rem' }}>Lihat Tugas Kelompok →</button>
+              <button className="dd-table-link" onClick={() => nav("dosenMateri")}>Kelola Materi →</button>
             </div>
             <div className="dd-table-wrapper">
               <table className="dd-table">
                 <thead>
                   <tr>
-                    <th>Nama Kelompok / Mahasiswa</th>
-                    <th>Nama Tugas</th>
-                    <th>Tanggal Kumpul</th>
-                    <th>Status</th>
-                    <th style={{ textAlign: "right" }}>Aksi</th>
+                    <th>Judul Materi</th>
+                    <th>Mata Kuliah</th>
+                    <th>Tipe</th>
+                    <th>Tanggal Upload</th>
+                    <th>Ukuran</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {dashboardData.pendingTasks.length > 0 ? dashboardData.pendingTasks.map((row, i) => (
-                    <tr key={i} style={{ cursor: "pointer" }} onClick={() => nav(row.navigationPage || "dosenKelompok")}>
+                  {dashboardData.daftarMateri.length > 0 ? dashboardData.daftarMateri.map((materi, i) => (
+                    <tr key={materi.id || i}>
                       <td>
                         <div className="dd-student-cell">
-                          <div className={`dd-avatar ${row.av}`}>{row.code}</div>
+                          <div className="dd-avatar av-blue">
+                            <span className="material-symbols-outlined" style={{ fontSize: "1rem" }}>
+                              {materi.tipe?.toLowerCase().includes('video') ? 'play_circle' : 
+                               materi.tipe?.toLowerCase().includes('pdf') ? 'picture_as_pdf' : 'description'}
+                            </span>
+                          </div>
                           <div>
-                            <p className="dd-cell-name">{row.name}</p>
-                            <p className="dd-cell-sub">{row.type}</p>
+                            <p className="dd-cell-name">{materi.judul}</p>
                           </div>
                         </div>
                       </td>
                       <td>
-                        <p className="dd-cell-name">{row.task}</p>
-                        <p className="dd-cell-sub">{row.course}</p>
+                        <p className="dd-cell-name">{materi.mataKuliah}</p>
                       </td>
                       <td>
-                        <p className="dd-cell-name">{row.date}</p>
-                        <p className={row.late ? "dd-late" : "dd-ontime"}>{row.timeStatus}</p>
+                        <span className="dd-status-badge">{materi.tipe}</span>
                       </td>
-                      <td><span className="dd-status-badge">Submitted</span></td>
-                      <td style={{ textAlign: "right" }}>
-                        <button className="dd-grade-btn" onClick={(e) => { e.stopPropagation(); nav(row.navigationPage || "dosenKelompok"); }}>
-                          Beri Nilai
-                        </button>
+                      <td>
+                        <p className="dd-cell-name">{materi.tanggal}</p>
+                      </td>
+                      <td>
+                        <p className="dd-cell-sub">{materi.ukuran}</p>
                       </td>
                     </tr>
                   )) : (
                     <tr>
-                      <td colSpan={5} style={{ textAlign: "center", padding: "2rem" }}>Tidak ada tugas yang menunggu penilaian.</td>
+                      <td colSpan={5} style={{ textAlign: "center", padding: "2rem" }}>Belum ada materi yang diupload.</td>
                     </tr>
                   )}
                 </tbody>
@@ -271,51 +205,6 @@ export default function DashboardDosen({ onNavigate, onLogout }) {
             </div>
           </div>
 
-          {/* Footer Grid */}
-          <div className="dd-footer-grid">
-            {/* Schedule */}
-            <div className="dd-schedule-card u-glass">
-              <div className="dd-sched-header">
-                <h3>Jadwal Mengajar Hari Ini</h3>
-                <span>Senin, 16 Okt 2023</span>
-              </div>
-              <div className="dd-sched-list">
-                {dashboardData.jadwal.length > 0 ? dashboardData.jadwal.map((s, i) => (
-                  <div key={i} className="dd-sched-item dd-sched-item--clickable" onClick={() => setDetailMatkul(s)}>
-                    <div className="dd-time-box" style={{ backgroundColor: s.color }}>
-                      <span className="dd-time-val">{s.time}</span>
-                      <span className="dd-time-zone">WIB</span>
-                    </div>
-                    <div className="dd-sched-info">
-                      <p className="dd-sched-name">{s.subject}</p>
-                      <p className="dd-sched-room">{s.room}</p>
-                    </div>
-                    <button className="dd-arrow-btn" onClick={(e) => { e.stopPropagation(); setDetailMatkul(s); }}>
-                      <span className="material-symbols-outlined">chevron_right</span>
-                    </button>
-                  </div>
-                )) : (
-                  <div style={{ padding: "1rem", color: "#64748b" }}>Tidak ada jadwal mengajar hari ini.</div>
-                )}
-              </div>
-            </div>
-
-            {/* Banner */}
-            <div className="dd-banner-card" style={{ cursor: "pointer" }} onClick={() => nav("dosenKelompok")}>
-              <img
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuBy8KGz3t51144zS6UQIyIU8ZW9LlWKExAwAE0EYBSMd8xjBrDEDMdyN6TSGMoHuO2OBFHGkDiJuXiA7I62wUbHUnV30wKyQRh1YDFJdfuio83pIPkwmsG9aWE2wsXeE_fcSuHIlCWIXBc2NWXHOkYvCMM4h_H3qWsir3i7rNnwhGwbuCo8ww3WB7XBZ06Tlpj5neS7xIvYPg7Xb0Ip2PHkzUK1p1RyVmFMTQuvRYk0kF4QWN7vU_2WBKbpA8qCygIgSCWtx4oUQjXY"
-                alt="E-Learning Experience"
-              />
-              <div className="dd-banner-overlay">
-                <h3>Pantau Progress<br />Pembelajaran Digital</h3>
-                <p>Gunakan analitik kurasi untuk melihat area yang paling menantang bagi mahasiswa Anda.</p>
-                <button className="dd-report-btn" onClick={(e) => { e.stopPropagation(); nav("dosenKelompok"); }}>
-                  Lihat Laporan Analitik
-                  <span className="material-symbols-outlined">trending_up</span>
-                </button>
-              </div>
-            </div>
-          </div>
         </div>
       </main>
     </div>

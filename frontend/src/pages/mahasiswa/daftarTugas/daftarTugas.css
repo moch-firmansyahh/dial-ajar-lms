@@ -48,16 +48,16 @@
 }
 
 .dt-filter-btn--active {
-  background-color: var(--color-secondary);
+  background-color: #1e3a8a;
   color: white;
-  border-color: var(--color-secondary);
-  box-shadow: 0 4px 12px rgba(75, 83, 188, 0.30);
+  border-color: #1e3a8a;
+  box-shadow: 0 2px 6px rgba(30, 58, 138, 0.2);
 }
 
 .dt-filter-btn--active:hover {
-  background-color: var(--blue-700);
+  background-color: #1e40af;
+  border-color: #1e40af;
   color: white;
-  border-color: var(--blue-700);
 }
 
 .dt-filter-count {
@@ -76,6 +76,15 @@
 .dt-filter-btn:not(.dt-filter-btn--active) .dt-filter-count {
   background-color: var(--slate-100);
   color: var(--slate-600);
+}
+.dt-filter-btn--active {
+  background: #4b53bc !important;
+  color: #ffffff !important;
+}
+.dt-filter-btn--active .dt-filter-count {
+  background-color: #ffffff;
+  color: #4b53bc;
+  border: none;
 }
 
 /* ─── Task List ─── */
@@ -345,3 +354,48 @@
 .dt-cta-btn:hover  { opacity: 0.9; }
 .dt-cta-btn:active { transform: scale(0.97); }
 .dt-cta-btn .material-symbols-outlined { font-size: 1.125rem; }
+
+/* ─── Custom Dropdown Styling ─── */
+.dt-custom-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-color: white;
+  border: 1.5px solid var(--slate-300);
+  border-radius: 0.625rem;
+  padding: 0.625rem 2.5rem 0.625rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--slate-700);
+  cursor: pointer;
+  min-width: 180px;
+  transition: all 0.2s ease;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1rem;
+}
+
+.dt-custom-select:hover {
+  border-color: var(--color-secondary);
+  background-color: var(--slate-50);
+}
+
+.dt-custom-select:focus {
+  outline: none;
+  border-color: var(--color-secondary);
+  box-shadow: 0 0 0 3px rgba(47, 150, 150, 0.15);
+  background-color: white;
+}
+
+.dt-custom-select option {
+  padding: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--slate-700);
+}
+
+.dt-custom-select option:checked {
+  background-color: var(--color-secondary);
+  color: white;
+  font-weight: 600;
+}

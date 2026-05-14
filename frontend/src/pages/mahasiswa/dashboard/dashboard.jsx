@@ -26,15 +26,25 @@ export default function Dashboard({ onNavigate, onLogout }) {
         if (storedUser.fotoUrl) {
           setAvatarUrl(`${API_BASE}${storedUser.fotoUrl}`);
         }
-        const res = await apiClient.get("/api/dashboard/mahasiswa");
-        setDashboardData(res.data);
+        const now = new Date();
+        const hariIni = ['minggu', 'senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu'][now.getDay()];
+        console.log('DEBUG - Frontend hariIni:', hariIni, '| getDay():', now.getDay(), '| Date:', now.toString());
+        const res = await apiClient.get(`/api/dashboard/mahasiswa?hari=${hariIni}`);
+        console.log('Dashboard response:', res);
+        console.log('Full data:', JSON.stringify(res.data, null, 2));
+        setDashboardData(res.data || res);
       } catch (error) {
         console.error("Gagal memuat dashboard", error);
       } finally {
         setLoading(false);
       }
     };
+
     fetchDashboard();
+
+    const interval = setInterval(fetchDashboard, 60000); // Refresh setiap 60 detik
+
+    return () => clearInterval(interval); // Membersihkan interval saat komponen unmount
   }, []);
 
   if (loading) {
@@ -48,6 +58,8 @@ export default function Dashboard({ onNavigate, onLogout }) {
       </div>
     );
   }
+  console.log('=== STATE dashboardData ===', JSON.stringify(dashboardData, null, 2));
+  console.log('jadwal:', dashboardData?.jadwal);
 
   return (
     <div className="page-shell">
@@ -72,7 +84,7 @@ export default function Dashboard({ onNavigate, onLogout }) {
             <div className="db-left">
               <div className="db-page-header">
                 <h1>Dashboard Mahasiswa</h1>
-                <p>Selamat datang kembali di ekosistem pembelajaran Anda.</p>
+                <p>Selamat datang kembali</p>
               </div>
 
               {/* Hero Card — clickable to profile */}
@@ -95,11 +107,11 @@ export default function Dashboard({ onNavigate, onLogout }) {
                   </div>
                   <div className="db-hero-stats">
                     <div className="db-stat-box">
-                      <p className="db-stat-val">3.82</p>
+                      <p className="db-stat-val">{dashboardData?.ipk?.toFixed(2) || '0.00'}</p>
                       <p className="db-stat-lbl">IPK</p>
                     </div>
                     <div className="db-stat-box">
-                      <p className="db-stat-val">18</p>
+                      <p className="db-stat-val">{dashboardData?.sks || '0'}</p>
                       <p className="db-stat-lbl">SKS</p>
                     </div>
                   </div>
@@ -182,8 +194,14 @@ export default function Dashboard({ onNavigate, onLogout }) {
                 </button>
                 <div className="db-schedule-row">
                   <div>
-                    <p className="db-sched-lbl">Jadwal Terdekat</p>
-                    <p className="db-sched-time">{dashboardData?.mataKuliah?.[0]?.nama || "Tidak ada jadwal"}</p>
+                    <p className="db-sched-lbl">Jadwal Hari Ini</p>
+                    {dashboardData?.jadwal?.length > 0 ? (
+                      dashboardData.jadwal.map((j, idx) => (
+                        <p key={idx} className="db-sched-time">{j.mataKuliah} ({j.hari}) - {j.waktu}</p>
+                      ))
+                    ) : (
+                      <p className="db-sched-time">Tidak ada jadwal hari ini</p>
+                    )}
                   </div>
                   <span className="db-pulse-dot"></span>
                 </div>
@@ -210,10 +228,15 @@ export default function Dashboard({ onNavigate, onLogout }) {
                       <span className="material-symbols-outlined">auto_stories</span>
                       <div>
                         <p style={{ fontSize: "0.8125rem", fontWeight: 700 }}>
-                          {dashboardData.mataKuliah[0].nama}
+                          {dashboardData.mataKuliah[0]?.nama}
                         </p>
                         <p style={{ fontSize: "0.75rem", color: "var(--slate-500)" }}>
-                          Mata Kuliah Anda
+                          {dashboardData.mataKuliah[0]?.dosenNama || "Dosen"}
+                          {dashboardData.mataKuliah[0]?.jadwal && (
+                            <span style={{ marginLeft: "0.5rem", color: "var(--color-secondary)" }}>
+                              • {dashboardData.mataKuliah[0]?.jadwal}
+                            </span>
+                          )}
                         </p>
                       </div>
                     </div>

@@ -55,15 +55,17 @@ function getIPKKumulatif(semesters) {
 }
 
 function calculateGrade(tugas, kuis) {
-  // Simplifikasi grading untuk integrasi, misal tugas 50% kuis 50%
-  const total = Number(tugas || 0) * 0.5 + Number(kuis || 0) * 0.5;
-  if (total >= 85) return "A";
-  if (total >= 80) return "A-";
-  if (total >= 75) return "B+";
-  if (total >= 70) return "B";
-  if (total >= 65) return "B-";
-  if (total >= 60) return "C";
-  if (total >= 50) return "D";
+  if (tugas === null && kuis === null) return null;
+  const total = Number(tugas || 0) + Number(kuis || 0);
+  if (total === 0) return null;
+  const avg = Number(tugas || 0) * 0.5 + Number(kuis || 0) * 0.5;
+  if (avg >= 85) return "A";
+  if (avg >= 80) return "A-";
+  if (avg >= 75) return "B+";
+  if (avg >= 70) return "B";
+  if (avg >= 65) return "B-";
+  if (avg >= 60) return "C";
+  if (avg >= 50) return "D";
   return "E";
 }
 
@@ -88,6 +90,9 @@ export default function Nilai({ onNavigate, onLogout }) {
   const [toast, setToast] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const storedUserStr = localStorage.getItem("user");
+  const storedUser = storedUserStr ? JSON.parse(storedUserStr) : {};
+
   useEffect(() => {
     const fetchTranskrip = async () => {
       try {
@@ -109,13 +114,16 @@ export default function Nilai({ onNavigate, onLogout }) {
             let totalSks = 0;
             let totalPoint = 0;
 
-            const matkul = (data[k] || []).map((m) => {
-              const tugas = m.nilaiTugas ? parseFloat(m.nilaiTugas) : null;
-              const kuis = m.nilaiKuis ? parseFloat(m.nilaiKuis) : null;
-              const finalScore = m.nilaiAkhir ? parseFloat(m.nilaiAkhir) : null;
-              const grade = finalScore ? calculateGrade(tugas, kuis) : null;
+            const isAktif = Number(k) > 3;
 
-              const sks = 3;
+          const matkul = (data[k] || []).map((m) => {
+              const tugas = (!isAktif && m.nilaiTugas) ? parseFloat(m.nilaiTugas) : null;
+              const kuis = (!isAktif && m.nilaiKuis) ? parseFloat(m.nilaiKuis) : null;
+              const finalScore = (!isAktif && m.nilaiAkhir) ? parseFloat(m.nilaiAkhir) : 
+                (!isAktif && tugas !== null && kuis !== null ? Math.round((tugas * 0.5 + kuis * 0.5)) : null);
+              const grade = (!isAktif && finalScore) ? calculateGrade(tugas, kuis) : null;
+
+              const sks = m.mataKuliah?.sks || 3;
               totalSks += sks;
               if (grade) {
                 totalPoint += convertGradeToPoint(grade) * sks;
@@ -136,8 +144,8 @@ export default function Nilai({ onNavigate, onLogout }) {
               totalSks > 0 && totalPoint > 0 ? totalPoint / totalSks : null;
 
             return {
-              label: k === "null" ? "Semester Aktif" : `Semester ${k}`,
-              year: "Tahun Akademik",
+              label: !isAktif ? `Semester ${k}` : `Semester ${k} (Aktif)`,
+              year: !isAktif ? "Tahun Akademik 2023/2024" : "Sedang Berlangsung — Nilai belum final",
               ipk: ipk,
               sks: totalSks,
               matkul: matkul,
@@ -171,6 +179,65 @@ export default function Nilai({ onNavigate, onLogout }) {
     setTimeout(() => setToast(null), 3000);
   };
 
+  const handleUnduhTranskrip = () => {
+    const nama = storedUser?.nama || "Mahasiswa";
+    const nim = storedUser?.nomorInduk || "-";
+    const selesai = semesters.filter(s => s.ipk !== null);
+    const ipkFinal = ipkKumulatif;
+    const sksTotal = totalSksSelesai;
+
+    const rows = selesai.flatMap(sem =>
+      sem.matkul.map(mk => `
+        <tr>
+          <td>${mk.kode}</td>
+          <td>${mk.nama}</td>
+          <td style="text-align:center">${mk.sks}</td>
+          <td style="text-align:center">${mk.tugas ?? '—'}</td>
+          <td style="text-align:center">${mk.uts ?? '—'}</td>
+          <td style="text-align:center">${mk.uas ?? '—'}</td>
+          <td style="text-align:center">${mk.nilai ?? '—'}</td>
+        </tr>
+      `)
+    ).join('');
+
+    const html = `
+      <html><head><title>Transkrip Nilai - ${nama}</title>
+      <style>
+        body { font-family: Arial, sans-serif; padding: 2rem; font-size: 12px; }
+        h2 { text-align: center; margin-bottom: 0.25rem; }
+        p { text-align: center; margin: 0 0 1.5rem; color: #555; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #1e3a5f; color: white; padding: 8px; text-align: left; }
+        td { padding: 7px 8px; border-bottom: 1px solid #ddd; }
+        tr:nth-child(even) td { background: #f8fafc; }
+        .footer { margin-top: 1.5rem; display: flex; justify-content: space-between; font-size: 11px; color: #555; }
+        .ipk { font-size: 13px; font-weight: bold; }
+      </style>
+      </head><body>
+      <h2>TRANSKRIP NILAI AKADEMIK</h2>
+      <p>Nama: <b>${nama}</b> &nbsp;|&nbsp; NIM: <b>${nim}</b></p>
+      <table>
+        <thead><tr>
+          <th>Kode MK</th><th>Mata Kuliah</th><th>SKS</th>
+          <th>Tugas</th><th>UTS</th><th>UAS</th><th>Nilai</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div class="footer">
+        <span>Total SKS Lulus: <b>${sksTotal}</b></span>
+        <span class="ipk">IPK Kumulatif: ${ipkFinal}</span>
+        <span>Dicetak: ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+      </div>
+      </body></html>
+    `;
+
+    const win = window.open('', '_blank');
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    setTimeout(() => { win.print(); }, 500);
+  };
+
   const sem = semesters[activeSem] || {
     matkul: [],
     label: "",
@@ -185,9 +252,6 @@ export default function Nilai({ onNavigate, onLogout }) {
           .filter((s) => s.ipk !== null)
           .reduce((acc, s) => acc + s.sks, 0)
       : 0;
-
-  const storedUserStr = localStorage.getItem("user");
-  const storedUser = storedUserStr ? JSON.parse(storedUserStr) : {};
 
   if (loading) {
     return (
@@ -282,9 +346,7 @@ export default function Nilai({ onNavigate, onLogout }) {
             </div>
             <button
               className="nlai-download-btn"
-              onClick={() =>
-                showToast("Transkrip nilai sedang diunduh dalam format PDF...")
-              }
+              onClick={handleUnduhTranskrip}
             >
               <span className="material-symbols-outlined">download</span>
               Unduh Transkrip

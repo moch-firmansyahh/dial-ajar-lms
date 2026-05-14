@@ -678,11 +678,51 @@
   box-shadow: var(--shadow-sm);
 }
 
+.pmh-history-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
 .pmh-history-title {
   font-size: 0.9375rem;
   font-weight: 700;
   color: var(--color-on-surface);
-  margin-bottom: 1rem;
+  margin: 0;
+}
+
+.pmh-date-filter {
+  display: flex;
+  gap: 0.375rem;
+  flex-wrap: wrap;
+}
+
+.pmh-filter-chip {
+  padding: 0.375rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border: 1px solid #e2e8f0;
+  background-color: white;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pmh-filter-chip:hover {
+  border-color: #4b53bc;
+  color: #4b53bc;
+  background-color: #f5f7ff;
+}
+
+.pmh-filter-chip--active {
+  background-color: #4b53bc;
+  color: white;
+  border-color: #4b53bc;
+  font-weight: 600;
 }
 
 .pmh-history-list {

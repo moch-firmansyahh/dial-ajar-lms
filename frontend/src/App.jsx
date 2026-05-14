@@ -20,11 +20,13 @@ import DosenNilaiIndividu from "./pages/dosen/dosenNilaiIndividu/dosenNilaiIndiv
 import DosenForum from "./pages/dosen/dosenForum/dosenForum";
 import DosenProfile from "./pages/dosen/dosenProfile/dosenProfile";
 import DosenMateri from "./pages/dosen/dosenMateri/dosenMateri";
+import FAQ from "./pages/faq/faq";
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userRole, setUserRole] = useState("");
   const [currentPage, setCurrentPage] = useState({ page: "dashboard" });
+  const [showFaq, setShowFaq] = useState(false);
 
   const handleLogin = (role) => {
     setIsLoggedIn(true);
@@ -46,6 +48,20 @@ function App() {
     }
   };
 
+  if (showFaq) {
+    return (
+      <div>
+        <div style={{ padding: "1rem 2rem", background: "#fff", borderBottom: "1px solid #eee", display: "flex", alignItems: "center", gap: "0.75rem" }}>
+          <button onClick={() => setShowFaq(false)} style={{ display: "flex", alignItems: "center", gap: "0.4rem", background: "none", border: "none", cursor: "pointer", color: "#7c5800", fontWeight: 600, fontSize: "0.9rem" }}>
+            <span className="material-symbols-outlined" style={{ fontSize: "1.1rem" }}>arrow_back</span>
+            Kembali
+          </button>
+        </div>
+        <FAQ />
+      </div>
+    );
+  }
+
   if (isLoggedIn) {
     const sharedProps = {
       onNavigate: navigateTo,
@@ -59,7 +75,7 @@ function App() {
       return <DaftarMataKuliah {...sharedProps} />;
     if (pageName === "mataKuliah") return <MataKuliah {...sharedProps} />;
     if (pageName === "daftarTugas") return <DaftarTugas {...sharedProps} />;
-    if (pageName === "kuis") return <Kuis {...sharedProps} />;
+    if (pageName === "kuis") return <Kuis {...sharedProps} idKuis={currentPage.idKuis} />;
     if (pageName === "presensiMahasiswa")
       return <PresensiMahasiswa {...sharedProps} />;
     if (pageName === "forumDiskusi") return <ForumDiskusi {...sharedProps} />;
@@ -76,6 +92,7 @@ function App() {
     if (pageName === "dosenForum") return <DosenForum {...sharedProps} />;
     if (pageName === "dosenProfile") return <DosenProfile {...sharedProps} />;
     if (pageName === "dosenMateri") return <DosenMateri {...sharedProps} />;
+    if (pageName === "faq") return <div><div style={{ padding: "1rem 2rem", background: "#fff", borderBottom: "1px solid #eee", display: "flex", alignItems: "center", gap: "0.75rem" }}><button onClick={() => navigateTo(userRole === "Dosen" ? "dosenDashboard" : "dashboard")} style={{ display: "flex", alignItems: "center", gap: "0.4rem", background: "none", border: "none", cursor: "pointer", color: "#7c5800", fontWeight: 600, fontSize: "0.9rem" }}><span className="material-symbols-outlined" style={{ fontSize: "1.1rem" }}>arrow_back</span>Kembali</button></div><FAQ /></div>;
 
     // Default dashboard per role
     if (userRole === "Mahasiswa") {
@@ -115,7 +132,7 @@ function App() {
 
   return (
     <div>
-      <Login onLogin={handleLogin} />
+      <Login onLogin={handleLogin} onFaq={() => setShowFaq(true)} />
     </div>
   );
 }

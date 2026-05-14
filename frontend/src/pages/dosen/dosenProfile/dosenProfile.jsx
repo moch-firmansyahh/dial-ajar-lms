@@ -390,59 +390,37 @@ export default function DosenProfile({ onNavigate, onLogout }) {
                   <span className="material-symbols-outlined" style={{ color: "var(--color-secondary)", fontSize: "1.25rem" }}>id_card</span>
                   <h2>Data Pribadi</h2>
                 </div>
-                {editMode ? (
-                  <div className="prf-edit-actions">
-                    <button className="prf-btn-cancel-sm" onClick={() => setEditMode(false)} disabled={isSaving}>Batal</button>
-                    <button className="prf-btn-save-sm" onClick={handleSave} disabled={isSaving}>
-                      {isSaving ? "Menyimpan..." : "Simpan"}
-                    </button>
-                  </div>
-                ) : (
-                  <button className="prf-sunting-btn" onClick={() => setEditMode(true)}>Sunting Data</button>
-                )}
               </div>
 
               <div className="prf-data-grid">
                 <div className="prf-data-field">
                   <p className="prf-field-label">EMAIL INSTITUSI</p>
-                  {editMode ? (
-                    <input className="prf-input" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
-                  ) : (
-                    <p className="prf-field-value">{formData.email}</p>
-                  )}
+                  <p className="prf-field-value">{formData.email}</p>
                 </div>
                 <div className="prf-data-field">
                   <p className="prf-field-label">NOMOR TELEPON</p>
-                  {editMode ? (
-                    <input className="prf-input" value={formData.telepon} onChange={(e) => setFormData({ ...formData, telepon: e.target.value })} />
-                  ) : (
-                    <p className="prf-field-value">{formData.telepon}</p>
-                  )}
+                  <p className="prf-field-value">{formData.telepon}</p>
                 </div>
               </div>
 
               <div className="prf-data-field prf-fullwidth">
                 <p className="prf-field-label">BIDANG KEAHLIAN</p>
-                {editMode ? (
-                  <input className="prf-input" value={formData.bidang} onChange={(e) => setFormData({ ...formData, bidang: e.target.value })} />
-                ) : (
-                  <p className="prf-field-value prf-prodi">{formData.bidang}</p>
-                )}
+                <p className="prf-field-value prf-prodi">{formData.bidang}</p>
               </div>
 
               <div className="prf-data-grid prf-data-grid--3">
                 <div className="prf-data-field">
                   <p className="prf-field-label">RUANG KANTOR</p>
-                  {editMode ? (
-                    <input className="prf-input" value={formData.officeRoom} onChange={(e) => setFormData({ ...formData, officeRoom: e.target.value })} />
-                  ) : (
-                    <p className="prf-field-value">{formData.officeRoom}</p>
-                  )}
+                  <p className="prf-field-value">{formData.officeRoom}</p>
                 </div>
                 <div className="prf-data-field">
                   <p className="prf-field-label">TAHUN AKADEMIK</p>
                   <p className="prf-field-value">2023/2024</p>
                 </div>
+              </div>
+              <div className="prf-admin-notice">
+                <span className="material-symbols-outlined" style={{ fontSize: "1rem", color: "#7c5800" }}>info</span>
+                <p>Untuk mengubah data pribadi, ajukan permintaan ke <strong>administrator akademik</strong>.</p>
               </div>
             </div>
 
@@ -458,7 +436,6 @@ export default function DosenProfile({ onNavigate, onLogout }) {
                 <span className="material-symbols-outlined">lock_reset</span>
                 Ubah Kata Sandi
               </button>
-              <p className="prf-last-changed">Terakhir diubah 2 bulan yang lalu</p>
             </div>
           </div>
 
@@ -486,25 +463,6 @@ export default function DosenProfile({ onNavigate, onLogout }) {
               </div>
             </div>
 
-            <div className="dprf-stats-card">
-              <div className="dprf-stats-icon">
-                <span className="material-symbols-outlined">bar_chart</span>
-              </div>
-              <h3 className="dprf-stats-title">Statistik Pengajaran</h3>
-              {[
-                { label: "Total Mahasiswa Aktif", value: stats.totalMahasiswa, icon: "group" },
-                { label: "Tugas Menunggu Dinilai", value: stats.tugasDiberikan, icon: "assignment" },
-                { label: "Rata-rata Presensi", value: stats.rataPresensi, icon: "how_to_reg" },
-              ].map((s) => (
-                <div key={s.label} className="dprf-stat-row">
-                  <span className="material-symbols-outlined dprf-stat-icon">{s.icon}</span>
-                  <div>
-                    <p className="dprf-stat-lbl">{s.label}</p>
-                    <p className="dprf-stat-val">{s.value}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
         </div>
       </main>

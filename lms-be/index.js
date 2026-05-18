@@ -92,10 +92,6 @@ app.post('/api/tugas-debug', (req, res) => {
   res.json({ success: true });
 });
 
-if (!process.env.VERCEL) {
-  app.listen(PORT, () => {
-    console.log(`🚀 Server ready at http://localhost:${PORT}`);
-  });
-}
-
-export default app;
+app.listen(PORT, () => {
+  console.log(`🚀 Server ready at http://localhost:${PORT}`);
+});

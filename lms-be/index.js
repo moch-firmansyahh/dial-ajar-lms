@@ -95,3 +95,5 @@ app.post('/api/tugas-debug', (req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 Server ready at http://localhost:${PORT}`);
 });
+
+export default app;

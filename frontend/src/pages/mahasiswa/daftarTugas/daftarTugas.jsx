@@ -206,6 +206,8 @@ const allKuis = [];
     }
   });
 
+  const filtered = sortedTasks;
+
   if (loading) {
     return <LoadingSpinner message="Memuat tugas..." fullPage={true} />;
   }

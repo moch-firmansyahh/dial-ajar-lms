@@ -6,6 +6,8 @@ import { useSidebar } from "../../../components/useSidebar";
 import Navbar from "../../../components/Navbar";
 import { apiClient } from "../../../utils/apiClient";
 
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
 const AVATAR =
   "https://lh3.googleusercontent.com/aida-public/AB6AXuBjoXu55KCdSSPl-2t0t7d2EH6gux6Xz8nZaCdXHePrj-gGn1ZWZyBoOucWc2yVgrhmNFyy8cKbxWH8i9Wm5VKkpqX9jraXjkHTr8PVU1oN3V4nkzLWUUm6nyAIS3hGDic_uY0YoNLNNZluKTKqFwJb2gYlRl9eATGdlXClTx6IXpYvk-2u1qqvfUGTzs-QJPlXTouWTyNYzTe8j8mS09evVA_aHTYfHxneVwUsb2jUygYzuAIDU5KwqO2kISzLvnzaTentePscoGoo";
 
@@ -110,6 +112,7 @@ export default function DosenForum({ onNavigate, onLogout }) {
           content: t.content || "",
           likes: t.likes || 0,
           liked: t.liked || false,
+          lampiran: t.lampiran || null,
           replies: (t.replies || t.comments || []).map(c => ({
             id: c.id,
             authorName: c.authorName || "User",
@@ -171,11 +174,15 @@ export default function DosenForum({ onNavigate, onLogout }) {
     }
     
     try {
-      await apiClient.post("/api/dosen/forum/", {
-        idMataKuliah: selectedMatkul.idMataKuliah,
-        judul: formTitle.trim(),
-        isiForum: formBody.trim()
-      });
+      const formData = new FormData();
+      formData.append("idMataKuliah", selectedMatkul.idMataKuliah);
+      formData.append("judul", formTitle.trim());
+      formData.append("isiForum", formBody.trim());
+      if (attachedFile) {
+        formData.append("lampiran", attachedFile);
+      }
+
+      await apiClient.post("/api/dosen/forum/", formData);
       
       setFormTitle("");
       setFormBody("");
@@ -412,6 +419,27 @@ export default function DosenForum({ onNavigate, onLogout }) {
                           className="fd-thread-body"
                           dangerouslySetInnerHTML={{ __html: thread.content || "" }}
                         />
+                        {thread.lampiran && (
+                          <div className="fd-thread-attachment" style={{ marginTop: "1rem" }}>
+                            {/\.(jpg|jpeg|png|gif)$/i.test(thread.lampiran) ? (
+                              <img
+                                src={`${API_BASE}${thread.lampiran}`}
+                                alt="Lampiran Gambar"
+                                style={{ maxWidth: "100%", maxHeight: "400px", borderRadius: "8px", border: "1px solid #e2e8f0", objectFit: "contain" }}
+                              />
+                            ) : (
+                              <a
+                                href={`${API_BASE}${thread.lampiran}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", padding: "0.75rem 1rem", backgroundColor: "#f1f5f9", borderRadius: "8px", color: "var(--color-primary)", textDecoration: "none", fontWeight: 500, fontSize: "0.875rem", border: "1px solid #e2e8f0" }}
+                              >
+                                <span className="material-symbols-outlined">attach_file</span>
+                                <span>Unduh Lampiran</span>
+                              </a>
+                            )}
+                          </div>
+                        )}
                         <div className="fd-thread-actions">
                           <button
                             className={`fd-action-btn ${thread.liked ? "fd-action-btn--liked" : ""}`}

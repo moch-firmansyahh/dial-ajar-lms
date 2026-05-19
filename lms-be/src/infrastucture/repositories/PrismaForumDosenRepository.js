@@ -1,4 +1,4 @@
-import { prisma } from "../../../lib/prisma.ts";
+import { prisma } from "../../../lib/prisma.js";
 export class PrismaForumDosenRepository {
 async getThreadsByMataKuliah(idMataKuliah) {
     return await prisma.forumDiskusi.findMany({

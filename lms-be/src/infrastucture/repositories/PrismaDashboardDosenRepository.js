@@ -1,4 +1,4 @@
-import { prisma } from "../../../lib/prisma.ts";
+import { prisma } from "../../../lib/prisma.js";
 export class PrismaDashboardDosenRepository {
   async getDosenInfo(nomorInduk) {
     return await prisma.dosen.findUnique({

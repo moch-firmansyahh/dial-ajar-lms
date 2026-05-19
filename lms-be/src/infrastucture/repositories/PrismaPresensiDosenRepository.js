@@ -1,4 +1,4 @@
-import { prisma } from "../../../lib/prisma.ts";
+import { prisma } from "../../../lib/prisma.js";
 
 // Helper untuk mendapatkan start/end of day dalam UTC
 function getStartOfDayUTC() {

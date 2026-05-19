@@ -3,7 +3,7 @@ import { PrismaPresensiDosenRepository } from '../../infrastucture/repositories/
 import { PresensiDosenUseCase } from '../../usecases/PresensiDosenUseCase.js';
 import { PresensiDosenController } from '../controllers/PresensiDosenController.js';
 import { authMiddleware } from '../middlewares/authMiddleware.js';
-import { prisma } from '../../../lib/prisma.ts';
+import { prisma } from '../../../lib/prisma.js';
 
 // Helper untuk normalisasi tanggal ke UTC
 function normalizeDateToUTC(date) {

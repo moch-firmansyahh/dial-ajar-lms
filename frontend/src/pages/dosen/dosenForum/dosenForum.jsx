@@ -297,11 +297,11 @@ export default function DosenForum({ onNavigate, onLogout }) {
     if (file) setAttachedFile(file);
   };
 
-  if (loadingCourses) {
+  if (view === "courses" && loadingCourses) {
     return <LoadingSpinner message="Memuat daftar mata kuliah..." fullPage={true} />;
   }
 
-  if (loading) {
+  if (view === "forum" && loading) {
     return <LoadingSpinner message="Memuat diskusi..." fullPage={true} />;
   }
 

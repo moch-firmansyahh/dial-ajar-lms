@@ -50,6 +50,7 @@ function formatTime(seconds) {
 }
 
 import { apiClient } from "../../../utils/apiClient";
+import LoadingSpinner from "../../../components/LoadingSpinner";
 
 export default function QuizKuis({ onNavigate, onLogout, idKuis }) {
   const { sidebarOpen, openSidebar, closeSidebar } = useSidebar();
@@ -449,7 +450,7 @@ export default function QuizKuis({ onNavigate, onLogout, idKuis }) {
   }
 
   if (loading) {
-    return <div className="page-shell"><main className="page-main"><div style={{display:'flex',justifyContent:'center',alignItems:'center',height:'100vh'}}>Memuat kuis...</div></main></div>;
+    return <LoadingSpinner message="Memuat kuis..." fullPage={true} />;
   }
 
   return (

@@ -5,6 +5,7 @@ import Sidebar from "../../../components/Sidebar";
 import { useSidebar } from "../../../components/useSidebar";
 import Navbar from "../../../components/Navbar";
 import { apiClient } from "../../../utils/apiClient";
+import LoadingSpinner from "../../../components/LoadingSpinner";
 
 export default function HasilKuis({ onNavigate, onLogout, idKuis }) {
   const { sidebarOpen, openSidebar, closeSidebar } = useSidebar();
@@ -41,15 +42,7 @@ export default function HasilKuis({ onNavigate, onLogout, idKuis }) {
   }, [idKuis]);
 
   if (loading) {
-    return (
-      <div className="page-shell">
-        <main className="page-main">
-          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
-            Memuat hasil kuis...
-          </div>
-        </main>
-      </div>
-    );
+    return <LoadingSpinner message="Memuat hasil kuis..." fullPage={true} />;
   }
 
   if (error) {

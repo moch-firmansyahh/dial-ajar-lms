@@ -5,6 +5,7 @@ import SidebarDosen from "../../../components/SidebarDosen";
 import { useSidebar } from "../../../components/useSidebar";
 import Navbar from "../../../components/Navbar";
 import { apiClient } from "../../../utils/apiClient";
+import LoadingSpinner from "../../../components/LoadingSpinner";
 
 const AVATAR_DOSEN =
   "https://lh3.googleusercontent.com/aida-public/AB6AXuBjoXu55KCdSSPl-2t0t7d2EH6gux6Xz8nZaCdXHePrj-gGn1ZWZyBoOucWc2yVgrhmNFyy8cKbxWH8i9Wm5VKkpqX9jraXjkHTr8PVU1oN3V4nkzLWUUm6nyAIS3hGDic_uY0YoNLNNZluKTKqFwJb2gYlRl9eATGdlXClTx6IXpYvk-2u1qqvfUGTzs-QJPlXTouWTyNYzTe8j8mS09evVA_aHTYfHxneVwUsb2jUygYzuAIDU5KwqO2kISzLvnzaTentePscoGoo";
@@ -56,6 +57,10 @@ export default function DashboardDosen({ onNavigate, onLogout }) {
   };
 
   const nav = (page) => onNavigate && onNavigate(page);
+
+  if (loading) {
+    return <LoadingSpinner message="Memuat dashboard..." fullPage={true} />;
+  }
 
   return (
     <div className="page-shell">

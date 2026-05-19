@@ -6,6 +6,7 @@ import Sidebar from "../../../components/Sidebar";
 import { useSidebar } from "../../../components/useSidebar";
 import Navbar from "../../../components/Navbar";
 import { apiClient } from "../../../utils/apiClient";
+import LoadingSpinner from "../../../components/LoadingSpinner";
 
 export default function MataKuliah({ onNavigate, onLogout, idMataKuliah = 1 }) {
   const { sidebarOpen, openSidebar, closeSidebar } = useSidebar();
@@ -143,7 +144,7 @@ export default function MataKuliah({ onNavigate, onLogout, idMataKuliah = 1 }) {
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
 
   if (loading) {
-    return <div className="page-shell"><main className="page-main"><div style={{display:'flex',justifyContent:'center',alignItems:'center',height:'100vh'}}>Memuat materi...</div></main></div>;
+    return <LoadingSpinner message="Memuat materi..." fullPage={true} />;
   }
 
 

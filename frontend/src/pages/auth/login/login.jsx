@@ -105,8 +105,10 @@ function Login({ onLogin, onFaq }) {
         <div className="login-card">
           {/* Logo & Branding */}
           <div className="brand-header">
-            <div className="logo-box" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 0.75rem' }}>
-              <img src={logoImg} alt="LeMaS Logo" style={{ width: '100px', height: '100px', objectFit: 'contain' }} />
+            <div className="logo-container-wrapper">
+              <div className={`logo-box ${isLoading ? "logo-loading" : ""}`}>
+                <img src={logoImg} alt="LeMaS Logo" className="logo-img" />
+              </div>
             </div>
             <h2 className="welcome-text">LeMaS</h2>
             <p className="welcome-subtext">

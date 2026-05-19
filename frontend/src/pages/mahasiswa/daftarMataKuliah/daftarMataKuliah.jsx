@@ -5,6 +5,7 @@ import Sidebar from "../../../components/Sidebar";
 import { useSidebar } from "../../../components/useSidebar";
 import Navbar from "../../../components/Navbar";
 import { apiClient } from "../../../utils/apiClient";
+import LoadingSpinner from "../../../components/LoadingSpinner";
 
 export default function DaftarMataKuliah({ onNavigate, onLogout }) {
   const { sidebarOpen, openSidebar, closeSidebar } = useSidebar();
@@ -58,13 +59,7 @@ export default function DaftarMataKuliah({ onNavigate, onLogout }) {
   }, [nim]);
 
   if (loading) {
-    return (
-      <div className="page-shell" style={{ backgroundColor: "var(--color-background)" }}>
-        <main className="page-main" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-          Memuat daftar mata kuliah...
-        </main>
-      </div>
-    );
+    return <LoadingSpinner message="Memuat daftar mata kuliah..." fullPage={true} />;
   }
 
   return (

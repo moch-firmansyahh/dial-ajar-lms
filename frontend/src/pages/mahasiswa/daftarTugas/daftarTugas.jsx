@@ -5,6 +5,7 @@ import Sidebar from "../../../components/Sidebar";
 import { useSidebar } from "../../../components/useSidebar";
 import Navbar from "../../../components/Navbar";
 import { apiClient } from "../../../utils/apiClient";
+import LoadingSpinner from "../../../components/LoadingSpinner";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
@@ -295,10 +296,7 @@ const allKuis = [];
           {/* Task List */}
           <div className="dt-task-list">
             {loading ? (
-              <div className="dt-empty">
-                <span className="material-symbols-outlined">hourglass_empty</span>
-                <p>Memuat tugas...</p>
-              </div>
+              <LoadingSpinner message="Memuat tugas..." />
             ) : filtered.length === 0 ? (
               <div className="dt-empty">
                 <span className="material-symbols-outlined">task_alt</span>

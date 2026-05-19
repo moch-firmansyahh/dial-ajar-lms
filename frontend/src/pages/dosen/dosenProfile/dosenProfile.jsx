@@ -3,7 +3,7 @@ import "../../../components/shared.css";
 import "../../mahasiswa/profile/profile.css";
 import "./dosenProfile.css";
 import SidebarDosen from "../../../components/SidebarDosen";
-import { useSidebar } from "../../../usecomponents/Sidebar";
+import { useSidebar } from "../../../components/useSidebar";
 import Navbar from "../../../components/Navbar";
 import { apiClient } from "../../../utils/apiClient";
 

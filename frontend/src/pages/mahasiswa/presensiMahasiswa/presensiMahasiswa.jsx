@@ -3,7 +3,7 @@ import { Html5Qrcode } from "html5-qrcode";
 import "../../../components/shared.css";
 import "./presensiMahasiswa.css";
 import Sidebar from "../../../components/Sidebar";
-import { useSidebar } from "../../../usecomponents/Sidebar";
+import { useSidebar } from "../../../components/useSidebar";
 import Navbar from "../../../components/Navbar";
 import { apiClient } from "../../../utils/apiClient";
 

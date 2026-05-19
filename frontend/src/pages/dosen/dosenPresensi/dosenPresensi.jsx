@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import "../../../components/shared.css";
 import "./dosenPresensi.css";
 import SidebarDosen from "../../../components/SidebarDosen";
-import { useSidebar } from "../../../usecomponents/Sidebar";
+import { useSidebar } from "../../../components/useSidebar";
 import Navbar from "../../../components/Navbar";
 import { apiClient } from "../../../utils/apiClient";
 

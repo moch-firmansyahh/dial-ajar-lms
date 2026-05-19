@@ -67,6 +67,7 @@ export default function DosenForum({ onNavigate, onLogout }) {
   const [attachedFile, setAttachedFile] = useState(null);
   const fileInputRef = useRef(null);
   const textareaRef = useRef(null);
+  const editorImageInputRef = useRef(null);
   const [loading, setLoading] = useState(true);
   const [mataKuliahList, setMataKuliahList] = useState([]);
   const [selectedMatkul, setSelectedMatkul] = useState(null);
@@ -164,6 +165,39 @@ export default function DosenForum({ onNavigate, onLogout }) {
       ta.selectionEnd = end + before.length;
       ta.focus();
     }, 0);
+  };
+
+  const handleEditorImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+      const formData = new FormData();
+      formData.append("image", file);
+      const res = await apiClient.post("/api/forum/upload-image", formData);
+      const url = res.url;
+      
+      const ta = textareaRef.current;
+      if (ta) {
+        const start = ta.selectionStart;
+        const end = ta.selectionEnd;
+        const before = formBody.slice(0, start);
+        const after = formBody.slice(end);
+        const markdown = `![Gambar](${API_BASE}${url})`;
+        const next = before + markdown + after;
+        setFormBody(next);
+        
+        // Reset value
+        e.target.value = "";
+        
+        setTimeout(() => {
+          ta.focus();
+          ta.setSelectionRange(start + markdown.length, start + markdown.length);
+        }, 0);
+        showToast("success", "Gambar berhasil diunggah dan disisipkan!");
+      }
+    } catch (error) {
+      showToast("error", error.message || "Gagal mengunggah gambar");
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -683,12 +717,19 @@ export default function DosenForum({ onNavigate, onLogout }) {
                           type="button"
                           className="fd-tool-btn"
                           title="Image"
-                          onClick={() => wrapText("![alt](", ")")}
+                          onClick={() => editorImageInputRef.current?.click()}
                         >
                           <span className="material-symbols-outlined">
                             image
                           </span>
                         </button>
+                        <input
+                          type="file"
+                          ref={editorImageInputRef}
+                          accept="image/*"
+                          style={{ display: "none" }}
+                          onChange={handleEditorImageUpload}
+                        />
                       </div>
                       <textarea
                         ref={textareaRef}

@@ -36,6 +36,12 @@ const controller = new ForumController(forumUseCase);
 router.get('/mata-kuliah/:idMataKuliah', authMiddleware, (req, res) => controller.getThreads(req, res));
 router.get('/comment/:idKomentar', (req, res) => controller.getCommentById(req, res));
 router.post('/thread', authMiddleware, upload.single('lampiran'), (req, res) => controller.createThread(req, res));
+router.post('/upload-image', authMiddleware, upload.single('image'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ status: 'error', message: 'No file uploaded' });
+  }
+  res.status(200).json({ status: 'success', url: `/uploads/${req.file.filename}` });
+});
 router.put('/thread/:idForumDiskusi', authMiddleware, (req, res) => controller.updateThread(req, res));
 router.delete('/thread/:idForumDiskusi', authMiddleware, (req, res) => controller.deleteThread(req, res));
 router.post('/comment', authMiddleware, (req, res) => controller.addComment(req, res));

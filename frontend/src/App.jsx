@@ -22,6 +22,7 @@ import DosenForum from "./pages/dosen/dosenForum/dosenForum";
 import DosenProfile from "./pages/dosen/dosenProfile/dosenProfile";
 import DosenMateri from "./pages/dosen/dosenMateri/dosenMateri";
 import FAQ from "./pages/faq/faq";
+import PageTransitionLoader from "./components/PageTransitionLoader";
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(() => {
@@ -64,6 +65,8 @@ function App() {
     return { page: "dashboard" };
   });
   const [showFaq, setShowFaq] = useState(false);
+  const [transitionLoading, setTransitionLoading] = useState(false);
+  const [transitionTarget, setTransitionTarget] = useState(null);
 
   const handleLogin = (role) => {
     setIsLoggedIn(true);
@@ -90,9 +93,18 @@ function App() {
     } else {
       newPage = target; // { page: "mataKuliah", id: 1 }
     }
-    setCurrentPage(newPage);
-    localStorage.setItem("currentPage", JSON.stringify(newPage));
+    setTransitionTarget(newPage.page);
+    setTransitionLoading(true);
+    setTimeout(() => {
+      setCurrentPage(newPage);
+      localStorage.setItem("currentPage", JSON.stringify(newPage));
+      setTransitionLoading(false);
+    }, 600);
   };
+
+  if (transitionLoading) {
+    return <PageTransitionLoader targetPage={transitionTarget} />;
+  }
 
   if (showFaq) {
     return (

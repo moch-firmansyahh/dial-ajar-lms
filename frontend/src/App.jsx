@@ -42,14 +42,23 @@ function App() {
     return "";
   });
   const [currentPage, setCurrentPage] = useState(() => {
-    const savedPage = localStorage.getItem("currentPage");
-    if (savedPage) {
-      try {
-        return JSON.parse(savedPage);
-      } catch (e) {
-        // ignore parsing failure
+    // Check if the current page load is a normal refresh/reload
+    const navEntries = performance.getEntriesByType('navigation');
+    const isReload = navEntries.length > 0 && navEntries[0].type === 'reload';
+
+    if (isReload) {
+      const savedPage = sessionStorage.getItem("currentPage");
+      if (savedPage) {
+        try {
+          return JSON.parse(savedPage);
+        } catch (e) {
+          // ignore parsing failure
+        }
       }
+    } else {
+      sessionStorage.removeItem("currentPage");
     }
+
     // Fallback to default dashboard based on role
     const savedUser = localStorage.getItem("user");
     if (savedUser) {
@@ -73,7 +82,7 @@ function App() {
     setUserRole(role);
     const initialPage = { page: role === "Dosen" ? "dosenDashboard" : "dashboard" };
     setCurrentPage(initialPage);
-    localStorage.setItem("currentPage", JSON.stringify(initialPage));
+    sessionStorage.setItem("currentPage", JSON.stringify(initialPage));
   };
 
   const handleLogout = () => {
@@ -83,7 +92,7 @@ function App() {
     setCurrentPage(defaultPage);
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    localStorage.removeItem("currentPage");
+    sessionStorage.removeItem("currentPage");
   };
 
   const navigateTo = (target) => {
@@ -97,7 +106,7 @@ function App() {
     setTransitionLoading(true);
     setTimeout(() => {
       setCurrentPage(newPage);
-      localStorage.setItem("currentPage", JSON.stringify(newPage));
+      sessionStorage.setItem("currentPage", JSON.stringify(newPage));
       setTransitionLoading(false);
     }, 600);
   };

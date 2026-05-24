@@ -259,15 +259,35 @@ export default function MataKuliah({ onNavigate, onLogout, idMataKuliah = 1 }) {
                   <>
                     <div className="mk-video-card">
                       <div className="mk-video-thumb">
-                        <img
-                          src={activeData?.type === "video" && isYouTubeUrl(activeData?.url)
-                            ? getYouTubeThumbnail(activeData.url)
-                            : activeData?.type === "video"
-                              ? "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&auto=format&fit=crop"
-                              : "https://images.unsplash.com/photo-1516321497487-e288fb19713f?w=800&auto=format&fit=crop"
-                          }
-                          alt={activeData?.title}
-                        />
+                        {activeData?.type === "video" ? (
+                          <img
+                            src={
+                              isYouTubeUrl(activeData?.url)
+                                ? getYouTubeThumbnail(activeData.url)
+                                : "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&auto=format&fit=crop"
+                            }
+                            alt={activeData?.title}
+                          />
+                        ) : (
+                          <div className={`mk-file-placeholder mk-placeholder-${activeData?.type || "default"}`}>
+                            <span className="material-symbols-outlined mk-placeholder-icon">
+                              {getTypeIcon(activeData?.meta)}
+                            </span>
+                            <span className="mk-placeholder-text">
+                              {activeData?.type === "pdf"
+                                ? "DOKUMEN PDF"
+                                : activeData?.type === "presentasi"
+                                  ? "PRESENTASI SLIDE"
+                                  : activeData?.type === "link"
+                                    ? "TAUTAN INTERNET"
+                                    : activeData?.type === "dokumen"
+                                      ? "DOKUMEN TEKS"
+                                      : activeData?.type === "spreadsheet"
+                                        ? "LEMBAR KERJA (SPREADSHEET)"
+                                        : "BERKAS MATERI"}
+                            </span>
+                          </div>
+                        )}
                         <div className="mk-video-overlay" onClick={async () => {
                           if (activeData?.action === "play") {
                             try {

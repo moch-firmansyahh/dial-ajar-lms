@@ -74,8 +74,26 @@ export default function PresensiMahasiswa({ onNavigate, onLogout }) {
         const myRecords = Array.isArray(allData) ? allData : [];
         console.log("DEBUG - myRecords:", myRecords);
 
+        // Menghapus duplikasi per tanggal pertemuan (prioritaskan status selain Alpha)
+        const uniqueRecordsMap = new Map();
+        myRecords.forEach(h => {
+          const dateKey = h.tanggalPertemuan;
+          if (!dateKey) return;
+          
+          const existing = uniqueRecordsMap.get(dateKey);
+          if (existing) {
+            // Jika data sebelumnya Alpha, dan data sekarang bukan Alpha (contoh: Hadir), maka timpa
+            if (existing.statusKehadiran === "Alpha" && h.statusKehadiran !== "Alpha") {
+              uniqueRecordsMap.set(dateKey, h);
+            }
+          } else {
+            uniqueRecordsMap.set(dateKey, h);
+          }
+        });
+        const dedupedRecords = Array.from(uniqueRecordsMap.values());
+
         // Format respons untuk UI - handle timezone correctly
-        const formattedHist = myRecords
+        const formattedHist = dedupedRecords
           .sort((a, b) => {
             // Sort by tanggalPertemuan descending (paling baru di atas)
             const dateA = new Date(a.tanggalPertemuan || 0);

@@ -20,9 +20,11 @@ export default function DosenProfile({ onNavigate, onLogout }) {
   const [toast, setToast] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [avatarUrl, setAvatarUrl] = useState(DEFAULT_AVATAR);
   const storedUserStr = localStorage.getItem("user");
   const storedUser = storedUserStr ? JSON.parse(storedUserStr) : {};
+
+  const initialAvatar = storedUser.fotoUrl ? `${API_BASE}${storedUser.fotoUrl}` : DEFAULT_AVATAR;
+  const [avatarUrl, setAvatarUrl] = useState(initialAvatar);
 
   const [formData, setFormData] = useState({
     email: storedUser.email || "",
@@ -130,8 +132,13 @@ export default function DosenProfile({ onNavigate, onLogout }) {
       showToast("error", "Kata sandi baru tidak cocok.");
       return;
     }
-    if (pwForm.newPw.length < 6) {
-      showToast("error", "Kata sandi baru minimal 6 karakter.");
+    if (pwForm.newPw.length < 8) {
+      showToast("error", "Kata sandi baru minimal 8 karakter.");
+      return;
+    }
+    const specialCharRegex = /[!@#$%^&*(),.?":{}|<>]/;
+    if (!specialCharRegex.test(pwForm.newPw)) {
+      showToast("error", "Kata sandi baru harus mengandung karakter unik/simbol.");
       return;
     }
     try {

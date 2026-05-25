@@ -35,17 +35,17 @@ Aplikasi LeMaS terbagi menjadi dua bagian: **Backend (Express.js + Prisma)** dan
 Buat file bernama `.env` di dalam root direktori backend (`lms-be/`) dan masukkan konfigurasi berikut:
 ```env
 PORT_APP="3000"
-DATABASE_URL="postgresql://postgres:firman2652006@localhost:5432/lemes?schema=public"
-JWT_SECRET="bG1zLWJlDQo="
+DATABASE_URL="postgresql://postgres:password_anda@localhost:5432/lemes?schema=public"
+JWT_SECRET="masukkan_rahasia_jwt_anda_disini"
 FRONTEND_URL="http://localhost:5173"
 ```
 > [!NOTE]
-> Ganti user `postgres`, kata sandi `firman2652006`, host `localhost:5432`, dan nama database `lemes` sesuai dengan kredensial PostgreSQL lokal di komputer Anda.
+> Ganti kata sandi `password_anda`, host `localhost:5432`, dan nama database `lemes` sesuai dengan kredensial PostgreSQL lokal di komputer Anda.
 
 #### B. Konfigurasi Frontend (`frontend/.env`)
 Buat file bernama `.env` di dalam root direktori frontend (`frontend/`) dan masukkan konfigurasi berikut:
 ```env
-VITE_GEMINI_API_KEY="AIzaSyCOVK_aDSnREpKHfUh4JGZFDh0wFN8Lk9k"
+VITE_GEMINI_API_KEY="masukkan_api_key_gemini_anda_disini"
 VITE_API_URL="http://localhost:3000"
 ```
 

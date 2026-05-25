@@ -20,13 +20,13 @@
 
 .logo-loading-box {
   position: relative;
-  width: 110px;
-  height: 110px;
+  width: 80px;
+  height: 80px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  padding: 8px;
+  padding: 6px;
   background: #ffffff;
   box-shadow: 0 10px 25px -5px rgba(75, 83, 188, 0.1), 0 8px 10px -6px rgba(75, 83, 188, 0.1);
   box-sizing: border-box;
@@ -35,17 +35,17 @@
 .logo-loading-box::after {
   content: "";
   position: absolute;
-  inset: -6px;
+  inset: -4px;
   border-radius: 50%;
   border: 3px solid rgba(75, 83, 188, 0.1);
-  border-top-color: #4b53bc; /* --secondary */
-  border-right-color: #4b53bc;
-  animation: logo-spin 1s cubic-bezier(0.5, 0.1, 0.5, 0.9) infinite;
+  border-top-color: #4b53bc;
+  border-right-color: #818cf8;
+  animation: logo-spin 0.8s linear infinite;
 }
 
 .logo-loading-img {
-  width: 75px;
-  height: 75px;
+  width: 50px;
+  height: 50px;
   object-fit: contain;
 }
 

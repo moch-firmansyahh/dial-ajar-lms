@@ -95,7 +95,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
+  border-radius: 1.5rem;
   padding: 8px;
   background: white;
   box-shadow: 0 4px 12px rgba(75, 83, 188, 0.08);

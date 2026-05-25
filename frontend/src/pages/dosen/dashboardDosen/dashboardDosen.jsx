@@ -16,7 +16,11 @@ export default function DashboardDosen({ onNavigate, onLogout }) {
   const { sidebarOpen, openSidebar, closeSidebar } = useSidebar();
   const [toast, setToast] = useState(null);
   const [selectedMateri, setSelectedMateri] = useState(null);
-  const [avatarUrl, setAvatarUrl] = useState(AVATAR_DOSEN);
+  const storedUserStr = localStorage.getItem("user");
+  const storedUser = storedUserStr ? JSON.parse(storedUserStr) : {};
+  const initialAvatar = storedUser.fotoUrl ? `${API_BASE}${storedUser.fotoUrl}` : AVATAR_DOSEN;
+
+  const [avatarUrl, setAvatarUrl] = useState(initialAvatar);
 
   const [dashboardData, setDashboardData] = useState({
     lecturerName: "Dosen",

@@ -17,7 +17,11 @@ export default function Dashboard({ onNavigate, onLogout }) {
   const [dashboardData, setDashboardData] = useState(null);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [avatarUrl, setAvatarUrl] = useState(AVATAR_HERO);
+  const storedUserStr = localStorage.getItem("user");
+  const storedUser = storedUserStr ? JSON.parse(storedUserStr) : {};
+  const initialAvatar = storedUser.fotoUrl ? `${API_BASE}${storedUser.fotoUrl}` : AVATAR_HERO;
+
+  const [avatarUrl, setAvatarUrl] = useState(initialAvatar);
 
   useEffect(() => {
     const fetchDashboard = async () => {

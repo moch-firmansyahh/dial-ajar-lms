@@ -41,6 +41,7 @@ export default function DosenProfile({ onNavigate, onLogout }) {
     rataPresensi: "0%"
   });
   const [pwForm, setPwForm] = useState({ old: "", newPw: "", confirm: "" });
+  const [showPw, setShowPw] = useState({ old: false, new: false, confirm: false });
 
   // Camera refs
   const videoRef = useRef(null);
@@ -253,19 +254,28 @@ export default function DosenProfile({ onNavigate, onLogout }) {
             </div>
             <form onSubmit={handlePwSubmit} className="prf-modal-body">
               {[
-                ["Kata Sandi Lama", "old"],
-                ["Kata Sandi Baru", "newPw"],
-                ["Konfirmasi Kata Sandi", "confirm"],
-              ].map(([label, key]) => (
-                <div key={key} className="prf-field">
+                ["Kata Sandi Lama", "old", "old"],
+                ["Kata Sandi Baru", "newPw", "new"],
+                ["Konfirmasi Kata Sandi", "confirm", "confirm"],
+              ].map(([label, key, showKey]) => (
+                <div key={key} className="prf-field prf-field--pw">
                   <label className="prf-label">{label}</label>
-                  <input
-                    className="prf-input"
-                    type="password"
-                    placeholder="••••••••"
-                    value={pwForm[key]}
-                    onChange={(e) => setPwForm({ ...pwForm, [key]: e.target.value })}
-                  />
+                  <div className="prf-pw-input-wrap">
+                    <input
+                      className="prf-input prf-input--pw"
+                      type={showPw[showKey] ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={pwForm[key]}
+                      onChange={(e) => setPwForm({ ...pwForm, [key]: e.target.value })}
+                    />
+                    <button
+                      type="button"
+                      className="prf-pw-toggle"
+                      onClick={() => setShowPw({ ...showPw, [showKey]: !showPw[showKey] })}
+                    >
+                      <span className="material-symbols-outlined">{showPw[showKey] ? 'visibility_off' : 'visibility'}</span>
+                    </button>
+                  </div>
                 </div>
               ))}
               <div className="prf-modal-actions">

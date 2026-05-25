@@ -6,6 +6,7 @@ import { useSidebar } from "../../../components/useSidebar";
 import Navbar from "../../../components/Navbar";
 import { apiClient } from "../../../utils/apiClient";
 import LoadingSpinner from "../../../components/LoadingSpinner";
+import DOMPurify from 'dompurify';
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
@@ -438,7 +439,7 @@ export default function ForumDiskusi({ onNavigate, onLogout }) {
                               </div>
                               <div
                                 className="fd-thread-body"
-                                dangerouslySetInnerHTML={{ __html: thread.content || "" }}
+                                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(thread.content || "") }}
                               />
                               {thread.lampiran && (
                                 <div className="fd-thread-attachment" style={{ marginTop: "1rem" }}>
@@ -493,7 +494,7 @@ export default function ForumDiskusi({ onNavigate, onLogout }) {
                                         <span className="fd-reply-name">{reply.authorName}</span>
                                         <span className="fd-reply-time">{reply.time}</span>
                                       </div>
-                                      <p className="fd-reply-text" dangerouslySetInnerHTML={{ __html: reply.content || "" }} />
+                                      <p className="fd-reply-text" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(reply.content || "") }} />
                                       <button
                                         className={`fd-reply-action ${reply.liked ? "fd-action-btn--liked" : ""}`}
                                         onClick={() => toggleLike(thread.id, reply.id)}

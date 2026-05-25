@@ -6,6 +6,7 @@ import { useSidebar } from "../../../components/useSidebar";
 import Navbar from "../../../components/Navbar";
 import { apiClient } from "../../../utils/apiClient";
 import LoadingSpinner from "../../../components/LoadingSpinner";
+import DOMPurify from 'dompurify';
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
@@ -473,7 +474,7 @@ export default function DosenForum({ onNavigate, onLogout }) {
                           </div>
                           <div
                             className="fd-thread-body"
-                            dangerouslySetInnerHTML={{ __html: thread.content || "" }}
+                            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(thread.content || "") }}
                           />
                           {thread.lampiran && (
                             <div className="fd-thread-attachment" style={{ marginTop: "1rem" }}>
@@ -563,7 +564,7 @@ export default function DosenForum({ onNavigate, onLogout }) {
                                   <p
                                     className="fd-reply-text"
                                     dangerouslySetInnerHTML={{
-                                      __html: reply.content || "",
+                                      __html: DOMPurify.sanitize(reply.content || ""),
                                     }}
                                   />
                                   <button

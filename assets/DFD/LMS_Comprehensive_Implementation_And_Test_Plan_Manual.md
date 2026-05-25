@@ -1,10 +1,13 @@
-# LAPORAN KOMPREHENSIF IMPLEMENTASI DAN RENCANA PENGUJIAN LE-MAS (LEARNING MANAGEMENT SYSTEM)
-
-Dokumen ini disusun untuk memberikan panduan lengkap mengenai instalasi sistem, rencana pengujian fungsionalitas backend menggunakan Postman (berdasarkan *Sequence Diagram*), rencana pengujian kegunaan (*Usability*) untuk pengguna non-teknis (berdasarkan *DFD Level 1*), serta *Traceability Matrix* (Matriks Penyelarasan) yang menghubungkan seluruh komponen tersebut secara 1-to-1.
-
----
+<h1 align="center">STANDAR DOKUMENTASI & RENCANA PENGUJIAN (TEST PLAN)</h1>
+<p align="center"><b>Panduan Terintegrasi: DFD Level 1, Sequence Diagram, dan Testing</b></p>
+<p align="center"><i>Proyek: LE-MAS (LEARNING MANAGEMENT SYSTEM)</i></p>
 
 ## 1. STANDAR INSTALLATION MANUAL
+---
+
+Mahasiswa wajib mendetailkan proses setup aplikasi agar dapat dijalankan oleh penguji atau pengguna lain.
+
+*(Berikut adalah detail instalasi untuk aplikasi LeMaS:)*
 
 ### 1.1 System Requirements (Spesifikasi Sistem)
 Untuk menjalankan aplikasi LeMaS dengan optimal, sistem Anda disarankan memenuhi kriteria minimum berikut:
@@ -92,17 +95,16 @@ Prisma ORM digunakan untuk melakukan deployment dan sinkronisasi skema database 
     ```
     Server development frontend akan berjalan aktif di alamat **`http://localhost:5173`**. Silakan buka alamat tersebut di browser Anda.
 
----
----
-
 ## 2. BACKEND TEST PLAN (Berdasarkan Sequence Diagram)
+---
 
-Pengujian backend dilakukan secara ketat dengan menggunakan Postman untuk menjamin keandalan API. Rencana pengujian ini disusun berdasarkan aturan keterlacakan (*Traceability*) dari *Sequence Diagram* yang telah dirancang.
+Pengujian backend dilakukan menggunakan Postman dengan aturan **Traceability** sebagai berikut:
 
-### 2.1 Aturan Traceability (Keterlacakan)
-*   **1 Sequence Diagram = 1 Folder Collection:** Setiap file *Sequence Diagram* (S1 s.d S9) dipetakan menjadi tepat satu folder collection di dalam Postman.
-*   **Semua Method di Diagram Wajib Diuji:** Setiap panah interaksi *request* yang dikirimkan oleh aktor (Dosen/Mahasiswa) ke sistem di dalam *Sequence Diagram* harus memiliki satu *request endpoint* yang setara di Postman.
-*   **Validasi Return Value di Tab "Tests":** Setiap pesan balik (*return/response*) yang digambarkan pada *Sequence Diagram* harus divalidasi kebenaran strukturnya di Postman menggunakan penulisan test script pada tab **Tests** untuk memeriksa status code dan response body.
+| Komponen Desain | Implementasi Testing |
+| :--- | :--- |
+| **1 Sequence Diagram** | Setara dengan 1 folder Collection atau alur proses di Postman. |
+| **Semua Method di Diagram** | Setiap pemanggilan method (call) dalam diagram harus diuji endpoint-nya. |
+| **Return Value** | Hasil balik di diagram divalidasi pada bagian "Tests" di Postman (Response Body). |
 
 ### 2.2 Penulisan Script Validasi Otomatis (Tests) di Postman
 
@@ -138,12 +140,17 @@ pm.test("Kelompok berhasil dihapus secara permanen", function () {
 });
 ```
 
----
----
-
 ## 3. USABILITY TEST PLAN (Berdasarkan DFD Level 1)
+---
 
-Pengujian kegunaan (*Usability*) dirancang untuk mengevaluasi interaksi pengguna non-teknis (Dosen dan Mahasiswa) terhadap antarmuka (*interface*) LeMaS, guna memastikan seluruh alur bisnis yang didefinisikan pada **DFD Level 1 (S1 s.d S9)** dapat diselesaikan dengan mudah dan tanpa hambatan.
+Pengujian ini ditujukan untuk user non-teknis guna memvalidasi alur bisnis yang didefinisikan pada DFD Level 1.
+*   **Skenario Uji:** Setiap proses di DFD Level 1 (misal: Proses 1.0 Registrasi) diturunkan menjadi 1 *Task* untuk pengguna.
+*   **Target Peserta:** Minimal 3-5 orang yang merepresentasikan end-user (bukan developer).
+*   **Metrik:**
+    *   *Completion Rate*: Apakah user berhasil menyelesaikan alur sesuai DFD?
+    *   *Error Rate*: Berapa kali user mengalami kendala navigasi?
+
+*(Berikut adalah rincian skenario dan metrik pengujian yang telah disesuaikan untuk aplikasi LeMaS:)*
 
 ### 3.1 Skenario Uji (User Task Scenarios)
 Setiap proses utama pada DFD Level 1 diturunkan menjadi skenario tugas dunia nyata yang harus diselesaikan oleh peserta uji:
@@ -177,14 +184,10 @@ Untuk mengukur keberhasilan tingkat kegunaan antarmuka aplikasi, metrik berikut 
 2.  **Error Rate (Tingkat Kesalahan):** Jumlah kesalahan navigasi, mis-klik, atau kegagalan aksi yang dilakukan pengguna selama mencoba menyelesaikan satu skenario (Target: **< 2 kali per skenario**).
 3.  **System Usability Scale (SUS Score):** Skor kuisioner subjektif berisi 10 pertanyaan standar yang diisi peserta pasca-pengujian (Target: **Skor > 75** dengan kategori *Good/Excellent*).
 
----
----
-
 ## 4. MATRIKS PENYELARASAN (Traceability Matrix)
+---
 
-Matriks penyelarasan di bawah ini menyajikan pemetaan lurus (**1-to-1 traceability**) yang menghubungkan setiap proses pada **DFD Level 1** dengan rancangan **Sequence Diagram**, implementasi **Method Backend (Postman)** yang diuji, serta **Skenario Usability** bagi pengguna non-teknis.
-
-| ID DFD 1 | Nama Sequence Diagram | Method Backend (Postman / API Endpoint) | Skenario Usability (User Task Scenario) |
+| ID DFD 1 | Nama Sequence Diagram | Method Backend (Postman) | Skenario Usability |
 | :--- | :--- | :--- | :--- |
 | **1.0** | `S1 - Kelola Tugas` | `GET /api/dosen/tugas`<br>`POST /api/dosen/tugas`<br>`PUT /api/dosen/tugas/:id`<br>`DELETE /api/dosen/tugas/:id`<br>`GET /api/kuis`<br>`POST /api/kuis`<br>`PUT /api/kuis/:id`<br>`DELETE /api/kuis/:id` | **Dosen** mengelola (membuat, mengubah, menghapus) penugasan reguler serta menyusun soal kuis online interaktif untuk kelas perkuliahan. |
 | **2.0** | `S2 - Kelola Anggota` | `POST /api/kelompok`<br>`POST /api/kelompok/:id/members`<br>`DELETE /api/kelompok/:id/members/:nim`<br>`DELETE /api/kelompok/:id` *(Hapus Kelompok)* | **Dosen** membuat kelompok belajar baru di kelas, menginput mahasiswa ke dalam kelompok, dan menghapus kelompok secara permanen (*cascade delete*). |

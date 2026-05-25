@@ -1,366 +1,837 @@
-# Panduan Testing Postman (S1 - S9)
+# Panduan Testing Postman (Role-Based & DFD Aligned)
 
-Panduan ini berisi cara melakukan _testing_ seluruh endpoint API (S1 sampai S9) menggunakan aplikasi Postman. 
+Panduan ini berisi cara melakukan _testing_ seluruh 97 endpoint API pada sistem LeMaS menggunakan Postman. Pengelompokan sudah disesuaikan persis dengan Traceability Matrix DFD Level 1, dan dipisahkan berdasarkan Role (Dosen/Mahasiswa) sesuai dengan kebutuhan akses sistem.
 
 > **PENTING: Aturan Token**
-> Hampir semua endpoint S1 sampai S8 membutuhkan otorisasi. Oleh karena itu, kamu **WAJIB** melakukan [S9 (Autentikasi/Login)](#s9-autentikasi-wajib-pertama-kali) terlebih dahulu, mengambil tokennya, lalu memasukannya di tab **Authorization -> Type: Bearer Token** pada Postman untuk endpoint lainnya.
+> Hampir semua endpoint membutuhkan otorisasi. Anda **WAJIB** melakukan Login pada bagian **S9 - Login & Auth** (pilih `Login Mahasiswa` atau `Login Dosen`) terlebih dahulu. Sistem secara otomatis akan menyimpan token dan menyiapkannya di tab **Authorization -> Type: Bearer Token** untuk request selanjutnya.
 
 ---
 
-## S9. Autentikasi (Wajib Pertama Kali)
-Digunakan untuk mendapatkan token akses (Login).
+## S9 - Login & Auth
 
+### 1. Login Mahasiswa
 - **Method:** `POST`
-- **URL:** `http://localhost:3000/api/auth/login`
-- **Tab Body:** `raw` -> `JSON`
-- **Isi Body (Login Dosen):**
+- **URL:** `{{base_url}}/api/auth/login`
+- **Body (`raw JSON`):**
   ```json
   {
-    "nomorInduk": "lestari@kampus.ac.id",
-    "password": "password123",
-    "role": "DOSEN"
+    "nomorInduk": "U001",
+    "password": "password123"
   }
   ```
-- **Isi Body (Login Mahasiswa):**
+
+### 2. Login Dosen
+- **Method:** `POST`
+- **URL:** `{{base_url}}/api/auth/login`
+- **Body (`raw JSON`):**
   ```json
   {
-    "nomorInduk": "2021002",
-    "password": "password123",
-    "role": "MAHASISWA"
+    "nomorInduk": "D001",
+    "password": "password123"
   }
   ```
+
+### 3. Health Check
+- **Method:** `GET`
+- **URL:** `{{base_url}}/ping`
 
 ---
 
-## S1. Kelola Tugas (Oleh Dosen)
-*Gunakan Token Dosen di tab Authorization.*
+## S2 - Kelola Anggota (Kelompok)
 
-### 1. Lihat Daftar Tugas Kelas
+### 1. Get Semua Kelompok
 - **Method:** `GET`
-- **URL:** `http://localhost:3000/api/tugas/mata-kuliah/1` *(Ganti `1` dengan ID Matkul)*
+- **URL:** `{{base_url}}/api/kelompok`
 
-### 2. Buat Tugas Baru
+### 2. Get Semua Mahasiswa
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api/kelompok/mahasiswa/all`
+
+### 3. Get Kelompok per Mata Kuliah
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api/kelompok/13`
+
+### 4. Buat Kelompok Baru
 - **Method:** `POST`
-- **URL:** `http://localhost:3000/api/tugas`
-- **Tab Body:** `raw` -> `JSON`
+- **URL:** `{{base_url}}/api/kelompok`
+- **Body (`raw JSON`):**
   ```json
   {
-    "judul": "Tugas Makalah Struktur Data",
-    "idMataKuliah": 1,
-    "deskripsi": "Buat makalah tentang implementasi Tree. Minimal 10 halaman.",
-    "deadlineTugas": "2026-06-01T23:59:00.000Z"
+    "name": "Kelompok A",
+    "idMataKuliah": 13,
+    "task": "Proyek Akhir Web"
   }
   ```
 
-### 3. Update Tugas
-- **Method:** `PATCH`
-- **URL:** `http://localhost:3000/api/tugas/1` *(Ganti `1` dengan ID Tugas)*
-- **Tab Body:** `raw` -> `JSON`
-  ```json
-  {
-    "judul": "Tugas Makalah Struktur Data (Revisi)"
-  }
-  ```
-
-### 4. Hapus Tugas
-- **Method:** `DELETE`
-- **URL:** `http://localhost:3000/api/tugas/1`
-
----
-
-## S2. Kelola Anggota
-*Endpoint umum untuk melihat pengguna & matkul.*
-
-### 1. Lihat Semua User
-- **Method:** `GET`
-- **URL:** `http://localhost:3000/api/users`
-
-### 2. Lihat Semua Mata Kuliah
-- **Method:** `GET`
-- **URL:** `http://localhost:3000/api/mata-kuliah`
-
-### 3. Lihat Detail Mata Kuliah
-- **Method:** `GET`
-- **URL:** `http://localhost:3000/api/mata-kuliah/1`
-
-### 4. Buat Mata Kuliah Baru
+### 5. Tambah Anggota Kelompok
 - **Method:** `POST`
-- **URL:** `http://localhost:3000/api/mata-kuliah`
-- **Tab Body:** `raw` -> `JSON`
-  ```json
-  {
-    "namaMataKuliah": "Pemrograman API",
-    "nipDosen": "19800101201001101"
-  }
-  ```
-
-### 5. Update Mata Kuliah
-- **Method:** `PATCH`
-- **URL:** `http://localhost:3000/api/mata-kuliah/1`
-- **Tab Body:** `raw` -> `JSON`
-  ```json
-  {
-    "namaMataKuliah": "Pemrograman Web Lanjut (Kelas B)"
-  }
-  ```
-
----
-
-## S3. Hapus Mata Kuliah
-*Gunakan Token Dosen.*
-
-- **Method:** `DELETE`
-- **URL:** `http://localhost:3000/api/mata-kuliah/11`
-> ⚠️ Gunakan ID mata kuliah yang **baru kamu buat di S2** (misal ID 11). Jangan hapus ID 1-10 karena data seed-nya masih dipakai S lainnya.
-
----
-
-## S4. Monitoring Progress (Dashboard Mahasiswa)
-*Gunakan Token Mahasiswa (login dengan `U001` / `password123`).*
-
-- **Method:** `GET`
-- **URL:** `http://localhost:3000/api/dashboard/mahasiswa`
-
----
-
-## S5. Upload Tugas (Oleh Mahasiswa)
-*Gunakan Token Mahasiswa.*
-
-### 1. Lihat Daftar Tugas
-- **Method:** `GET`
-- **URL:** `http://localhost:3000/api/tugas/mahasiswa`
-- **Jika tidak ada, gunakan:** `http://localhost:3000/api/tugas?idMataKuliah=1`
-
-### 2. Mengumpulkan Tugas
-- **Method:** `POST`
-- **URL:** `http://localhost:3000/api/tugas/2/submit`
-> Ganti `2` dengan ID Tugas yang **belum** ada pengumpulannya.
-- **Tab Body:** Pilih `form-data`
-  | Key | Value | Type |
-  |-----|-------|------|
-  | nim | 202601 | Text |
-  | judul | Jawaban Tugas Saya | Text |
-  | file | *(pilih file)* | File |
-
-### 3. Lihat Hasil Pengumpulan
-- **Method:** `GET`
-- **URL:** `http://localhost:3000/api/tugas/2/submission`
-
-### 4. Hapus/Batal Kumpul
-- **Method:** `DELETE`
-- **URL:** `http://localhost:3000/api/tugas/submission/1`
-> Ganti `1` dengan `idPengumpulan` dari respons sebelumnya.
-
----
-
-## S6. Presensi
-
-### 1. Generate Sesi Presensi (Dosen)
-*Gunakan Token Dosen.*
-- **Method:** `POST`
-- **URL:** `http://localhost:3000/api/dosen/presensi/matkul/1/generate`
-> Ganti `1` dengan ID Mata Kuliah. Ini harus dilakukan **terlebih dahulu** sebelum mahasiswa bisa scan presensi.
-
-### 2. Lihat Kehadiran Kelas (Dosen)
-*Gunakan Token Dosen.*
-- **Method:** `GET`
-- **URL:** `http://localhost:3000/api/presensi/mata-kuliah/1`
-
-### 3. Scan QR / Catat Kehadiran (Mahasiswa)
-*Gunakan Token Mahasiswa.*
-- **Method:** `POST`
-- **URL:** `http://localhost:3000/api/presensi/scan`
-- **Tab Body:** `raw` -> `JSON`
-  ```json
-  {
-    "idMataKuliah": 1,
-    "token": "LeMaS-abcd1234"
-  }
-  ```
-
-### 4. Riwayat Kehadiran Mahasiswa
-*Gunakan Token Mahasiswa.*
-- **Method:** `GET`
-- **URL:** `http://localhost:3000/api/presensi/mahasiswa/1`
-
-### 5. Summary Kehadiran
-*Gunakan Token Mahasiswa.*
-- **Method:** `GET`
-- **URL:** `http://localhost:3000/api/presensi/summary/1`
-
----
-
-## Kelompok
-
-### 1. Lihat Semua Kelompok
-*Gunakan Token Dosen.*
-- **Method:** `GET`
-- **URL:** `http://localhost:3000/api/kelompok`
-
-### 2. Lihat Daftar Kelompok per Mata Kuliah
-*Gunakan Token Dosen.*
-- **Method:** `GET`
-- **URL:** `http://localhost:3000/api/kelompok/1`
-
-### 3. Buat Kelompok Baru
-*Gunakan Token Dosen.*
-- **Method:** `POST`
-- **URL:** `http://localhost:3000/api/kelompok`
-- **Tab Body:** `raw` -> `JSON`
-  ```json
-  {
-    "idMataKuliah": 1,
-    "namaKelompok": "Kelompok A",
-    "warna": "#4b53bc"
-  }
-  ```
-
-### 3. Tambah Anggota ke Kelompok
-*Gunakan Token Dosen.*
-- **Method:** `POST`
-- **URL:** `http://localhost:3000/api/kelompok/1/members`
-- **Tab Body:** `raw` -> `JSON`
+- **URL:** `{{base_url}}/api/kelompok/1/members`
+- **Body (`raw JSON`):**
   ```json
   {
     "nim": "2026001"
   }
   ```
 
-### 4. Hapus Anggota dari Kelompok
-*Gunakan Token Dosen.*
+### 6. Hapus Anggota Kelompok
 - **Method:** `DELETE`
-- **URL:** `http://localhost:3000/api/kelompok/1/members/2026001`
+- **URL:** `{{base_url}}/api/kelompok/1/members/2026001`
 
-### 5. Simpan Nilai Kelompok
-*Gunakan Token Dosen.*
+### 7. Simpan Nilai Kelompok
 - **Method:** `PUT`
-- **URL:** `http://localhost:3000/api/kelompok/1/grades`
-- **Tab Body:** `raw` -> `JSON`
+- **URL:** `{{base_url}}/api/kelompok/1/grades`
+- **Body (`raw JSON`):**
   ```json
   {
-    "grades": [
-      { "nim": "2026001", "nilai": 85.5 }
-    ]
+    "grades": {
+      "2026001": "85",
+      "2026002": "90"
+    }
   }
   ```
 
----
-
-## S7. Penilaian
-
-### 1. Lihat Nilai per Mata Kuliah
-*Gunakan Token Mahasiswa.*
+### 8. Get Kelompok per Mata Kuliah (Dosen)
 - **Method:** `GET`
-- **URL:** `http://localhost:3000/api/nilai/mahasiswa/1`
+- **URL:** `{{base_url}}/api/kelompok/1`
 
-### 2. Masukkan Nilai Baru (Dosen)
-*Gunakan Token Dosen.*
+### 9. Hapus Anggota Kelompok (Dosen)
+- **Method:** `DELETE`
+- **URL:** `{{base_url}}/api/kelompok/1/members/1`
+
+### 10. [DELETE] /api/kelompok/:idKelompok (Dosen)
+- **Method:** `DELETE`
+- **URL:** `{{base_url}}/api/kelompok/1`
+
+### 11. Buat User (Dosen)
 - **Method:** `POST`
-- **URL:** `http://localhost:3000/api/nilai`
-- **Tab Body:** `raw` -> `JSON`
+- **URL:** `{{base_url}}/api/users/users`
+- **Body (`raw JSON`):**
   ```json
   {
-    "nomorInduk": "U002",
-    "idMataKuliah": 2,
-    "nilaiTugas": 85,
-    "nilaiKuis": 90
+    
   }
   ```
 
-### 3. Update Nilai
+### 12. Get Semua Users (Dosen)
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api/users/users`
+
+### 13. Update User (Dosen)
 - **Method:** `PATCH`
-- **URL:** `http://localhost:3000/api/nilai/1`
-- **Tab Body:** `raw` -> `JSON`
+- **URL:** `{{base_url}}/api/users/users/1`
+- **Body (`raw JSON`):**
   ```json
   {
-    "nilaiTugas": 88,
-    "nilaiKuis": 92
+    
   }
   ```
 
-### 4. Lihat Transkrip Mahasiswa
-*Gunakan Token Mahasiswa.*
-- **Method:** `GET`
-- **URL:** `http://localhost:3000/api/nilai/transkrip/mahasiswa`
+### 14. Hapus User (Dosen)
+- **Method:** `DELETE`
+- **URL:** `{{base_url}}/api/users/users/1`
 
 ---
 
-## S8. Diskusi (Forum)
-*Gunakan Token Dosen atau Mahasiswa.*
+## S1 - Kelola Tugas
 
-### 1. Lihat Daftar Topik Diskusi
+### 1. Get Semua Tugas (Dosen)
 - **Method:** `GET`
-- **URL:** `http://localhost:3000/api/forum/mata-kuliah/1`
+- **URL:** `{{base_url}}/api/dosen/tugas`
 
-### 2. Lihat Komentar (By ID)
+### 2. Get Tugas per Mata Kuliah (Dosen)
 - **Method:** `GET`
-- **URL:** `http://localhost:3000/api/forum/comment/1`
-> Ganti `1` dengan ID komentar
+- **URL:** `{{base_url}}/api/dosen/tugas/mata-kuliah/13`
 
-### 3. Buat Topik Diskusi Baru
+### 3. Buat Tugas Baru (Dosen)
 - **Method:** `POST`
-- **URL:** `http://localhost:3000/api/forum/thread`
-- **Tab Body:** `raw` -> `JSON`
+- **URL:** `{{base_url}}/api/dosen/tugas`
+- **Body (`form-data`):**
+  - `judul`: Website Portfolio dengan HTML & CSS
+  - `detailTugas`: Buat website portfolio pribadi menggunakan HTML5 dan CSS3.
+  - `deadlineTugas`: 2026-06-01T23:59:00.000Z
+  - `tipeTugas`: Individu
+  - `idMataKuliah`: 13
+  - `fileTugas`: *(File Upload)*
+
+### 4. Hapus Tugas (Dosen)
+- **Method:** `DELETE`
+- **URL:** `{{base_url}}/api/dosen/tugas/1`
+
+### 5. Get Daftar Tugas (Mahasiswa)
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api/tugas`
+
+### 6. Get Detail Tugas (Mahasiswa)
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api/tugas/1`
+
+### 7. Get Semua Kuis (Mahasiswa)
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api/kuis`
+
+### 8. Get Detail Kuis (Dosen)
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api/kuis/1/detail`
+
+### 9. Get Soal Kuis (Mahasiswa)
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api/kuis/1/soal`
+
+### 10. Buat Kuis Baru (Dosen)
+- **Method:** `POST`
+- **URL:** `{{base_url}}/api/kuis`
+- **Body (`raw JSON`):**
   ```json
   {
-    "idMataKuliah": 1,
-    "judul": "Implementasi Binary Search Tree",
-    "isiForum": "Halo teman-teman, adakah yang paham bagian insert data di BST?"
+    
   }
   ```
 
-### 3. Tambah Komentar
+### 11. Hapus Kuis (Dosen)
+- **Method:** `DELETE`
+- **URL:** `{{base_url}}/api/kuis/1`
+
+---
+
+## S3 - Kelola Deadline
+
+### 1. Update Tugas + Deadline (Dosen)
+- **Method:** `PUT`
+- **URL:** `{{base_url}}/api/dosen/tugas/1`
+- **Body (`form-data`):**
+  - `judul`: Website Portfolio (Update)
+  - `deadlineTugas`: 2026-06-10T23:59:00.000Z
+
+### 2. Cek Deadline Tugas (Mahasiswa)
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api/tugas/1`
+
+### 3. Get Daftar Kuis per Matkul (Mahasiswa)
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api/kuis/mata-kuliah/1`
+
+### 4. Update Kuis + Deadline (Dosen)
+- **Method:** `PUT`
+- **URL:** `{{base_url}}/api/kuis/1`
+- **Body (`raw JSON`):**
+  ```json
+  {
+    
+  }
+  ```
+
+---
+
+## S5 - Upload Tugas
+
+### 1. Submit / Upload Jawaban Tugas
 - **Method:** `POST`
-- **URL:** `http://localhost:3000/api/forum/comment`
-- **Tab Body:** `raw` -> `JSON`
+- **URL:** `{{base_url}}/api/tugas/1/submit`
+- **Body (`form-data`):**
+  - `file`: *(File Upload)*
+  - `catatan`: Berikut terlampir jawaban tugas saya.
+
+### 2. Cek Status Pengumpulan
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api/tugas/1/submission`
+
+### 3. Hapus Pengumpulan
+- **Method:** `DELETE`
+- **URL:** `{{base_url}}/api/tugas/submission/1`
+
+### 4. Submit / Upload Jawaban Tugas (Mahasiswa)
+- **Method:** `POST`
+- **URL:** `{{base_url}}/api/kuis/1/submit`
+- **Body (`raw JSON`):**
+  ```json
+  {
+    
+  }
+  ```
+
+### 5. Cek Status Pengerjaan Kuis (Mahasiswa)
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api/kuis/1/status`
+
+---
+
+## S4 - Monitoring Progress
+
+### 1. Get Materi + Status Progress
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api/materi/mata-kuliah/13`
+
+### 2. Tandai Materi Sudah Diakses
+- **Method:** `POST`
+- **URL:** `{{base_url}}/api/materi/1/access`
+- **Body:** *(Kosong atau isi form-data/JSON sesuai kebutuhan)*
+
+### 3. Get Progress Summary Materi
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api/materi/mata-kuliah/13/progress`
+
+### 4. Dashboard Mahasiswa
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api/dashboard`
+
+### 5. Dashboard Dosen
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api/dosen/dashboard`
+
+### 6. Get Materi per Matkul (Dosen)
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api/materi/mata-kuliah/1`
+
+### 7. Get Materi per Matkul (Mahasiswa)
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api/materi/mata-kuliah/1`
+
+### 8. Get Progress Summary Materi (Dosen)
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api/materi/mata-kuliah/1/progress`
+
+### 9. Get Progress Summary Materi (Mahasiswa)
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api/materi/mata-kuliah/1/progress`
+
+### 10. Get Modul Ajar (Dosen)
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api/modul-ajar`
+
+### 11. Get Modul Ajar (Mahasiswa)
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api/modul-ajar`
+
+### 12. Buat Modul Ajar (Dosen)
+- **Method:** `POST`
+- **URL:** `{{base_url}}/api/modul-ajar`
+- **Body (`raw JSON`):**
+  ```json
+  {
+    
+  }
+  ```
+
+### 13. Update Modul Ajar (Dosen)
+- **Method:** `PUT`
+- **URL:** `{{base_url}}/api/modul-ajar/1`
+- **Body (`raw JSON`):**
+  ```json
+  {
+    
+  }
+  ```
+
+### 14. Hapus Modul Ajar (Dosen)
+- **Method:** `DELETE`
+- **URL:** `{{base_url}}/api/modul-ajar/1`
+
+---
+
+## S6 - Presensi
+
+### 1. Generate Sesi Presensi + Token QR (Dosen)
+- **Method:** `POST`
+- **URL:** `{{base_url}}/api/dosen/presensi/matkul/13/generate`
+- **Body (`raw JSON`):**
+  ```json
+  {
+    "tanggal": "2026-05-15"
+  }
+  ```
+
+### 2. Get Daftar Hadir Terbaru (Dosen)
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api/dosen/presensi/matkul/13/daftar-hadir`
+
+### 3. Get Daftar Hadir per Tanggal (Dosen)
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api/dosen/presensi/daftar-hadir/13/2026-05-15`
+
+### 4. Get Semua Tanggal Presensi (Dosen)
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api/dosen/presensi/dates/13`
+
+### 5. Update Status Kehadiran by NIM (Dosen)
+- **Method:** `PUT`
+- **URL:** `{{base_url}}/api/dosen/presensi/nim/2026001/matkul/13/status`
+- **Body (`raw JSON`):**
+  ```json
+  {
+    "statusKehadiran": "Hadir"
+  }
+  ```
+
+### 6. Scan QR Code (Mahasiswa)
+- **Method:** `POST`
+- **URL:** `{{base_url}}/api/presensi/scan`
+- **Body (`raw JSON`):**
+  ```json
+  {
+    "token": "LeMaS-1234567890-abc123",
+    "idMataKuliah": 13
+  }
+  ```
+
+### 7. Get Rekap Presensi Mahasiswa
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api/presensi/mahasiswa/13`
+
+### 8. Get Summary Presensi
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api/presensi/summary/13`
+
+### 9. Get Presensi by Matkul (Mahasiswa)
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api/presensi/mata-kuliah/1`
+
+### 10. Get Rekap Presensi Mahasiswa (Mahasiswa)
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api/presensi/mahasiswa/1`
+
+### 11. Get Summary Presensi (Mahasiswa)
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api/presensi/summary/1`
+
+---
+
+## S7 - Penilaian
+
+### 1. Get Daftar Tugas Unik per Matkul (Dosen)
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api/nilai/tugas-list/13`
+
+### 2. Get List Mahasiswa + Status Kumpul per Tugas
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api/nilai/submissions/tugas/1`
+
+### 3. Simpan Nilai Tugas Individu
+- **Method:** `POST`
+- **URL:** `{{base_url}}/api/nilai/submissions/nilai`
+- **Body (`raw JSON`):**
+  ```json
+  {
+    "nim": "2026001",
+    "idMataKuliah": 13,
+    "nilaiTugas": 88
+  }
+  ```
+
+### 4. Get Nilai per Mata Kuliah
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api/nilai/mata-kuliah/13`
+
+### 5. Get Transkrip Nilai Mahasiswa
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api/nilai/transkrip/mahasiswa`
+
+### 6. Update Nilai (UTS/UAS/Akhir)
+- **Method:** `PATCH`
+- **URL:** `{{base_url}}/api/nilai/1`
+- **Body (`raw JSON`):**
+  ```json
+  {
+    "nilaiUTS": 80,
+    "nilaiUAS": 85,
+    "nilaiAkhir": 83
+  }
+  ```
+
+### 7. Get Hasil Kuis (Mahasiswa)
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api/kuis/1/hasil`
+
+### 8. [POST] /api/nilai (Dosen)
+- **Method:** `POST`
+- **URL:** `{{base_url}}/api/nilai`
+- **Body (`raw JSON`):**
+  ```json
+  {
+    
+  }
+  ```
+
+### 9. [GET] /api/nilai (Dosen)
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api/nilai`
+
+### 10. Get Nilai per Mata Kuliah (Dosen)
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api/nilai/mata-kuliah/1`
+
+### 11. [GET] /api/nilai/mahasiswa/:idMataKuliah (Dosen)
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api/nilai/mahasiswa/1`
+
+### 12. [GET] /api/nilai/submissions/individu/:idMataKuliah (Dosen)
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api/nilai/submissions/individu/1`
+
+---
+
+## S8 - Diskusi (Forum)
+
+### 1. Get Thread Forum per Matkul
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api/forum/mata-kuliah/13`
+
+### 2. Buat Thread Forum Baru
+- **Method:** `POST`
+- **URL:** `{{base_url}}/api/forum/thread`
+- **Body (`raw JSON`):**
+  ```json
+  {
+    "idMataKuliah": 13,
+    "judul": "Diskusi Pertemuan 1",
+    "isiForum": "Silakan bertanya mengenai materi HTML & CSS..."
+  }
+  ```
+
+### 3. Edit Thread Forum
+- **Method:** `PUT`
+- **URL:** `{{base_url}}/api/forum/thread/1`
+- **Body (`raw JSON`):**
+  ```json
+  {
+    "judul": "Diskusi Pertemuan 1 (Update)",
+    "isiForum": "Isi diskusi diperbarui..."
+  }
+  ```
+
+### 4. Hapus Thread Forum
+- **Method:** `DELETE`
+- **URL:** `{{base_url}}/api/forum/thread/1`
+
+### 5. Tambah Komentar
+- **Method:** `POST`
+- **URL:** `{{base_url}}/api/forum/comment`
+- **Body (`raw JSON`):**
   ```json
   {
     "idForum": 1,
-    "isiKomentar": "Saya paham, coba lihat contoh kode ini..."
+    "isiKomentar": "Terima kasih materinya sangat membantu!"
   }
   ```
 
-### 4. Like / Unlike Thread
+### 6. Edit Komentar
+- **Method:** `PUT`
+- **URL:** `{{base_url}}/api/forum/comment/1`
+- **Body (`raw JSON`):**
+  ```json
+  {
+    "isiKomentar": "Komentar diperbarui..."
+  }
+  ```
+
+### 7. Hapus Komentar
+- **Method:** `DELETE`
+- **URL:** `{{base_url}}/api/forum/comment/1`
+
+### 8. Toggle Like Forum
 - **Method:** `POST`
-- **URL:** `http://localhost:3000/api/forum/like`
-- **Tab Body:** `raw` -> `JSON`
+- **URL:** `{{base_url}}/api/forum/like`
+- **Body (`raw JSON`):**
   ```json
   {
     "idForum": 1
   }
   ```
 
-### 5. Edit Forum Diskusi
-- **Method:** `PUT`
-- **URL:** `http://localhost:3000/api/forum/thread/1`
-- **Tab Body:** `raw` -> `JSON`
+### 9. Get Thread Forum per Matkul (Dosen)
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api/forum/mata-kuliah/1`
+
+### 10. Get Thread Forum per Matkul (Mahasiswa)
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api/forum/mata-kuliah/1`
+
+### 11. Upload Gambar Forum (Dosen)
+- **Method:** `POST`
+- **URL:** `{{base_url}}/api/forum/upload-image`
+- **Body (`raw JSON`):**
   ```json
   {
-    "judul": "Judul yang sudah diperbarui",
-    "isiForum": "Isi diskusi yang sudah diperbarui"
+    
   }
   ```
-> ⚠️ Hanya penulis thread yang dapat mengeditnya.
 
-### 6. Hapus Forum Diskusi
-- **Method:** `DELETE`
-- **URL:** `http://localhost:3000/api/forum/thread/1`
-> ⚠️ Hanya penulis thread yang dapat menghapusnya.
-
-### 7. Edit Komentar
-- **Method:** `PUT`
-- **URL:** `http://localhost:3000/api/forum/comment/:idKomentar`
-- **Tab Params:** `idKomentar`: `1` *(ganti dengan ID komentar)*
-- **Tab Body:** `raw` -> `JSON`
+### 12. Upload Gambar Forum (Mahasiswa)
+- **Method:** `POST`
+- **URL:** `{{base_url}}/api/forum/upload-image`
+- **Body (`raw JSON`):**
   ```json
   {
-    "isiKomentar": "Komentar yang sudah diperbarui"
+    
   }
   ```
-> ⚠️ Hanya penulis komentar yang dapat mengeditnya.
 
-### 8. Hapus Komentar
+---
+
+## Endpoint Pendukung (Lainnya)
+
+### 1. [GET] /api (Dosen) (Dosen)
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api`
+
+### 2. [GET] /api (Mahasiswa) (Mahasiswa)
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api`
+
+### 3. [GET] /api/mahasiswa (Dosen) (Dosen)
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api/mahasiswa`
+
+### 4. [GET] /api/mahasiswa (Mahasiswa) (Mahasiswa)
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api/mahasiswa`
+
+### 5. Get Mata Kuliah by ID (Dosen)
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api/mata-kuliah/1`
+
+### 6. Get Mata Kuliah by ID (Mahasiswa)
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api/mata-kuliah/1`
+
+### 7. [POST] /api (Dosen) (Dosen)
+- **Method:** `POST`
+- **URL:** `{{base_url}}/api`
+- **Body (`raw JSON`):**
+  ```json
+  {
+    
+  }
+  ```
+
+### 8. [POST] /api (Mahasiswa) (Mahasiswa)
+- **Method:** `POST`
+- **URL:** `{{base_url}}/api`
+- **Body (`raw JSON`):**
+  ```json
+  {
+    
+  }
+  ```
+
+### 9. [POST] /api/:idForum/reply (Dosen) (Dosen)
+- **Method:** `POST`
+- **URL:** `{{base_url}}/api/1/reply`
+- **Body (`raw JSON`):**
+  ```json
+  {
+    
+  }
+  ```
+
+### 10. [POST] /api/:idForum/reply (Mahasiswa) (Mahasiswa)
+- **Method:** `POST`
+- **URL:** `{{base_url}}/api/1/reply`
+- **Body (`raw JSON`):**
+  ```json
+  {
+    
+  }
+  ```
+
+### 11. [POST] /api/:idForum/like (Dosen) (Dosen)
+- **Method:** `POST`
+- **URL:** `{{base_url}}/api/1/like`
+- **Body (`raw JSON`):**
+  ```json
+  {
+    
+  }
+  ```
+
+### 12. [POST] /api/:idForum/like (Mahasiswa) (Mahasiswa)
+- **Method:** `POST`
+- **URL:** `{{base_url}}/api/1/like`
+- **Body (`raw JSON`):**
+  ```json
+  {
+    
+  }
+  ```
+
+### 13. Ubah Password (Dosen)
+- **Method:** `POST`
+- **URL:** `{{base_url}}/api/profile/change-password`
+- **Body (`raw JSON`):**
+  ```json
+  {
+    
+  }
+  ```
+
+### 14. Ubah Password (Mahasiswa)
+- **Method:** `POST`
+- **URL:** `{{base_url}}/api/profile/change-password`
+- **Body (`raw JSON`):**
+  ```json
+  {
+    
+  }
+  ```
+
+### 15. Hitung Notifikasi Belum Dibaca (Dosen)
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api/notifikasi/unread-count`
+
+### 16. Hitung Notifikasi Belum Dibaca (Mahasiswa)
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api/notifikasi/unread-count`
+
+### 17. [GET] /api/matkul/:idMataKuliah/daftar-hadir (Dosen) (Dosen)
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api/matkul/1/daftar-hadir`
+
+### 18. [GET] /api/matkul/:idMataKuliah/daftar-hadir (Mahasiswa) (Mahasiswa)
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api/matkul/1/daftar-hadir`
+
+### 19. [PUT] /api/:idPresensi/status (Dosen) (Dosen)
+- **Method:** `PUT`
+- **URL:** `{{base_url}}/api/1/status`
+- **Body (`raw JSON`):**
+  ```json
+  {
+    
+  }
+  ```
+
+### 20. [PUT] /api/:idPresensi/status (Mahasiswa) (Mahasiswa)
+- **Method:** `PUT`
+- **URL:** `{{base_url}}/api/1/status`
+- **Body (`raw JSON`):**
+  ```json
+  {
+    
+  }
+  ```
+
+### 21. [PUT] /api/nim/:nim/matkul/:idMataKuliah/status (Dosen) (Dosen)
+- **Method:** `PUT`
+- **URL:** `{{base_url}}/api/nim/1/matkul/1/status`
+- **Body (`raw JSON`):**
+  ```json
+  {
+    
+  }
+  ```
+
+### 22. [PUT] /api/nim/:nim/matkul/:idMataKuliah/status (Mahasiswa) (Mahasiswa)
+- **Method:** `PUT`
+- **URL:** `{{base_url}}/api/nim/1/matkul/1/status`
+- **Body (`raw JSON`):**
+  ```json
+  {
+    
+  }
+  ```
+
+### 23. [POST] /api/matkul/:idMataKuliah/generate (Dosen) (Dosen)
+- **Method:** `POST`
+- **URL:** `{{base_url}}/api/matkul/1/generate`
+- **Body (`raw JSON`):**
+  ```json
+  {
+    
+  }
+  ```
+
+### 24. [POST] /api/matkul/:idMataKuliah/generate (Mahasiswa) (Mahasiswa)
+- **Method:** `POST`
+- **URL:** `{{base_url}}/api/matkul/1/generate`
+- **Body (`raw JSON`):**
+  ```json
+  {
+    
+  }
+  ```
+
+### 25. [GET] /api/daftar-hadir/:idMataKuliah/:tanggal (Dosen) (Dosen)
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api/daftar-hadir/1/1`
+
+### 26. [GET] /api/daftar-hadir/:idMataKuliah/:tanggal (Mahasiswa) (Mahasiswa)
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api/daftar-hadir/1/1`
+
+### 27. [GET] /api/dates/:idMataKuliah (Dosen) (Dosen)
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api/dates/1`
+
+### 28. [GET] /api/dates/:idMataKuliah (Mahasiswa) (Mahasiswa)
+- **Method:** `GET`
+- **URL:** `{{base_url}}/api/dates/1`
+
+### 29. [PUT] /api/:id (Dosen) (Dosen)
+- **Method:** `PUT`
+- **URL:** `{{base_url}}/api/1`
+- **Body (`raw JSON`):**
+  ```json
+  {
+    
+  }
+  ```
+
+### 30. [PUT] /api/:id (Mahasiswa) (Mahasiswa)
+- **Method:** `PUT`
+- **URL:** `{{base_url}}/api/1`
+- **Body (`raw JSON`):**
+  ```json
+  {
+    
+  }
+  ```
+
+### 31. [PATCH] /api/:id (Dosen) (Dosen)
+- **Method:** `PATCH`
+- **URL:** `{{base_url}}/api/1`
+- **Body (`raw JSON`):**
+  ```json
+  {
+    
+  }
+  ```
+
+### 32. [PATCH] /api/:id (Mahasiswa) (Mahasiswa)
+- **Method:** `PATCH`
+- **URL:** `{{base_url}}/api/1`
+- **Body (`raw JSON`):**
+  ```json
+  {
+    
+  }
+  ```
+
+### 33. [DELETE] /api/:id (Dosen) (Dosen)
 - **Method:** `DELETE`
-- **URL:** `http://localhost:3000/api/forum/comment/1`
-- **Tab Params:** `idKomentar`: `1` *(ganti dengan ID komentar)*
-> ⚠️ Hanya penulis komentar yang dapat menghapusnya.
+- **URL:** `{{base_url}}/api/1`
+
+### 34. [DELETE] /api/:id (Mahasiswa) (Mahasiswa)
+- **Method:** `DELETE`
+- **URL:** `{{base_url}}/api/1`
+
+### 35. [POST] /api/grades (Dosen) (Dosen)
+- **Method:** `POST`
+- **URL:** `{{base_url}}/api/grades`
+- **Body (`raw JSON`):**
+  ```json
+  {
+    
+  }
+  ```
+
+### 36. [POST] /api/grades (Mahasiswa) (Mahasiswa)
+- **Method:** `POST`
+- **URL:** `{{base_url}}/api/grades`
+- **Body (`raw JSON`):**
+  ```json
+  {
+    
+  }
+  ```
+
+---
+

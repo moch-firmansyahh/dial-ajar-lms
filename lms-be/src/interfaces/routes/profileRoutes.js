@@ -131,8 +131,13 @@ router.post('/change-password', async (req, res) => {
       return res.status(400).json({ status: 'error', message: 'Password lama dan baru wajib diisi' });
     }
     
-    if (newPassword.length < 6) {
-      return res.status(400).json({ status: 'error', message: 'Password baru minimal 6 karakter' });
+    if (newPassword.length < 8) {
+      return res.status(400).json({ status: 'error', message: 'Password baru minimal 8 karakter' });
+    }
+
+    const specialCharRegex = /[!@#$%^&*(),.?":{}|<>]/;
+    if (!specialCharRegex.test(newPassword)) {
+      return res.status(400).json({ status: 'error', message: 'Password baru harus mengandung minimal 1 karakter unik/simbol (contoh: @, !, #)' });
     }
 
     const user = await prisma.user.findUnique({

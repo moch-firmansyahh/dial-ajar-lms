@@ -36,7 +36,7 @@ export class PrismaPresensiDosenRepository {
 
         if (nomorIndukSet.size > 0) {
             const mahasiswaFromNilai = await prisma.mahasiswa.findMany({
-                where: { nomorInduk: { in: Array.from(nomorIndukSet) } },
+                where: { nim: { in: Array.from(nomorIndukSet) } },
                 include: { user: true }
             });
             mahasiswaFromNilai.forEach(m => mahasiswaMap.set(m.nim, m));

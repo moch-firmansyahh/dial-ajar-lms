@@ -7,11 +7,8 @@ export class DashboardMahasiswaUseCase {
 
   async getDashboardData(nomorInduk, hariDariClient) {
     try {
-      // Map nomorInduk (U001) ke nim asli (2026001) — dilakukan PALING ATAS
-      const mahasiswaData = await this.prisma.mahasiswa.findUnique({
-        where: { nomorInduk: nomorInduk },
-      });
-      const actualNim = mahasiswaData ? mahasiswaData.nim : nomorInduk;
+      // Map nomorInduk ke nim asli (karena sudah refactor, mereka sama)
+      const actualNim = nomorInduk;
 
       // Cari mata kuliah pakai nomorInduk (untuk Nilai) DAN actualNim (untuk Tugas/Presensi/Kelompok)
       const mataKuliah = await this.prisma.mataKuliah.findMany({

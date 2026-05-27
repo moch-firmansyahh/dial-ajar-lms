@@ -1,4 +1,4 @@
-﻿import { prisma } from '../../prismaClient.js';
+import { prisma } from '../../prismaClient.js';
 export class PrismaTugasDosenRepository {
 async findAllByDosen(idMataKuliahList) {
     // Mengambil tugas dan kuis berdasarkan mata kuliah yang diajar dosen
@@ -65,9 +65,9 @@ async createTugas(data) {
         if (nims.length > 0) {
             const mhs = await prisma.mahasiswa.findMany({
                 where: { nim: { in: nims } },
-                select: { nomorInduk: true }
+                select: { nim: true }
             });
-            mhs.forEach(m => nomorIndukSet.add(m.nomorInduk));
+            mhs.forEach(m => nomorIndukSet.add(m.nim));
         }
     } catch (e) {}
 
@@ -81,9 +81,9 @@ async createTugas(data) {
         if (nims.length > 0) {
             const mhs = await prisma.mahasiswa.findMany({
                 where: { nim: { in: nims } },
-                select: { nomorInduk: true }
+                select: { nim: true }
             });
-            mhs.forEach(m => nomorIndukSet.add(m.nomorInduk));
+            mhs.forEach(m => nomorIndukSet.add(m.nim));
         }
     } catch (e) {}
 
@@ -103,9 +103,9 @@ async createTugas(data) {
             if (nims.length > 0) {
                 const mhs = await prisma.mahasiswa.findMany({
                     where: { nim: { in: nims } },
-                    select: { nomorInduk: true }
+                    select: { nim: true }
                 });
-                mhs.forEach(m => nomorIndukSet.add(m.nomorInduk));
+                mhs.forEach(m => nomorIndukSet.add(m.nim));
             }
         }
     } catch (e) {}
@@ -115,7 +115,7 @@ async createTugas(data) {
     const relatedNomorInduk = Array.from(nomorIndukSet);
     if (relatedNomorInduk.length > 0) {
         const mahasiswas = await prisma.mahasiswa.findMany({
-            where: { nomorInduk: { in: relatedNomorInduk } },
+            where: { nim: { in: relatedNomorInduk } },
             select: { nim: true }
         });
         mahasiswaNIMs = mahasiswas.map(m => m.nim);
@@ -229,9 +229,9 @@ async createKuis(data, quizData) {
             if (nims.length > 0) {
                 const mhs = await prisma.mahasiswa.findMany({
                     where: { nim: { in: nims } },
-                    select: { nomorInduk: true }
+                    select: { nim: true }
                 });
-                mhs.forEach(m => nomorIndukSet.add(m.nomorInduk));
+                mhs.forEach(m => nomorIndukSet.add(m.nim));
             }
         } catch (e) {}
 
@@ -245,9 +245,9 @@ async createKuis(data, quizData) {
             if (nims.length > 0) {
                 const mhs = await prisma.mahasiswa.findMany({
                     where: { nim: { in: nims } },
-                    select: { nomorInduk: true }
+                    select: { nim: true }
                 });
-                mhs.forEach(m => nomorIndukSet.add(m.nomorInduk));
+                mhs.forEach(m => nomorIndukSet.add(m.nim));
             }
         } catch (e) {}
 
@@ -255,7 +255,7 @@ async createKuis(data, quizData) {
         const relatedNomorInduk = Array.from(nomorIndukSet);
         if (relatedNomorInduk.length > 0) {
             const mahasiswas = await prisma.mahasiswa.findMany({
-                where: { nomorInduk: { in: relatedNomorInduk } },
+                where: { nim: { in: relatedNomorInduk } },
                 select: { nim: true }
             });
             const relatedNIMs = mahasiswas.map(m => m.nim);

@@ -34,7 +34,7 @@ export default function DosenProfile({ onNavigate, onLogout }) {
   });
   const [profileData, setProfileData] = useState({
     nama: storedUser.nama || "Dosen",
-    nidn: storedUser.nomorInduk || "-",
+    nidn: storedUser.dosen?.nidn || "-",
   });
   const [mataKuliahList, setMataKuliahList] = useState([]);
   const [stats, setStats] = useState({
@@ -69,7 +69,7 @@ export default function DosenProfile({ onNavigate, onLogout }) {
           const d = res.data;
           setProfileData({
             nama: d.nama || storedUser.nama || "Dosen",
-            nidn: d.nidn || storedUser.nomorInduk || "-",
+            nidn: d.nidn || storedUser.dosen?.nidn || "-",
           });
           setFormData({
             email: d.email || storedUser.email || "",

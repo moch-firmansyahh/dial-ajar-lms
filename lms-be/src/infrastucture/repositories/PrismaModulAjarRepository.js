@@ -1,4 +1,4 @@
-﻿import { prisma } from "../../prismaClient.js";
+import { prisma } from "../../prismaClient.js";
 export class PrismaModulAjarRepository {
 async findAllByDosen(filterMatkul, filterTipe, nipDosen) {
     const where = {};
@@ -43,7 +43,7 @@ async create(data) {
         const relatedNomorInduk = [...new Set(relatedData.map(r => r.nomorInduk))];
         if (relatedNomorInduk.length > 0) {
             const mahasiswas = await prisma.mahasiswa.findMany({
-                where: { nomorInduk: { in: relatedNomorInduk } },
+                where: { nim: { in: relatedNomorInduk } },
                 select: { nim: true }
             });
             const relatedNIMs = mahasiswas.map(m => m.nim);

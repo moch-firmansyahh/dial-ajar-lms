@@ -354,7 +354,16 @@ export default function Nilai({ onNavigate, onLogout }) {
               </span>
               <div>
                 <p className="nlai-sum-val">{ipkKumulatif}</p>
-                <p className="nlai-sum-lbl">{"Rata-Rata Nilai Siswa"}</p>
+                <p className="nlai-sum-lbl">{"IPK Kumulatif"}</p>
+              </div>
+            </div>
+            <div className="nlai-sum-card nlai-sum-card--teal">
+              <span className="material-symbols-outlined nlai-sum-icon">
+                school
+              </span>
+              <div>
+                <p className="nlai-sum-val">{totalSksSelesai}</p>
+                <p className="nlai-sum-lbl">SKS Lulus</p>
               </div>
             </div>
             <div className="nlai-sum-card nlai-sum-card--amber">
@@ -364,6 +373,15 @@ export default function Nilai({ onNavigate, onLogout }) {
               <div>
                 <p className="nlai-sum-val">{semesters.length}</p>
                 <p className="nlai-sum-lbl">{"Semester Ditempuh"}</p>
+              </div>
+            </div>
+            <div className="nlai-sum-card nlai-sum-card--purple">
+              <span className="material-symbols-outlined nlai-sum-icon">
+                workspace_premium
+              </span>
+              <div>
+                <p className="nlai-sum-val">Cum Laude</p>
+                <p className="nlai-sum-lbl">Predikat Target</p>
               </div>
             </div>
           </div>
@@ -504,6 +522,33 @@ export default function Nilai({ onNavigate, onLogout }) {
                 {"info"}
               </span>
               <p>{"Bobot Nilai: Tugas 30% • UTS 30% • UAS 40%"}</p>
+            </div>
+          </div>
+
+          {/* IPK History Chart */}
+          <div className="nlai-chart-card">
+            <h3 className="nlai-chart-title">Perkembangan IP Per Semester</h3>
+            <div className="nlai-chart-bars">
+              {semesters.filter((s) => s.ipk !== null).map((s, i) => {
+                const pct = (s.ipk / 4.0) * 100;
+                return (
+                  <div key={i} className="nlai-chart-col">
+                    <div className="nlai-bar-wrap">
+                      <span className="nlai-bar-val">{s.ipk.toFixed(2)}</span>
+                      <div className="nlai-bar-track">
+                        <div
+                          className="nlai-bar-fill"
+                          style={{ height: `${pct}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                    <p className="nlai-bar-lbl">Sem {i + 1}</p>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="nlai-chart-legend">
+              <span>Skala 4.0 — IP ≥ 3.51 = Cum Laude</span>
             </div>
           </div>
 

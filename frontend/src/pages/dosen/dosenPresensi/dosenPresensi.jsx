@@ -41,7 +41,7 @@ export default function DosenPresensi({ onNavigate, onLogout }) {
   const [students, setStudents] = useState(INITIAL_STUDENTS);
   const [mataKuliahList, setMataKuliahList] = useState([]);
   const [selectedMatkul, setSelectedMatkul] = useState({ id: null, name: "Memuat...", room: "-", time: "-", jadwal: "" });
-  const [sessionActive, setSessionActive]   = useState(true);
+  const [sessionActive, setSessionActive]   = useState(false);
   const [showMatkul, setShowMatkul]         = useState(false);
   const [showJadwal, setShowJadwal]         = useState(false);
   const [selectedDays, setSelectedDays]     = useState([]);
@@ -342,31 +342,10 @@ export default function DosenPresensi({ onNavigate, onLogout }) {
                         setAvailableDates(prev => [...new Set([...prev, tempDate])].sort().reverse());
                         setSelectedDateFilter(tempDate);
                         setShowJadwal(false);
-                        setSessionActive(true);
-                        try {
-                          const res = await apiClient.post(`/api/dosen/presensi/matkul/${selectedMatkul.id}/generate`, { tanggal: tempDate });
-                          if (res.token) {
-                            setToken(res.token);
-                            setTimeLeft(QR_TTL);
-                            setQrLoaded(false);
-                          }
-                          showToast(`Sesi dibuat untuk tanggal ${new Date(tempDate).toLocaleDateString('id-ID')}`);
-                          // Fetch dengan tanggal yang baru dipilih
-                          setTimeout(() => fetchStudents(tempDate), 500);
-                        } catch (err) {
-                          if (err.message.includes('sudah ada')) {
-                            // Generate new token for existing session
-                            const newToken = `LeMaS-${Date.now()}-${Math.random().toString(36).substring(7)}`;
-                            setToken(newToken);
-                            setTimeLeft(QR_TTL);
-                            setQrLoaded(false);
-                            showToast(`Sesi tanggal ${new Date(tempDate).toLocaleDateString('id-ID')} sudah ada - Token baru dibuat`);
-                            // Fetch dengan tanggal yang dipilih
-                            setTimeout(() => fetchStudents(tempDate), 500);
-                          } else {
-                            showToast(err.message || "Gagal membuat sesi", "error");
-                          }
-                        }
+                        
+                        showToast(`Tanggal ${new Date(tempDate).toLocaleDateString('id-ID')} dipilih. Silakan klik Buka Sesi.`);
+                        // Fetch dengan tanggal yang baru dipilih
+                        setTimeout(() => fetchStudents(tempDate), 500);
                       } else {
                         setSelectedDateFilter("semua");
                         setShowJadwal(false);
@@ -393,8 +372,12 @@ export default function DosenPresensi({ onNavigate, onLogout }) {
                     showToast("Pilih mata kuliah terlebih dahulu", "error");
                     return;
                   }
+                  
+                  // Gunakan tanggal dari filter, atau hari ini jika filter adalah "semua"
+                  const targetDate = (selectedDateFilter && selectedDateFilter !== "semua") ? selectedDateFilter : new Date().toISOString().split('T')[0];
+
                   try {
-                    const res = await apiClient.post(`/api/dosen/presensi/matkul/${selectedMatkul.id}/generate`);
+                    const res = await apiClient.post(`/api/dosen/presensi/matkul/${selectedMatkul.id}/generate`, { tanggal: targetDate });
                     if (res.token) {
                       setToken(res.token);
                       setTimeLeft(QR_TTL);
@@ -402,28 +385,26 @@ export default function DosenPresensi({ onNavigate, onLogout }) {
                     } else {
                     }
                     setSessionActive(true);
-                    // Tambahkan tanggal hari ini ke filter
-                    const today = new Date().toISOString().split('T')[0];
-                    setAvailableDates(prev => [...new Set([...prev, today])].sort().reverse());
-                    setSelectedDateFilter(today);
-                    // Fetch dengan tanggal hari ini
-                    setTimeout(() => fetchStudents(today), 500);
+                    
+                    setAvailableDates(prev => [...new Set([...prev, targetDate])].sort().reverse());
+                    setSelectedDateFilter(targetDate);
+                    // Fetch dengan tanggal yang dipilih
+                    setTimeout(() => fetchStudents(targetDate), 500);
                     showToast("Sesi presensi berhasil dibuat!");
                   } catch (error) {
-                    if (error.message.includes('sudah ada')) {
+                    if (error.message && error.message.includes('sudah ada')) {
                       setSessionActive(true);
                       // Generate new token for existing session
                       const newToken = `LeMaS-${Date.now()}-${Math.random().toString(36).substring(7)}`;
                       setToken(newToken);
                       setTimeLeft(QR_TTL);
                       setQrLoaded(false);
-                      // Tambahkan tanggal hari ini ke filter
-                      const today = new Date().toISOString().split('T')[0];
-                      setAvailableDates(prev => [...new Set([...prev, today])].sort().reverse());
-                      setSelectedDateFilter(today);
-                      showToast("Sesi hari ini sudah ada - Token baru dibuat");
-                      // Fetch dengan tanggal hari ini
-                      setTimeout(() => fetchStudents(today), 500);
+                      
+                      setAvailableDates(prev => [...new Set([...prev, targetDate])].sort().reverse());
+                      setSelectedDateFilter(targetDate);
+                      showToast("Sesi untuk tanggal ini sudah ada - Token baru dibuat");
+                      // Fetch dengan tanggal target
+                      setTimeout(() => fetchStudents(targetDate), 500);
                     } else {
                       showToast(error.message || "Gagal membuat sesi", "error");
                     }

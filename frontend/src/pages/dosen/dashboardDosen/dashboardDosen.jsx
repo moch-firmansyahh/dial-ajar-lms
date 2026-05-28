@@ -121,7 +121,7 @@ export default function DashboardDosen({ onNavigate, onLogout }) {
           </div>
 
           {/* Stats Grid - 3 Card Utama */}
-          <div className="dd-stats-grid" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
+          <div className="dd-stats-grid">
             <div className="dd-stat-card">
               <div className="dd-stat-top">
                 <div className="dd-stat-icon dd-icon--blue">

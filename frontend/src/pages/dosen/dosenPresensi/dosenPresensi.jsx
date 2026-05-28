@@ -326,7 +326,7 @@ export default function DosenPresensi({ onNavigate, onLogout }) {
                 <div className="dp-jadwal-popup" onClick={(e) => e.stopPropagation()}>
                   <div className="dp-jadwal-header">
                     <span>Pilih Tanggal Presensi</span>
-                    <button onClick={() => setShowJadwal(false)}>Ã—</button>
+                    <button onClick={() => setShowJadwal(false)}>&times;</button>
                   </div>
                   <input 
                     type="date" 

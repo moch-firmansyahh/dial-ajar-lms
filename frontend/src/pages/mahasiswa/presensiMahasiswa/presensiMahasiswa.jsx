@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 import "../../../components/shared.css";
 import "./presensiMahasiswa.css";
@@ -482,7 +482,7 @@ export default function PresensiMahasiswa({ onNavigate, onLogout }) {
                     <div key={i} className="pmh-history-item">
                       <div className="pmh-history-left">
                         <p className="pmh-history-course">{h.code} - {h.name}</p>
-                        <p className="pmh-history-date">{h.date} Â· {h.time}</p>
+                        <p className="pmh-history-date">{h.date} • {h.time}</p>
                       </div>
                       <StatusBadge status={h.status} />
                     </div>

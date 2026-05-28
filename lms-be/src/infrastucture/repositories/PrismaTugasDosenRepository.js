@@ -8,7 +8,7 @@ async findAllByDosen(idMataKuliahList) {
         orderBy: { deadlineTugas: 'asc' }
     });
 
-    // Deduplicate tugas â€” grup berdasarkan judul + idMataKuliah + deadline
+    // Deduplicate tugas - grup berdasarkan judul + idMataKuliah + deadline
     // Dosen seharusnya melihat 1 baris per "tugas", bukan 1 baris per mahasiswa
     const tugasMap = new Map();
     for (const t of allTugas) {

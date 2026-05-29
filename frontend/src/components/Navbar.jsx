@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import "./shared.css";
 import "../pages/mahasiswa/dashboard/notifikasi.css";
 import { apiClient } from "../utils/apiClient";
@@ -152,62 +152,6 @@ export default function Navbar({ role, onOpenSidebar, onNavigate }) {
         <button className="navbar__hamburger" onClick={handleHamburgerClick}>
           <span className="material-symbols-outlined">menu</span>
         </button>
-        {!isDosen && <div className="navbar__search" style={{ position: "relative" }}>
-          <span className="material-symbols-outlined navbar__search-icon">search</span>
-          <input
-            className="navbar__search-input"
-            placeholder={placeholder}
-            type="text"
-            value={searchQuery}
-            onChange={handleSearchChange}
-          />
-          {isSearchOpen && (
-            <div className="search-dropdown" style={{
-              position: "absolute",
-              top: "calc(100% + 0.5rem)",
-              left: 0,
-              width: "100%",
-              minWidth: "300px",
-              backgroundColor: "var(--color-surface)",
-              boxShadow: "var(--shadow-md)",
-              borderRadius: "var(--radius-md)",
-              border: "1px solid var(--color-border)",
-              zIndex: 50,
-              maxHeight: "350px",
-              overflowY: "auto",
-              display: "flex",
-              flexDirection: "column"
-            }}>
-              {searchResults.length > 0 ? (
-                searchResults.map(res => (
-                  <div 
-                    key={res.id} 
-                    className="search-item" 
-                    onClick={() => handleResultClick(res)}
-                    style={{
-                      padding: "0.75rem 1rem",
-                      cursor: "pointer",
-                      borderBottom: "1px solid var(--color-border)",
-                      transition: "background-color 0.2s"
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "var(--slate-50)"}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
-                  >
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.25rem" }}>
-                      <span style={{ fontWeight: 600, fontSize: "0.875rem", color: "var(--blue-900)" }}>{res.title}</span>
-                      <span style={{ fontSize: "0.625rem", padding: "0.15rem 0.5rem", borderRadius: "1rem", backgroundColor: "var(--blue-50)", color: "var(--blue-700)", fontWeight: 700, textTransform: "uppercase" }}>{res.type}</span>
-                    </div>
-                    <p style={{ fontSize: "0.75rem", color: "var(--slate-500)", margin: 0 }}>{res.desc}</p>
-                  </div>
-                ))
-              ) : (
-                <div style={{ padding: "1rem", textAlign: "center", color: "var(--slate-500)", fontSize: "0.875rem" }}>
-                  Tidak ada hasil untuk "{searchQuery}"
-                </div>
-              )}
-            </div>
-          )}
-        </div>}
       </div>
       <div className="navbar__right">
         <button className="navbar__bell" onClick={() => setNotifOpen(!notifOpen)} style={{ position: "relative" }}>

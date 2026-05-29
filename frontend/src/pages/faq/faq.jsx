@@ -75,6 +75,27 @@ const FAQ_DATA = {
         ),
       },
       {
+        icon: "download",
+        question: "Bagaimana cara mengakses dan mengunduh materi perkuliahan?",
+        answer: (
+          <>
+            <ol>
+              <li>Masuk ke menu <strong>Mata Kuliah</strong> di sidebar.</li>
+              <li>Pilih mata kuliah yang ingin Anda pelajari.</li>
+              <li>Daftar materi akan tampil di panel sebelah kanan. Pilih materi yang diinginkan.</li>
+              <li>
+                Klik tombol aksi yang sesuai pada materi aktif:
+                <ul>
+                  <li><strong>Unduh Modul</strong> untuk menyimpan file PDF/Presentasi/Dokumen ke perangkat Anda.</li>
+                  <li><strong>Buka Link</strong> untuk membuka tautan materi eksternal di tab baru.</li>
+                  <li><strong>Putar Video</strong> untuk memutar video pembelajaran langsung di aplikasi.</li>
+                </ul>
+              </li>
+            </ol>
+          </>
+        ),
+      },
+      {
         icon: "qr_code_scanner",
         question: "Bagaimana cara melakukan presensi dengan QR Code?",
         answer: (
@@ -155,8 +176,9 @@ const FAQ_DATA = {
               <li>Masuk ke menu <strong>Materi</strong>.</li>
               <li>Pilih mata kuliah yang ingin ditambahkan materi.</li>
               <li>Klik tombol <strong>Tambah Materi</strong>.</li>
-              <li>Isi judul, deskripsi, dan unggah file (PDF, PPT, dll).</li>
-              <li>Klik <strong>Simpan</strong>.</li>
+              <li>Pilih <strong>Tipe Materi</strong> (PDF, Video, Link, Presentasi, Dokumen, atau Spreadsheet).</li>
+              <li>Isi judul materi, deskripsi (opsional), lalu unggah file materi Anda (untuk tipe dokumen/file) atau masukkan URL (untuk tipe Link/Video).</li>
+              <li>Klik <strong>Simpan</strong>. Seluruh materi bertipe dokumen otomatis dapat diunduh oleh mahasiswa.</li>
             </ol>
           </>
         ),

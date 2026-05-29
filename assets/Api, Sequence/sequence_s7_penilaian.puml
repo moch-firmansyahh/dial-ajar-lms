@@ -1,28 +1,12 @@
 @startuml S7 - Penilaian
+hide footbox
 
+skinparam monochrome true
+skinparam Padding 20
+skinparam ParticipantPadding 40
 skinparam sequenceArrowThickness 2
 skinparam roundcorner 10
-skinparam maxmessagesize 100
-skinparam backgroundColor #FFFFFF
-skinparam ArrowColor #000000
-skinparam BorderColor #000000
-skinparam ParticipantBackgroundColor #FFFFFF
-skinparam ParticipantBorderColor #000000
-skinparam ParticipantFontColor #000000
-skinparam ActorBackgroundColor #FFFFFF
-skinparam ActorBorderColor #000000
-skinparam ActorFontColor #000000
-skinparam DatabaseBackgroundColor #FFFFFF
-skinparam DatabaseBorderColor #000000
-skinparam DatabaseFontColor #000000
-skinparam BoxBackgroundColor #FFFFFF
-skinparam BoxBorderColor #000000
-skinparam BoxFontColor #000000
-skinparam LifeLineBorderColor #000000
-skinparam LifeLineBackgroundColor #FFFFFF
-skinparam NoteBackgroundColor #FFFFFF
-skinparam NoteBorderColor #000000
-skinparam NoteFontColor #000000
+skinparam maxmessagesize 150
 
 actor Dosen
 actor Mahasiswa

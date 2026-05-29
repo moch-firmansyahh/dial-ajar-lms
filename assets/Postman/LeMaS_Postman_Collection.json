@@ -1,6 +1,6 @@
 {
   "info": {
-    "name": "LeMaS API Collection",
+    "name": "LeMaS API Collection v2",
     "description": "API Collection LeMaS - Learning Management System, diurutkan per Sequence Diagram (S9→S2→S1→S3→S5→S4→S6→S7→S8)",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
@@ -21,14 +21,15 @@
       "name": "S9 - Login & Auth",
       "item": [
         {
-          "name": "Login Mahasiswa",
+          "name": "Login Dosen",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
                   "const res = pm.response.json();",
-                  "if (res.token) { pm.collectionVariables.set('token', res.token); }"
+                  "if (res.data && res.data.token) { pm.collectionVariables.set('token', res.data.token); }",
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });"
                 ],
                 "type": "text/javascript"
               }
@@ -44,7 +45,47 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nomorInduk\": \"U001\",\n  \"password\": \"password123\"\n}"
+              "raw": "{\n  \"nomorInduk\": \"2025001\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Login Mahasiswa",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.token) { pm.collectionVariables.set('token', res.data.token); }",
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nomorInduk\": \"2026001\",\n  \"password\": \"password123\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/auth/login",
@@ -176,7 +217,20 @@
                 "kelompok"
               ]
             }
-          }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.idKelompok) { pm.collectionVariables.set('created_kelompok_id', res.data.idKelompok); }",
+                  "pm.test('Kelompok berhasil dibuat', function () { pm.response.to.have.status(201); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
         },
         {
           "name": "Tambah Anggota Kelompok",
@@ -194,17 +248,17 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nim\": \"2026001\"\n}"
+              "raw": "{\n  \"nim\": \"2026002\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/api/kelompok/1/members",
+              "raw": "{{base_url}}/api/kelompok/{{created_kelompok_id}}/members",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
                 "kelompok",
-                "1",
+                "{{created_kelompok_id}}",
                 "members"
               ]
             }
@@ -221,16 +275,16 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/kelompok/1/members/2026001",
+              "raw": "{{base_url}}/api/kelompok/{{created_kelompok_id}}/members/2026002",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
                 "kelompok",
-                "1",
+                "{{created_kelompok_id}}",
                 "members",
-                "2026001"
+                "2026002"
               ]
             }
           }
@@ -251,17 +305,17 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"grades\": {\n    \"2026001\": \"85\",\n    \"2026002\": \"90\"\n  }\n}"
+              "raw": "[\n  {\n    \"nim\": \"2026002\",\n    \"nilaiTugas\": 90\n  }\n]"
             },
             "url": {
-              "raw": "{{base_url}}/api/kelompok/1/grades",
+              "raw": "{{base_url}}/api/kelompok/{{created_kelompok_id}}/grades",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
                 "kelompok",
-                "1",
+                "{{created_kelompok_id}}",
                 "grades"
               ]
             }
@@ -526,31 +580,20 @@
                 "tugas"
               ]
             }
-          }
-        },
-        {
-          "name": "Hapus Tugas",
-          "request": {
-            "method": "DELETE",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.idTugas) { pm.collectionVariables.set('created_task_id', res.data.idTugas); }",
+                  "pm.test('Tugas berhasil dibuat', function () { pm.response.to.have.status(201); });"
+                ],
+                "type": "text/javascript"
               }
-            ],
-            "url": {
-              "raw": "{{base_url}}/api/dosen/tugas/1",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "dosen",
-                "tugas",
-                "1"
-              ]
             }
-          }
+          ]
         },
         {
           "name": "Get Daftar Tugas",
@@ -585,14 +628,14 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/tugas/1",
+              "raw": "{{base_url}}/api/tugas/{{created_task_id}}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
                 "tugas",
-                "1"
+                "{{created_task_id}}"
               ]
             }
           }
@@ -630,14 +673,14 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/kuis/1/detail",
+              "raw": "{{base_url}}/api/kuis/{{created_kuis_id}}/detail",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
                 "kuis",
-                "1",
+                "{{created_kuis_id}}",
                 "detail"
               ]
             }
@@ -654,14 +697,14 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/kuis/1/soal",
+              "raw": "{{base_url}}/api/kuis/{{created_kuis_id}}/soal",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
                 "kuis",
-                "1",
+                "{{created_kuis_id}}",
                 "soal"
               ]
             }
@@ -695,6 +738,43 @@
               "mode": "raw",
               "raw": "{\n  \n}"
             }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.idKuis) { pm.collectionVariables.set('created_kuis_id', res.data.idKuis); }",
+                  "pm.test('Kuis berhasil dibuat', function () { pm.response.to.have.status(201); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Hapus Tugas",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/dosen/tugas/{{created_task_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dosen",
+                "tugas",
+                "{{created_task_id}}"
+              ]
+            }
           }
         },
         {
@@ -708,14 +788,14 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/kuis/1",
+              "raw": "{{base_url}}/api/kuis/{{created_kuis_id}}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
                 "kuis",
-                "1"
+                "{{created_kuis_id}}"
               ]
             }
           }
@@ -751,7 +831,7 @@
               ]
             },
             "url": {
-              "raw": "{{base_url}}/api/dosen/tugas/1",
+              "raw": "{{base_url}}/api/dosen/tugas/241",
               "host": [
                 "{{base_url}}"
               ],
@@ -759,7 +839,7 @@
                 "api",
                 "dosen",
                 "tugas",
-                "1"
+                "241"
               ]
             }
           }
@@ -775,14 +855,14 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/tugas/1",
+              "raw": "{{base_url}}/api/tugas/241",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
                 "tugas",
-                "1"
+                "241"
               ]
             }
           }
@@ -798,7 +878,7 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/kuis/mata-kuliah/1",
+              "raw": "{{base_url}}/api/kuis/mata-kuliah/13",
               "host": [
                 "{{base_url}}"
               ],
@@ -806,7 +886,7 @@
                 "api",
                 "kuis",
                 "mata-kuliah",
-                "1"
+                "13"
               ]
             }
           }
@@ -826,14 +906,14 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/kuis/1",
+              "raw": "{{base_url}}/api/kuis/13",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
                 "kuis",
-                "1"
+                "13"
               ]
             },
             "body": {
@@ -873,18 +953,31 @@
               ]
             },
             "url": {
-              "raw": "{{base_url}}/api/tugas/1/submit",
+              "raw": "{{base_url}}/api/tugas/241/submit",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
                 "tugas",
-                "1",
+                "241",
                 "submit"
               ]
             }
-          }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.idPengumpulan) { pm.collectionVariables.set('created_submission_id', res.data.idPengumpulan); }",
+                  "pm.test('Status code is 201', function () { pm.response.to.have.status(201); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
         },
         {
           "name": "Cek Status Pengumpulan",
@@ -897,14 +990,14 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/tugas/1/submission",
+              "raw": "{{base_url}}/api/tugas/241/submission?nim=2026001",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
                 "tugas",
-                "1",
+                "241",
                 "submission"
               ]
             }
@@ -921,7 +1014,7 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/tugas/submission/1",
+              "raw": "{{base_url}}/api/tugas/submission/{{created_submission_id}}",
               "host": [
                 "{{base_url}}"
               ],
@@ -929,7 +1022,7 @@
                 "api",
                 "tugas",
                 "submission",
-                "1"
+                "{{created_submission_id}}"
               ]
             }
           }
@@ -949,14 +1042,14 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/kuis/1/submit",
+              "raw": "{{base_url}}/api/kuis/13/submit",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
                 "kuis",
-                "1",
+                "13",
                 "submit"
               ]
             },
@@ -977,14 +1070,14 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/kuis/1/status",
+              "raw": "{{base_url}}/api/kuis/13/status",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
                 "kuis",
-                "1",
+                "13",
                 "status"
               ]
             }
@@ -1038,14 +1131,14 @@
               "raw": "{}"
             },
             "url": {
-              "raw": "{{base_url}}/api/materi/1/access",
+              "raw": "{{base_url}}/api/materi/25/access",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
                 "materi",
-                "1",
+                "25",
                 "access"
               ]
             }
@@ -1087,13 +1180,14 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/dashboard",
+              "raw": "{{base_url}}/api/dashboard/mahasiswa",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
-                "dashboard"
+                "dashboard",
+                "mahasiswa"
               ]
             }
           }
@@ -1220,7 +1314,20 @@
               "mode": "raw",
               "raw": "{\n  \n}"
             }
-          }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.idModulAjar) { pm.collectionVariables.set('created_modul_id', res.data.idModulAjar); }",
+                  "pm.test('Modul Ajar berhasil dibuat', function () { pm.response.to.have.status(201); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
         },
         {
           "name": "Update Modul Ajar",
@@ -1237,14 +1344,14 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/modul-ajar/1",
+              "raw": "{{base_url}}/api/modul-ajar/{{created_modul_id}}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
                 "modul-ajar",
-                "1"
+                "{{created_modul_id}}"
               ]
             },
             "body": {
@@ -1264,14 +1371,14 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/modul-ajar/1",
+              "raw": "{{base_url}}/api/modul-ajar/{{created_modul_id}}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
                 "modul-ajar",
-                "1"
+                "{{created_modul_id}}"
               ]
             }
           }
@@ -1755,14 +1862,14 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/kuis/1/hasil",
+              "raw": "{{base_url}}/api/kuis/13/hasil",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
                 "kuis",
-                "1",
+                "13",
                 "hasil"
               ]
             }

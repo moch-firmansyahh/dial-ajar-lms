@@ -1,19 +1,16 @@
 @startuml ERD
 
-!define primary_key(x) <b><color:black><&key></color> x</b>
-!define foreign_key(x) <color:black><&key></color> x
-!define column(x) <color:black><&media-record></color> x
-!define table(x) entity x << (T, white) >>
+!define primary_key(x) x
+!define foreign_key(x) x
+!define column(x) x
+!define table(x) entity x
 
 hide circle
+skinparam monochrome true
+skinparam shadowing false
 skinparam linetype ortho
 skinparam nodesep 60
 skinparam ranksep 80
-skinparam EntityBackgroundColor white
-skinparam EntityBorderColor black
-skinparam ArrowColor black
-skinparam EntityAttributeFontName Arial
-skinparam DefaultFontColor black
 
 title ERD - Learning Management System (LeMas)
 

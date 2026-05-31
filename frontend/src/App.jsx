@@ -1,221 +1,107 @@
-import { useState } from "react";
-import Login from "./pages/auth/login/login";
-import Dashboard from "./pages/mahasiswa/dashboard/dashboard";
-import DashboardDosen from "./pages/dosen/dashboardDosen/dashboardDosen";
-import DaftarMataKuliah from "./pages/mahasiswa/daftarMataKuliah/daftarMataKuliah";
-import MataKuliah from "./pages/mahasiswa/mataKuliah/mataKuliah";
-import DaftarTugas from "./pages/mahasiswa/daftarTugas/daftarTugas";
-import Kuis from "./pages/mahasiswa/kuis/kuis";
-import HasilKuis from "./pages/mahasiswa/kuis/hasilKuis";
-import PresensiMahasiswa from "./pages/mahasiswa/presensiMahasiswa/presensiMahasiswa";
-import ForumDiskusi from "./pages/mahasiswa/forumDiskusi/forumDiskusi";
-import Profile from "./pages/mahasiswa/profile/profile";
-import Nilai from "./pages/mahasiswa/nilai/nilai";
-import PengumpulanTugas from "./pages/mahasiswa/pengumpulanTugas/pengumpulanTugas";
+import React, { useEffect } from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { useAuthStore } from './store/authStore';
 
-// Dosen-specific pages
-import DosenPresensi from "./pages/dosen/dosenPresensi/dosenPresensi";
-import DosenTugas from "./pages/dosen/dosenTugas/dosenTugas";
-import DosenKelompok from "./pages/dosen/dosenKelompok/dosenKelompok";
-import DosenNilaiIndividu from "./pages/dosen/dosenNilaiIndividu/dosenNilaiIndividu";
-import DosenForum from "./pages/dosen/dosenForum/dosenForum";
-import DosenProfile from "./pages/dosen/dosenProfile/dosenProfile";
-import DosenMateri from "./pages/dosen/dosenMateri/dosenMateri";
-import FAQ from "./pages/faq/faq";
-import PageTransitionLoader from "./components/PageTransitionLoader";
+import MainLayout from './components/layout/MainLayout';
+import ProtectedRoute from './components/shared/ProtectedRoute';
 
-// Event listener global untuk mendeteksi F5 atau Ctrl+R
-window.addEventListener("keydown", (e) => {
-  if (e.key === "F5" || (e.ctrlKey && (e.key === "r" || e.key === "R"))) {
-    sessionStorage.setItem("isF5", "true");
-  }
-});
+import Login from './pages/Login';
+
+// Dosen
+import DashboardDosen from './pages/dosen/Dashboard';
+import MataKuliahForm from './pages/dosen/MataKuliahForm';
+import MateriUpload from './pages/dosen/MateriUpload';
+import TugasForm from './pages/dosen/TugasForm';
+import TugasNilai from './pages/dosen/TugasNilai';
+import NilaiRekap from './pages/dosen/NilaiRekap';
+
+// Mahasiswa
+import DashboardMahasiswa from './pages/mahasiswa/Dashboard';
+import TugasSubmit from './pages/mahasiswa/TugasSubmit';
+import KuisKerjakan from './pages/mahasiswa/KuisKerjakan';
+import KuisHasil from './pages/mahasiswa/KuisHasil';
+import NilaiSaya from './pages/mahasiswa/NilaiSaya';
+
+// Shared
+import Kalender from './pages/shared/Kalender';
+import Profile from './pages/shared/Profile';
+import MataKuliahList from './pages/shared/MataKuliahList';
+import MataKuliahDetail from './pages/shared/MataKuliahDetail';
+import CourseSelector from './pages/shared/CourseSelector';
+import MateriList from './pages/shared/MateriList';
+import TugasList from './pages/shared/TugasList';
+import TugasDetail from './pages/shared/TugasDetail';
+import ForumList from './pages/shared/ForumList';
+import ForumDetail from './pages/shared/ForumDetail';
+import ForumForm from './pages/shared/ForumForm';
 
 function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(() => {
-    if (sessionStorage.getItem("isF5") === "true") {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      sessionStorage.removeItem("currentPage");
-      sessionStorage.removeItem("isF5"); // Hapus flag setelah digunakan
-      return false;
-    }
-    return localStorage.getItem("token") !== null;
-  });
-  const [userRole, setUserRole] = useState(() => {
-    const savedUser = localStorage.getItem("user");
-    if (savedUser) {
-      try {
-        const parsed = JSON.parse(savedUser);
-        const role = parsed.role || "";
-        return role.charAt(0).toUpperCase() + role.slice(1).toLowerCase();
-      } catch (e) {
-        return "";
-      }
-    }
-    return "";
-  });
-  const [currentPage, setCurrentPage] = useState(() => {
-    // Check if the current page load is a normal refresh/reload
-    const navEntries = performance.getEntriesByType('navigation');
-    const isReload = navEntries.length > 0 && navEntries[0].type === 'reload';
+  const { initAuth, isLoggedIn, user } = useAuthStore();
 
-    if (isReload) {
-      const savedPage = sessionStorage.getItem("currentPage");
-      if (savedPage) {
-        try {
-          return JSON.parse(savedPage);
-        } catch (e) {
-          // ignore parsing failure
-        }
-      }
-    } else {
-      sessionStorage.removeItem("currentPage");
-    }
-
-    // Fallback to default dashboard based on role
-    const savedUser = localStorage.getItem("user");
-    if (savedUser) {
-      try {
-        const parsed = JSON.parse(savedUser);
-        const role = parsed.role || "";
-        const formattedRole = role.charAt(0).toUpperCase() + role.slice(1).toLowerCase();
-        return { page: formattedRole === "Dosen" ? "dosenDashboard" : "dashboard" };
-      } catch (e) {
-        // ignore
-      }
-    }
-    return { page: "dashboard" };
-  });
-  const [showFaq, setShowFaq] = useState(false);
-  const [transitionLoading, setTransitionLoading] = useState(false);
-  const [transitionTarget, setTransitionTarget] = useState(null);
-
-  const handleLogin = (role) => {
-    setIsLoggedIn(true);
-    setUserRole(role);
-    const initialPage = { page: role === "Dosen" ? "dosenDashboard" : "dashboard" };
-    setCurrentPage(initialPage);
-    sessionStorage.setItem("currentPage", JSON.stringify(initialPage));
-  };
-
-  const handleLogout = () => {
-    setIsLoggedIn(false);
-    setUserRole("");
-    const defaultPage = { page: "dashboard" };
-    setCurrentPage(defaultPage);
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    sessionStorage.removeItem("currentPage");
-  };
-
-  const navigateTo = (target) => {
-    let newPage;
-    if (typeof target === "string") {
-      newPage = { page: target };
-    } else {
-      newPage = target; // { page: "mataKuliah", id: 1 }
-    }
-    setTransitionTarget(newPage.page);
-    setTransitionLoading(true);
-    setTimeout(() => {
-      setCurrentPage(newPage);
-      sessionStorage.setItem("currentPage", JSON.stringify(newPage));
-      setTransitionLoading(false);
-    }, 600);
-  };
-
-  if (transitionLoading) {
-    return <PageTransitionLoader targetPage={transitionTarget} />;
-  }
-
-  if (showFaq) {
-    return (
-      <div>
-        <div style={{ padding: "1rem 2rem", background: "#fff", borderBottom: "1px solid #eee", display: "flex", alignItems: "center", gap: "0.75rem" }}>
-          <button onClick={() => setShowFaq(false)} style={{ display: "flex", alignItems: "center", gap: "0.4rem", background: "none", border: "none", cursor: "pointer", color: "#7c5800", fontWeight: 600, fontSize: "0.9rem" }}>
-            <span className="material-symbols-outlined" style={{ fontSize: "1.1rem" }}>arrow_back</span>
-            Kembali
-          </button>
-        </div>
-        <FAQ />
-      </div>
-    );
-  }
-
-  if (isLoggedIn) {
-    const sharedProps = {
-      onNavigate: navigateTo,
-      onLogout: handleLogout,
-      ...currentPage,
-    };
-    const pageName = currentPage.page;
-
-    // ── MAHASISWA pages ──
-    if (pageName === "daftarMataKuliah")
-      return <DaftarMataKuliah {...sharedProps} />;
-    if (pageName === "mataKuliah") return <MataKuliah {...sharedProps} />;
-    if (pageName === "daftarTugas") return <DaftarTugas {...sharedProps} />;
-    if (pageName === "kuis") return <Kuis {...sharedProps} idKuis={currentPage.idKuis} />;
-    if (pageName === "hasilKuis") return <HasilKuis {...sharedProps} idKuis={currentPage.idKuis} />;
-    if (pageName === "presensiMahasiswa")
-      return <PresensiMahasiswa {...sharedProps} />;
-    if (pageName === "forumDiskusi") return <ForumDiskusi {...sharedProps} />;
-    if (pageName === "profile") return <Profile {...sharedProps} />;
-    if (pageName === "nilai") return <Nilai {...sharedProps} />;
-    if (pageName === "pengumpulanTugas")
-      return <PengumpulanTugas {...sharedProps} taskId={currentPage.taskId} />;
-
-    // ── DOSEN-specific pages ──
-    if (pageName === "dosenPresensi") return <DosenPresensi {...sharedProps} />;
-    if (pageName === "dosenTugas") return <DosenTugas {...sharedProps} />;
-    if (pageName === "dosenKelompok") return <DosenKelompok {...sharedProps} />;
-    if (pageName === "dosenNilaiIndividu") return <DosenNilaiIndividu {...sharedProps} />;
-    if (pageName === "dosenForum") return <DosenForum {...sharedProps} />;
-    if (pageName === "dosenProfile") return <DosenProfile {...sharedProps} />;
-    if (pageName === "dosenMateri") return <DosenMateri {...sharedProps} />;
-    if (pageName === "faq") return <div><div style={{ padding: "1rem 2rem", background: "#fff", borderBottom: "1px solid #eee", display: "flex", alignItems: "center", gap: "0.75rem" }}><button onClick={() => navigateTo(userRole === "Dosen" ? "dosenDashboard" : "dashboard")} style={{ display: "flex", alignItems: "center", gap: "0.4rem", background: "none", border: "none", cursor: "pointer", color: "#7c5800", fontWeight: 600, fontSize: "0.9rem" }}><span className="material-symbols-outlined" style={{ fontSize: "1.1rem" }}>arrow_back</span>Kembali</button></div><FAQ /></div>;
-
-    // Default dashboard per role
-    if (userRole === "Mahasiswa") {
-      return <Dashboard {...sharedProps} />;
-    } else if (userRole === "Dosen") {
-      return <DashboardDosen {...sharedProps} />;
-    } else {
-      return (
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            height: "100vh",
-          }}
-        >
-          <h2>Akses role tidak ditemukan.</h2>
-          <button
-            onClick={handleLogout}
-            style={{
-              marginTop: "1rem",
-              padding: "0.5rem 1rem",
-              backgroundColor: "#4b53bc",
-              color: "white",
-              borderRadius: "8px",
-              border: "none",
-              cursor: "pointer",
-            }}
-          >
-            Kembali ke Login
-          </button>
-        </div>
-      );
-    }
-  }
+  useEffect(() => {
+    initAuth();
+  }, [initAuth]);
 
   return (
-    <div>
-      <Login onLogin={handleLogin} onFaq={() => setShowFaq(true)} />
-    </div>
+    <Routes>
+      <Route path="/login" element={<Login />} />
+      
+      {/* Fallback route */}
+      <Route path="/" element={
+        isLoggedIn 
+          ? <Navigate to="/dashboard" replace /> 
+          : <Navigate to="/login" replace />
+      } />
+
+      <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
+        {/* Dashboard */}
+        <Route 
+          path="/dashboard" 
+          element={
+            user?.role === 'DOSEN' ? <DashboardDosen /> : <DashboardMahasiswa />
+          } 
+        />
+        
+        {/* Mata Kuliah */}
+        <Route path="/matakuliah" element={<MataKuliahList />} />
+        <Route path="/matakuliah/buat" element={<ProtectedRoute role="DOSEN"><MataKuliahForm /></ProtectedRoute>} />
+        
+        <Route path="/matakuliah/:id" element={<MataKuliahDetail />}>
+          <Route index element={<Navigate to="materi" replace />} />
+          <Route path="materi" element={<MateriList />} />
+          <Route path="materi/upload" element={<ProtectedRoute role="DOSEN"><MateriUpload /></ProtectedRoute>} />
+        </Route>
+
+        {/* Global Features Route (Select Course First) */}
+        
+        {/* Tugas */}
+        <Route path="/tugas" element={<CourseSelector targetFeature="tugas" title="Tugas" subtitle="Pilih mata kuliah untuk melihat tugas" />} />
+        <Route path="/tugas/:id" element={<TugasList />} />
+        <Route path="/tugas/:id/:tugasId" element={<TugasDetail />} />
+        <Route path="/tugas/:id/buat" element={<ProtectedRoute role="DOSEN"><TugasForm /></ProtectedRoute>} />
+        <Route path="/tugas/:id/:tugasId/submit" element={<ProtectedRoute role="MAHASISWA"><TugasSubmit /></ProtectedRoute>} />
+        <Route path="/tugas/:id/:tugasId/kerjakan" element={<ProtectedRoute role="MAHASISWA"><KuisKerjakan /></ProtectedRoute>} />
+        <Route path="/tugas/:id/:tugasId/hasil" element={<ProtectedRoute role="MAHASISWA"><KuisHasil /></ProtectedRoute>} />
+
+
+        {/* Forum */}
+        <Route path="/forum" element={<CourseSelector targetFeature="forum" title="Forum Diskusi" subtitle="Pilih mata kuliah untuk bergabung dalam diskusi" />} />
+        <Route path="/forum/:id" element={<ForumList />} />
+        <Route path="/forum/:id/:forumId" element={<ForumDetail />} />
+
+        {/* Nilai (Global) */}
+        <Route path="/nilai" element={
+          user?.role === 'DOSEN' ? <NilaiRekap /> : <NilaiSaya />
+        } />
+
+        {/* Kalender & Profil */}
+        <Route path="/kalender" element={<Kalender />} />
+        <Route path="/profile" element={<Profile />} />
+      </Route>
+      
+      {/* Catch all route */}
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 }
 

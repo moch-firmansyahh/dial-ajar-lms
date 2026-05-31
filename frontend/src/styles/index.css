@@ -1,0 +1,65 @@
+@import "tailwindcss";
+
+@theme {
+  /* Colors from frontend.md */
+  --color-primary: #1374B8; 
+  --color-primary-hover: #0f5c94;
+  --color-accent: #38bdf8; 
+  --color-emerald: #10B981; 
+  --color-amber: #F59E0B; 
+  
+  --color-bg-app: #F4F5F7; /* Very light gray for main background */
+  --color-bg-sidebar: #FFFFFF;
+  --color-bg-iconstrip: #F9FAFB; /* Slightly off-white for the icon strip */
+
+  --font-sans: 'Inter', system-ui, sans-serif;
+}
+
+:root {
+  --slate-50:  #f8fafc;
+  --slate-100: #f1f5f9;
+  --slate-200: #e2e8f0;
+  --slate-300: #cbd5e1;
+  --slate-400: #94a3b8;
+  --slate-500: #64748b;
+  --slate-600: #475569;
+  --slate-700: #334155;
+  --slate-800: #1e293b;
+  --slate-900: #0f172a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-bg-app);
+  color: var(--slate-800);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom Scrollbar for sidebar */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--slate-200);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--slate-300);
+}
+
+/* Circular Progress Animation */
+@keyframes progress {
+  0% { stroke-dasharray: 0 100; }
+}
+
+.circular-progress circle {
+  transition: stroke-dasharray 0.5s ease-out;
+}

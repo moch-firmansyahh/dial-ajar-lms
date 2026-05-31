@@ -1,10 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import EmptyState from '../../components/shared/EmptyState';
+import Skeleton from '../../components/ui/Skeleton';
 import { Plus, LayoutGrid, List as ListIcon, Lock, CheckCircle2, Clock, ArrowRight, ArrowLeft, ArrowUpDown, FileText, HelpCircle, Brain, X } from 'lucide-react';
 
 const TugasList = () => {
@@ -32,6 +33,18 @@ const TugasList = () => {
   // State for Quiz Modal
   const [showQuizModal, setShowQuizModal] = useState(false);
   const [selectedQuiz, setSelectedQuiz] = useState(null);
+  
+  // State for Error Notification
+  const [errorNotification, setErrorNotification] = useState('');
+
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Dummy Data with types
   const dummyTugas = [
@@ -150,6 +163,15 @@ const TugasList = () => {
         }
       `}</style>
 
+      {/* Toast Notification */}
+      {errorNotification && (
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[100] animate-slide-up-fade">
+          <div className="bg-red-500 text-white px-6 py-3 rounded-full shadow-lg shadow-red-500/20 font-medium flex items-center gap-2">
+            <Lock size={18} /> {errorNotification}
+          </div>
+        </div>
+      )}
+
       {/* Action Header */}
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
         
@@ -213,14 +235,32 @@ const TugasList = () => {
         </div>
 
         {isDosen && (
-          <Button onClick={() => navigate(`/tugas/${id}/buat`)} size="sm" className="shadow-sm hover:scale-105 transition-transform w-full sm:w-auto">
-            <Plus size={16} /> Buat Tugas / Kuis
+          <Button 
+            onClick={() => navigate(`/tugas/${id}/buat`)} 
+            className="shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all w-full sm:w-auto px-5"
+          >
+            <Plus size={18} /> Buat Tugas / Kuis
           </Button>
         )}
       </div>
 
       {/* List Area - with key binding to re-trigger animations on layout/sort change */}
-      {filteredAndSortedTugas.length > 0 ? (
+      {isLoading ? (
+        <div className={`${viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5' : 'flex flex-col space-y-4'}`}>
+          {Array(4).fill(0).map((_, i) => (
+            <Card key={`skel-tugas-${i}`} className={`p-5 ${viewMode === 'grid' ? 'h-[240px]' : 'h-[100px] flex items-center gap-4'}`}>
+              <div className={`flex ${viewMode === 'grid' ? 'flex-col gap-4 h-full' : 'w-full gap-4 items-center'}`}>
+                <Skeleton className="w-12 h-12 rounded-xl shrink-0" />
+                <div className={`flex-1 ${viewMode === 'grid' ? 'space-y-3' : 'space-y-2'}`}>
+                  <Skeleton className="h-5 w-3/4" />
+                  <Skeleton className="h-4 w-1/2" />
+                </div>
+                {viewMode === 'grid' && <div className="mt-auto"><Skeleton className="h-8 w-full rounded-lg" /></div>}
+              </div>
+            </Card>
+          ))}
+        </div>
+      ) : filteredAndSortedTugas.length > 0 ? (
         <div key={viewMode + sortOrder + filterType} className={`${viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5' : 'flex flex-col space-y-4'}`}>
           {filteredAndSortedTugas.map((tugas, idx) => {
             const style = getStatusStyle(tugas.status);
@@ -242,7 +282,15 @@ const TugasList = () => {
             const handleCardClick = () => {
               if (isDosen) {
                 navigate(`/tugas/${id}/${tugas.id}`);
+              } else if (isLocked) {
+                setErrorNotification('Tugas atau kuis ini sudah melewati batas waktu pengerjaan.');
+                setTimeout(() => setErrorNotification(''), 3000);
               } else if (tugas.type === 'kuis') {
+                if (tugas.status === 'dikumpulkan') {
+                  setErrorNotification('Kamu sudah mengerjakan kuis ini.');
+                  setTimeout(() => setErrorNotification(''), 3000);
+                  return;
+                }
                 setSelectedQuiz(tugas);
                 setShowQuizModal(true);
               } else {
@@ -313,7 +361,11 @@ const TugasList = () => {
           })}
         </div>
       ) : (
-        <EmptyState title="Belum ada data" description="Belum ada tugas atau kuis yang sesuai dengan filter Anda." icon={FileText} />
+        <EmptyState 
+          icon={filterType === 'kuis' ? HelpCircle : FileText}
+          title={filterType === 'all' ? 'Belum Ada Tugas' : `Belum Ada ${filterType === 'kuis' ? 'Kuis' : 'Tugas'}`}
+          description={`Saat ini belum ada ${filterType === 'all' ? 'tugas atau kuis' : filterType} yang ditugaskan pada kelas ini.`}
+        />
       )}
 
       {/* Quiz Verification Modal */}
@@ -381,7 +433,7 @@ const TugasList = () => {
                 </Button>
                 <Button 
                   className="w-full sm:w-auto h-12 px-10 shadow-lg shadow-primary/30 hover:shadow-primary/40 hover:-translate-y-1 transition-all" 
-                  onClick={() => navigate(`/kuis/${id}/${selectedQuiz.id}`)}
+                  onClick={() => navigate(`/tugas/${id}/${selectedQuiz.id}/kerjakan`)}
                 >
                   Kerjakan Kuis Sekarang <ArrowRight size={18} className="ml-2" />
                 </Button>

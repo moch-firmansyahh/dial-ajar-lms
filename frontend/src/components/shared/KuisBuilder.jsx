@@ -11,8 +11,6 @@ const KuisBuilder = ({ quizData, setQuizData }) => {
   // State for AI Generator
   const [materiText, setMateriText] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
-  const [jumlahPg, setJumlahPg] = useState(5);
-  const [jumlahEssay, setJumlahEssay] = useState(2);
   const [isExtracting, setIsExtracting] = useState(false);
   const fileInputRef = useRef(null);
   
@@ -74,7 +72,7 @@ const KuisBuilder = ({ quizData, setQuizData }) => {
     
     setIsGenerating(true);
     try {
-      const generatedQuiz = await generateQuizWithAI(materiText, jumlahPg, jumlahEssay);
+      const generatedQuiz = await generateQuizWithAI(materiText);
       
       // Merge with existing or replace
       setQuizData({
@@ -143,7 +141,7 @@ const KuisBuilder = ({ quizData, setQuizData }) => {
         </button>
         <button 
           onClick={() => setActiveTab('ai')}
-          className={`flex-1 py-3 font-semibold text-sm flex justify-center items-center gap-2 transition-colors ${activeTab === 'ai' ? 'text-blue-600 bg-white border-b-2 border-blue-600' : 'text-slate-500 hover:bg-slate-100'}`}
+          className={`flex-1 py-3 font-semibold text-sm flex justify-center items-center gap-2 transition-colors ${activeTab === 'ai' ? 'text-sky-500 bg-white border-b-2 border-sky-500' : 'text-slate-500 hover:bg-slate-100'}`}
         >
           <Brain size={16} /> Generate dengan AI
         </button>
@@ -152,64 +150,38 @@ const KuisBuilder = ({ quizData, setQuizData }) => {
       <div className="p-5">
         {activeTab === 'ai' && (
           <div className="space-y-4 animate-fadeIn">
-            <div className="bg-blue-50 text-blue-700 p-4 rounded-xl text-sm font-medium border border-blue-100 flex gap-3">
-              <Wand2 size={24} className="shrink-0 text-blue-500" />
-              <p>Upload dokumen Word/PDF atau tempel (paste) bahan ajar Anda. AI (Google Gemini) akan secara cerdas menganalisis isi materi dan membuatkan butir soal Kuis untuk Anda!</p>
-            </div>
             
-            <div className="grid grid-cols-2 gap-4">
-              <InputField 
-                label="Jumlah Soal Pilihan Ganda" 
-                type="number" 
-                value={jumlahPg} 
-                onChange={(e) => setJumlahPg(parseInt(e.target.value) || 0)} 
-                min="0"
-              />
-              <InputField 
-                label="Jumlah Soal Essay" 
-                type="number" 
-                value={jumlahEssay} 
-                onChange={(e) => setJumlahEssay(parseInt(e.target.value) || 0)} 
-                min="0"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-slate-700">Upload Dokumen (Word/PDF)</label>
-                <div 
-                  onClick={() => fileInputRef.current.click()}
-                  className={`border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-colors ${isExtracting ? 'border-blue-300 bg-blue-50' : 'border-slate-300 hover:border-blue-400 hover:bg-blue-50/50'}`}
-                >
-                  <input type="file" ref={fileInputRef} className="hidden" accept=".docx" onChange={handleFileUpload} />
-                  {isExtracting ? (
-                    <div className="flex flex-col items-center justify-center text-blue-600 h-full py-4">
-                      <Loader2 size={28} className="animate-spin mb-2" />
-                      <p className="text-sm font-medium">Membaca dokumen...</p>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center text-slate-500 h-full py-2">
-                      <FileUp size={28} className="text-slate-400 mb-2" />
-                      <p className="text-sm font-medium">Klik untuk upload dokumen</p>
-                      <p className="text-xs text-slate-400 mt-1">Hanya .docx</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-slate-700">Atau Tempel Bahan Materi Kuis</label>
-                <textarea 
-                  value={materiText}
-                  onChange={(e) => setMateriText(e.target.value)}
-                  className="w-full border-2 border-slate-200 rounded-xl p-3 focus:border-blue-500 outline-none transition-colors h-[135px] resize-none text-sm" 
-                  placeholder="Hasil ekstrak dokumen akan muncul di sini, atau Anda bisa menempelkan (paste) teks secara manual..." 
-                />
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-slate-700">Upload Dokumen Soal (Word)</label>
+              <div 
+                onClick={() => fileInputRef.current.click()}
+                className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${isExtracting ? 'border-sky-300 bg-sky-50/50' : materiText ? 'border-emerald-300 bg-emerald-50 hover:bg-emerald-100/50' : 'border-slate-200 hover:border-sky-300 hover:bg-sky-50/30'}`}
+              >
+                <input type="file" ref={fileInputRef} className="hidden" accept=".docx" onChange={handleFileUpload} />
+                {isExtracting ? (
+                  <div className="flex flex-col items-center justify-center text-sky-500 h-full">
+                    <Loader2 size={36} className="animate-spin mb-3" />
+                    <p className="font-medium">Membaca dokumen...</p>
+                  </div>
+                ) : materiText ? (
+                  <div className="flex flex-col items-center justify-center text-emerald-600 h-full">
+                    <CheckCircle2 size={36} className="text-emerald-500 mb-3" />
+                    <p className="font-medium text-lg">Dokumen Siap Diekstrak</p>
+                    <p className="text-sm text-emerald-600/80 mt-1">Klik "Generate Kuis Sekarang" di bawah</p>
+                    <Button size="sm" variant="ghost" className="mt-4 text-xs bg-white/50" onClick={(e) => { e.stopPropagation(); setMateriText(''); }}>Ganti File</Button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center text-slate-500 h-full">
+                    <FileUp size={36} className="text-slate-400 mb-3" />
+                    <p className="font-medium text-lg">Klik untuk upload dokumen</p>
+                    <p className="text-sm text-slate-400 mt-1">Hanya mendukung format .docx</p>
+                  </div>
+                )}
               </div>
             </div>
 
             <Button 
-              className="w-full !bg-blue-600 hover:!bg-blue-700 !text-white shadow-md shadow-blue-500/20 py-3"
+              className="w-full !bg-sky-500 hover:!bg-sky-600 !text-white shadow-md shadow-sky-300/20 py-3"
               onClick={handleGenerateAI}
               disabled={isGenerating}
             >

@@ -1,11 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Award, Users, Search, FileSpreadsheet, ArrowLeft } from 'lucide-react';
 import Button from '../../components/ui/Button';
+import Skeleton from '../../components/ui/Skeleton';
 import MataKuliahList from '../shared/MataKuliahList';
 
 const NilaiRekap = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMatkul, setSelectedMatkul] = useState(null);
+
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (selectedMatkul) {
+      setIsLoading(true);
+      const timer = setTimeout(() => {
+        setIsLoading(false);
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [selectedMatkul]);
 
   const dummyMahasiswa = [
     { nim: '13521001', nama: 'Andi Mahasiswa', tugas: 85, kuis: 90, akhir: 87.5, grade: 'A' },
@@ -42,20 +55,18 @@ const NilaiRekap = () => {
 
   return (
     <div className="animate-slideUpFade">
-      {/* Header with Back Button */}
-      <div className="mb-6">
+      {/* Header with Back Button and Export */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <button 
           onClick={() => setSelectedMatkul(null)}
-          className="flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-primary transition-colors group mb-4"
+          className="flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-primary transition-colors group"
         >
           <div className="bg-white p-1.5 rounded-lg border border-slate-200 shadow-sm group-hover:border-primary/30 group-hover:bg-primary/5 transition-all">
             <ArrowLeft size={16} />
           </div>
           Kembali pilih mata kuliah
         </button>
-      </div>
 
-      <div className="flex flex-col md:flex-row md:items-center justify-end gap-4 mb-8">
         <div className="flex items-center gap-4">
           <Button className="!bg-emerald-500 hover:!bg-emerald-600 !text-white shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex items-center gap-2">
             <FileSpreadsheet size={18} /> Export Excel
@@ -64,6 +75,47 @@ const NilaiRekap = () => {
       </div>
 
       {/* Action Bar */}
+      {isLoading ? (
+        <div className="animate-slide-up-fade">
+          <div className="bg-white p-4 rounded-[20px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 mb-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <Skeleton className="h-10 w-48 rounded-xl" />
+            <Skeleton className="h-10 w-full sm:w-80 rounded-xl" />
+          </div>
+          <div className="bg-white rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 overflow-hidden relative">
+            <div className="overflow-x-auto relative z-10">
+              <table className="w-full min-w-[700px]">
+                <thead>
+                  <tr className="bg-slate-50/80 border-b border-slate-100">
+                    <th className="text-left px-6 py-4"><Skeleton className="h-4 w-24" /></th>
+                    <th className="text-center px-6 py-4"><Skeleton className="h-4 w-16 mx-auto" /></th>
+                    <th className="text-center px-6 py-4"><Skeleton className="h-4 w-16 mx-auto" /></th>
+                    <th className="text-center px-6 py-4"><Skeleton className="h-4 w-20 mx-auto" /></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {Array(5).fill(0).map((_, i) => (
+                    <tr key={`skel-rekap-${i}`} className="hover:bg-slate-50/80">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <Skeleton className="w-10 h-10 rounded-full shrink-0" />
+                          <div>
+                            <Skeleton className="h-4 w-32 mb-1" />
+                            <Skeleton className="h-3 w-20" />
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-center"><Skeleton className="h-6 w-12 mx-auto rounded-lg" /></td>
+                      <td className="px-6 py-4 text-center"><Skeleton className="h-6 w-12 mx-auto rounded-lg" /></td>
+                      <td className="px-6 py-4 text-center"><Skeleton className="h-6 w-16 mx-auto rounded-lg" /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      ) : (
+      <>
       <div className="bg-white p-4 rounded-[20px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 mb-6 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center justify-center gap-3 text-sm font-medium text-slate-600 bg-slate-50 px-4 py-2.5 rounded-xl border border-slate-200/60 w-full sm:w-auto">
           <Users size={18} className="text-primary shrink-0" />
@@ -123,14 +175,8 @@ const NilaiRekap = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-center">
-                    <div className="flex flex-col items-center justify-center gap-1">
+                    <div className="flex items-center justify-center">
                       <span className="text-[16px] font-medium text-slate-800">{mhs.akhir}</span>
-                      <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                        <div 
-                          className={`h-full rounded-full ${mhs.akhir >= 80 ? 'bg-emerald-500' : mhs.akhir >= 60 ? 'bg-amber-500' : 'bg-rose-500'}`} 
-                          style={{ width: `${mhs.akhir}%` }}
-                        />
-                      </div>
                     </div>
                   </td>
                 </tr>
@@ -149,6 +195,8 @@ const NilaiRekap = () => {
           </table>
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 };

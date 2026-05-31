@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
+import Skeleton from '../../components/ui/Skeleton';
 import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
@@ -12,18 +13,35 @@ const DashboardMahasiswa = () => {
 
   const [filterType, setFilterType] = useState('semua'); // 'semua', 'tugas', 'kuis'
   const [sortBy, setSortBy] = useState('terdekat'); // 'terdekat', 'terlama'
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Simulasi loading data dari API
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Nanti nilai ini akan diganti dengan state/data hasil fetch API backend
+  const dashboardStats = {
+    mataKuliah: 5,
+    tugasMendatang: 2,
+    kuisMendatang: 1,
+    ipkSementara: '3.85',
+  };
 
   const stats = [
-    { label: 'Mata Kuliah', value: 5, icon: BookOpen, color: 'text-indigo-600', bg: 'bg-indigo-50' },
-    { label: 'Tugas Mendatang', value: 2, icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50' },
-    { label: 'Kuis Mendatang', value: 1, icon: FileText, color: 'text-amber-600', bg: 'bg-amber-50' },
-    { label: 'IPK Sementara', value: '3.85', icon: Trophy, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+    { label: 'Mata Kuliah', value: dashboardStats.mataKuliah, icon: BookOpen, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+    { label: 'Tugas Mendatang', value: dashboardStats.tugasMendatang, icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50' },
+    { label: 'Kuis Mendatang', value: dashboardStats.kuisMendatang, icon: FileText, color: 'text-amber-600', bg: 'bg-amber-50' },
+    { label: 'IPK Sementara', value: dashboardStats.ipkSementara, icon: Trophy, color: 'text-emerald-600', bg: 'bg-emerald-50' },
   ];
 
   const deadlines = [
-    { id: 1, type: 'tugas', title: 'Tugas 3: React Router', matkul: 'IF3110 - Pengembangan Aplikasi Berbasis Web', time: 'Hari ini, 23:59', urgency: 'bahaya' },
-    { id: 2, type: 'kuis', title: 'Kuis 2: Inheritance & Polymorphism', matkul: 'IF3111 - Pemrograman Berorientasi Objek', time: 'Besok, 10:00', urgency: 'peringatan' },
-    { id: 3, type: 'tugas', title: 'Tugas Besar Laporan', matkul: 'IF3112 - Rekayasa Perangkat Lunak', time: 'Lusa, 08:00', urgency: 'normal' },
+    { id: 1, courseId: 1, type: 'tugas', title: 'Tugas 3: React Router', matkul: 'IF3110 - Pengembangan Aplikasi Berbasis Web', time: 'Hari ini, 23:59', urgency: 'bahaya' },
+    { id: 2, courseId: 2, type: 'kuis', title: 'Kuis 2: Inheritance & Polymorphism', matkul: 'IF3111 - Pemrograman Berorientasi Objek', time: 'Besok, 10:00', urgency: 'peringatan' },
+    { id: 3, courseId: 3, type: 'tugas', title: 'Tugas Besar Laporan', matkul: 'IF3112 - Rekayasa Perangkat Lunak', time: 'Lusa, 08:00', urgency: 'normal' },
   ];
 
   // Logic Filter & Sort Dummy
@@ -39,7 +57,17 @@ const DashboardMahasiswa = () => {
       
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
-        {stats.map((stat, idx) => (
+        {isLoading 
+          ? Array(4).fill(0).map((_, idx) => (
+              <Card key={`skel-stat-${idx}`} className="flex items-center gap-4 h-[104px]">
+                <Skeleton className="w-14 h-14 rounded-2xl shrink-0" />
+                <div className="flex flex-col gap-2 flex-1">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-6 w-12" />
+                </div>
+              </Card>
+            ))
+          : stats.map((stat, idx) => (
           <Card key={idx} className="relative overflow-hidden flex items-center gap-4 hover:-translate-y-1.5 hover:shadow-lg transition-all duration-300 border border-slate-100 group">
             {/* Decorative Background Watermark */}
             <div className={`absolute -right-6 -bottom-6 opacity-[0.03] group-hover:scale-110 group-hover:-rotate-12 group-hover:opacity-[0.05] transition-all duration-500 text-slate-900 pointer-events-none`}>
@@ -50,8 +78,10 @@ const DashboardMahasiswa = () => {
               <stat.icon size={26} />
             </div>
             <div className="relative z-10">
-              <p className="text-[13px] font-medium text-slate-500 uppercase tracking-wider mb-0.5">{stat.label}</p>
-              <h3 className="text-3xl font-medium text-slate-800 tracking-tight">{stat.value}</h3>
+              <p className="text-slate-500 text-sm font-medium mb-0.5">{stat.label}</p>
+              <h3 className="text-2xl font-bold text-slate-800 tracking-tight">
+                {stat.value}
+              </h3>
             </div>
           </Card>
         ))}
@@ -112,7 +142,21 @@ const DashboardMahasiswa = () => {
         `}</style>
 
         <div key={filterType + sortBy} className="space-y-4 animate-slide-up-fade">
-          {filteredDeadlines.length > 0 ? (
+          {isLoading ? (
+            Array(3).fill(0).map((_, idx) => (
+              <Card key={`skel-task-${idx}`} className="flex flex-col sm:flex-row sm:items-center gap-4 p-5">
+                <Skeleton className="w-12 h-12 rounded-xl shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-5 w-3/4" />
+                  <Skeleton className="h-4 w-1/2" />
+                </div>
+                <div className="flex flex-col sm:items-end gap-2 shrink-0 w-full sm:w-32">
+                  <Skeleton className="h-6 w-24 rounded-full" />
+                  <Skeleton className="h-9 w-full rounded-lg" />
+                </div>
+              </Card>
+            ))
+          ) : filteredDeadlines.length > 0 ? (
             filteredDeadlines.map((item) => (
               <Card key={item.id} className="relative overflow-hidden group flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:-translate-y-1 hover:shadow-md transition-all duration-300 border border-slate-100">
                 
@@ -144,7 +188,7 @@ const DashboardMahasiswa = () => {
                 <Button 
                   size="sm" 
                   variant="outline"
-                  onClick={() => navigate('/matakuliah/1/tugas')} 
+                  onClick={() => navigate(`/tugas/${item.courseId}/${item.id}`)} 
                   className="w-full sm:w-auto shrink-0 font-medium hover:!bg-primary hover:!text-white hover:!border-primary shadow-sm transition-all"
                 >
                   Kerjakan <ArrowRight size={16} />

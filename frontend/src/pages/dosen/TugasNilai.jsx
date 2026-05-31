@@ -1,5 +1,6 @@
 import React from 'react';
 import Card from '../../components/ui/Card';
+import Skeleton from '../../components/ui/Skeleton';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import { Download, Users, CheckCircle, Clock, Save, FileBox, Edit3, X, Eye } from 'lucide-react';
@@ -21,6 +22,15 @@ const TugasNilai = () => {
   
   // Custom Notification State
   const [notification, setNotification] = React.useState({ show: false, message: '' });
+
+  const [isLoading, setIsLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, []);
 
   const showToast = (message) => {
     setNotification({ show: true, message });
@@ -68,27 +78,67 @@ const TugasNilai = () => {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-5 relative">
-        <div>
-          <h2 className="text-lg font-medium text-slate-800">Penilaian {tugasId === '2' ? 'Kuis' : 'Tugas'}</h2>
-          <p className="text-sm text-slate-500">{tugasId === '2' ? 'Kuis 1: Pemahaman JSX Dasar' : 'Tugas 1: Instalasi React'}</p>
-        </div>
-        
-        {/* Custom Toast Notification */}
-        {notification.show && (
-          <div className="absolute top-0 right-[200px] animate-fadeIn bg-emerald-500 text-white px-4 py-2 rounded-xl shadow-lg flex items-center gap-2 text-sm font-medium">
-            <CheckCircle size={16} />
-            {notification.message}
+      {isLoading ? (
+        <div className="animate-slide-up-fade">
+          <div className="flex justify-between items-center mb-5">
+            <div>
+              <Skeleton className="h-6 w-32 mb-1" />
+              <Skeleton className="h-4 w-48" />
+            </div>
+            <Skeleton className="h-8 w-32 rounded-xl" />
           </div>
-        )}
-
-        <div className="flex items-center gap-2 text-sm text-slate-500 bg-slate-100 px-3 py-1.5 rounded-xl">
-          <Users size={16} />
-          <span>{taskSubmissions.length} pengumpulan</span>
+          <Card noPadding>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-slate-100">
+                    <th className="text-left px-5 py-3.5"><Skeleton className="h-4 w-12" /></th>
+                    <th className="text-left px-5 py-3.5"><Skeleton className="h-4 w-20" /></th>
+                    <th className="text-left px-5 py-3.5"><Skeleton className="h-4 w-24" /></th>
+                    <th className="text-left px-5 py-3.5"><Skeleton className="h-4 w-16" /></th>
+                    <th className="text-center px-5 py-3.5"><Skeleton className="h-4 w-20 mx-auto" /></th>
+                    <th className="text-center px-5 py-3.5"><Skeleton className="h-4 w-16 mx-auto" /></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Array(4).fill(0).map((_, i) => (
+                    <tr key={`skel-nilai-${i}`} className="border-b border-slate-50">
+                      <td className="px-5 py-3.5"><Skeleton className="h-4 w-16" /></td>
+                      <td className="px-5 py-3.5"><Skeleton className="h-4 w-32" /></td>
+                      <td className="px-5 py-3.5"><Skeleton className="h-4 w-24" /></td>
+                      <td className="px-5 py-3.5"><Skeleton className="h-8 w-24 rounded-lg" /></td>
+                      <td className="px-5 py-3.5"><Skeleton className="h-8 w-16 rounded-lg mx-auto" /></td>
+                      <td className="px-5 py-3.5"><Skeleton className="h-8 w-16 rounded-lg mx-auto" /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
         </div>
-      </div>
+      ) : (
+      <div className="animate-slide-up-fade">
+        <div className="flex justify-between items-center mb-5 relative">
+          <div>
+            <h2 className="text-lg font-medium text-slate-800">Penilaian {tugasId === '2' ? 'Kuis' : 'Tugas'}</h2>
+            <p className="text-sm text-slate-500">{tugasId === '2' ? 'Kuis 1: Pemahaman JSX Dasar' : 'Tugas 1: Instalasi React'}</p>
+          </div>
+          
+          {/* Custom Toast Notification */}
+          {notification.show && (
+            <div className="absolute top-0 right-[200px] animate-fadeIn bg-emerald-500 text-white px-4 py-2 rounded-xl shadow-lg flex items-center gap-2 text-sm font-medium">
+              <CheckCircle size={16} />
+              {notification.message}
+            </div>
+          )}
 
-      <Card noPadding>
+          <div className="flex items-center gap-2 text-sm text-slate-500 bg-slate-100 px-3 py-1.5 rounded-xl">
+            <Users size={16} />
+            <span>{taskSubmissions.length} pengumpulan</span>
+          </div>
+        </div>
+
+        <Card noPadding>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
@@ -179,8 +229,10 @@ const TugasNilai = () => {
           </table>
         </div>
       </Card>
+      </div>
+      )}
 
-      {/* Answer Modal for Kuis */}
+      {/* Modal Kuis Answer (Khusus untuk tipe kuis) */}
       {selectedStudent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/40" onClick={() => setSelectedStudent(null)} />

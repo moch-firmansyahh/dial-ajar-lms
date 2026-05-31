@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import Card from '../../components/ui/Card';
+import Skeleton from '../../components/ui/Skeleton';
 import Button from '../../components/ui/Button';
 import EmptyState from '../../components/shared/EmptyState';
 import { MessageSquare, Plus, ArrowRight, LayoutGrid, List as ListIcon, HelpCircle, Megaphone, Share2, X, Send } from 'lucide-react';
@@ -33,6 +34,15 @@ const ForumList = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newContent, setNewContent] = useState('');
+
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleCreateForum = () => {
     if (!newTitle.trim()) return;
@@ -94,7 +104,24 @@ const ForumList = () => {
       </div>
 
       {/* List Area */}
-      {forums.length > 0 ? (
+      {isLoading ? (
+        <div className={`${viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5' : 'flex flex-col space-y-4'}`}>
+          {Array(4).fill(0).map((_, i) => (
+            <Card key={`skel-forum-${i}`} className={`p-5 flex ${viewMode === 'grid' ? 'flex-col gap-5 h-[200px]' : 'flex-row items-center gap-4'}`}>
+              <Skeleton className="w-12 h-12 rounded-2xl shrink-0" />
+              <div className="flex-1 space-y-3 w-full">
+                <Skeleton className="h-5 w-3/4" />
+                <Skeleton className="h-4 w-1/2" />
+              </div>
+              {viewMode === 'grid' ? (
+                <Skeleton className="h-10 w-full rounded-xl mt-auto" />
+              ) : (
+                <Skeleton className="w-24 h-11 rounded-full shrink-0" />
+              )}
+            </Card>
+          ))}
+        </div>
+      ) : forums.length > 0 ? (
         <div key={viewMode} className={`${viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5' : 'flex flex-col space-y-4'}`}>
           {forums.map((forum, idx) => {
             const isGrid = viewMode === 'grid';

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../../store/authStore';
+import Skeleton from '../../components/ui/Skeleton';
 import { Award, LayoutGrid, List, Search, BookOpen } from 'lucide-react';
 
 const NilaiSaya = () => {
@@ -11,6 +12,15 @@ const NilaiSaya = () => {
   useEffect(() => {
     const saved = localStorage.getItem('nilaiViewMode');
     if (saved) setViewMode(saved);
+  }, []);
+
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 1500);
+    return () => clearTimeout(timer);
   }, []);
 
   const handleViewMode = (mode) => {
@@ -79,6 +89,38 @@ const NilaiSaya = () => {
       </div>
 
       {/* Content */}
+      {isLoading ? (
+        <div className={isGrid ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 animate-slideUpFade" : "flex flex-col gap-4 animate-slideUpFade"}>
+          {Array(4).fill(0).map((_, i) => (
+            <div key={`skel-nilai-${i}`} className={`bg-white border border-slate-200/60 rounded-[24px] overflow-hidden flex ${isGrid ? 'flex-col' : 'flex-col sm:flex-row items-center p-2'}`}>
+              <div className={`p-6 relative z-10 flex-1 ${isGrid ? 'border-b border-slate-100/80' : 'w-full sm:w-[40%] border-b sm:border-b-0 sm:border-r border-slate-100/80'}`}>
+                <div className="flex items-start gap-4">
+                  <Skeleton className="w-12 h-12 rounded-2xl shrink-0" />
+                  <div className="flex-1 mt-1">
+                    <Skeleton className="h-5 w-3/4 mb-2" />
+                    <Skeleton className="h-4 w-1/2" />
+                  </div>
+                </div>
+              </div>
+              <div className={`p-6 flex-1 w-full bg-slate-50/50 flex ${isGrid ? 'flex-col gap-6' : 'flex-row items-center gap-6 justify-around'}`}>
+                {isGrid ? (
+                  <>
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-10 w-full rounded-xl mt-2" />
+                  </>
+                ) : (
+                  <>
+                    <div className="flex-1"><Skeleton className="h-4 w-24 mb-2" /><Skeleton className="h-6 w-16" /></div>
+                    <div className="flex-1"><Skeleton className="h-4 w-24 mb-2" /><Skeleton className="h-6 w-16" /></div>
+                    <div className="flex-1"><Skeleton className="h-4 w-24 mb-2" /><Skeleton className="h-8 w-20" /></div>
+                  </>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
       <div 
         key={viewMode}
         className={
@@ -149,6 +191,7 @@ const NilaiSaya = () => {
           </div>
         )}
       </div>
+      )}
     </div>
   );
 };

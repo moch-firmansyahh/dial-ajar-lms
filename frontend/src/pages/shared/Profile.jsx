@@ -1,6 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import PageHeader from '../../components/shared/PageHeader';
 import Card from '../../components/ui/Card';
+import Skeleton from '../../components/ui/Skeleton';
 import Button from '../../components/ui/Button';
 import { useAuthStore } from '../../store/authStore';
 import { Camera, Mail, User, Shield, Info, UploadCloud, Eye, EyeOff, Lock, CheckCircle2, AlertCircle, X } from 'lucide-react';
@@ -18,6 +19,15 @@ const Profile = () => {
   const [showNew, setShowNew] = useState(false);
   const [pwdError, setPwdError] = useState('');
   const [pwdSuccess, setPwdSuccess] = useState('');
+
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -86,7 +96,50 @@ const Profile = () => {
       
       <div className="mt-6 flex flex-col lg:flex-row gap-6">
         
-        {/* Kolom Kiri: Foto Profil & Aksi */}
+        {isLoading ? (
+          <>
+            <div className="w-full lg:w-1/3 space-y-6">
+              <Card className="p-6 md:p-8 flex flex-col items-center text-center">
+                <Skeleton className="w-32 h-32 md:w-40 md:h-40 rounded-full mb-6" />
+                <Skeleton className="h-6 w-3/4 mb-2" />
+                <Skeleton className="h-6 w-1/2 rounded-full mb-6" />
+                <Skeleton className="h-10 w-full rounded-xl" />
+                <Skeleton className="h-12 w-full mt-4" />
+              </Card>
+              <Card className="p-6 border border-slate-200">
+                <div className="flex items-center gap-4 mb-5">
+                  <Skeleton className="w-12 h-12 rounded-full shrink-0" />
+                  <div className="space-y-2 flex-1">
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-3 w-1/2" />
+                  </div>
+                </div>
+                <Skeleton className="h-10 w-full rounded-xl" />
+              </Card>
+            </div>
+            <div className="w-full lg:w-2/3">
+              <Card className="p-0 overflow-hidden h-full">
+                <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50">
+                  <Skeleton className="h-6 w-48 mb-2" />
+                  <Skeleton className="h-4 w-3/4" />
+                </div>
+                <div className="p-6 md:p-8 space-y-6">
+                  <Skeleton className="h-20 w-full rounded-xl" />
+                  <div className="space-y-6">
+                    {Array(4).fill(0).map((_, i) => (
+                      <div key={`skel-prof-info-${i}`}>
+                        <Skeleton className="h-4 w-24 mb-2" />
+                        <Skeleton className="h-12 w-full rounded-xl" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </Card>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Kolom Kiri: Foto Profil & Aksi */}
         <div className="w-full lg:w-1/3 space-y-6">
           {/* Kartu Profil Utama */}
           <Card className="p-6 md:p-8 flex flex-col items-center text-center">
@@ -227,10 +280,11 @@ const Profile = () => {
             </div>
           </Card>
         </div>
-
+        </>
+        )}
       </div>
 
-      {/* Modal Pop Up Ubah Password */}
+      {/* Modal Change Password */}
       {showPasswordModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm px-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">

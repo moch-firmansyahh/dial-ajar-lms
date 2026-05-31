@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import PageHeader from '../../components/shared/PageHeader';
 import Card from '../../components/ui/Card';
+import Skeleton from '../../components/ui/Skeleton';
 import Badge from '../../components/ui/Badge';
-import { Calendar as CalendarIcon } from 'lucide-react';
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 
 const months = ['JAN', 'FEB', 'MAR', 'APR', 'MEI', 'JUN', 'JUL', 'AGU', 'SEP', 'OKT', 'NOV', 'DES'];
 const fullMonths = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
@@ -10,13 +11,52 @@ const fullMonths = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Jul
 const Kalender = () => {
   const [currentDate, setCurrentDate] = useState(new Date(2026, 5, 1)); // Juni 2026 sebagai default
 
-  const events = [
-    { day: 1, month: 5, year: 2026, title: 'Hari Lahir Pancasila', type: 'bahaya', tag: 'Hari Libur' },
+  const [holidays, setHolidays] = useState([]);
+
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    // Fetch real public holidays for Indonesia
+    const fetchHolidays = async () => {
+      try {
+        const response = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${currentDate.getFullYear()}/ID`);
+        if (response.ok) {
+          const data = await response.json();
+          const formattedHolidays = data.map(h => {
+            const d = new Date(h.date);
+            return {
+              day: d.getDate(),
+              month: d.getMonth(),
+              year: d.getFullYear(),
+              title: h.localName,
+              type: 'bahaya',
+              tag: 'Hari Libur'
+            };
+          });
+          setHolidays(formattedHolidays);
+        }
+      } catch (error) {
+        console.error("Gagal mengambil data hari libur:", error);
+      }
+    };
+    fetchHolidays();
+  }, [currentDate.getFullYear()]);
+
+  const academicEvents = [
     { day: 9, month: 5, year: 2026, title: 'Deadline Tugas 3: React Router', type: 'peringatan', tag: 'Tugas' },
     { day: 15, month: 5, year: 2026, title: 'Ujian Tengah Semester', type: 'info', tag: 'Akademik' },
     { day: 20, month: 5, year: 2026, title: 'Kuis 2: PBO Java', type: 'kuis', tag: 'Kuis' },
     { day: 28, month: 5, year: 2026, title: 'Deadline Makalah Basis Data', type: 'peringatan', tag: 'Tugas' },
   ];
+
+  const events = [...holidays, ...academicEvents];
 
   const prevMonth = () => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
@@ -50,16 +90,71 @@ const Kalender = () => {
       `}</style>
       <PageHeader title="Kalender Kampus" subtitle="Jadwal akademik dan tenggat tugas Anda" />
       
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {isLoading ? (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-slide-up-fade">
+          <div className="lg:col-span-2">
+            <Card className="p-5">
+              <div className="flex justify-between items-center mb-6">
+                <Skeleton className="h-8 w-24 rounded-lg" />
+                <Skeleton className="h-8 w-32 rounded-lg" />
+                <Skeleton className="h-8 w-24 rounded-lg" />
+              </div>
+              <Skeleton className="h-[300px] w-full rounded-2xl" />
+            </Card>
+          </div>
+          <div>
+            <Card className="p-5">
+              <Skeleton className="h-6 w-3/4 mb-4" />
+              <div className="space-y-4">
+                {Array(4).fill(0).map((_, i) => (
+                  <div key={`skel-event-${i}`} className="flex gap-3">
+                    <Skeleton className="h-10 w-10 rounded-xl shrink-0" />
+                    <div className="flex-1 space-y-2">
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-3 w-1/2" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </div>
+        </div>
+      ) : (
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-slide-up-fade">
         {/* Calendar Grid */}
         <div className="lg:col-span-2">
           <Card noPadding>
-            <div className="px-5 py-4 border-b border-slate-100 flex justify-between items-center">
-              <h3 className="font-medium text-slate-800">{fullMonths[currentMonth]} {currentYear}</h3>
-              <div className="flex gap-2">
-                <button onClick={prevMonth} className="px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">← Sebelumnya</button>
-                <button onClick={nextMonth} className="px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">Selanjutnya →</button>
+            <div className="px-5 py-4 border-b border-slate-100 flex justify-between items-center relative">
+              <button onClick={prevMonth} className="hidden sm:flex px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-primary rounded-lg transition-colors items-center gap-1"><ChevronLeft size={16} /> Sebelumnya</button>
+              <button onClick={prevMonth} className="sm:hidden p-2 text-slate-600 hover:bg-slate-100 hover:text-primary rounded-lg transition-colors"><ChevronLeft size={18} /></button>
+              
+              <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
+                {/* Month Dropdown */}
+                <div className="relative group">
+                  <select 
+                    value={currentMonth}
+                    onChange={(e) => setCurrentDate(new Date(currentYear, parseInt(e.target.value), 1))}
+                    className="appearance-none bg-slate-50 border border-slate-200 hover:border-primary/50 text-slate-700 font-medium text-[13px] py-1.5 pl-3 pr-7 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary/10 cursor-pointer transition-all outline-none"
+                  >
+                    {fullMonths.map((m, idx) => <option key={m} value={idx}>{m}</option>)}
+                  </select>
+                  <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-hover:text-primary transition-colors" />
+                </div>
+                {/* Year Dropdown */}
+                <div className="relative group">
+                  <select 
+                    value={currentYear}
+                    onChange={(e) => setCurrentDate(new Date(parseInt(e.target.value), currentMonth, 1))}
+                    className="appearance-none bg-slate-50 border border-slate-200 hover:border-primary/50 text-slate-700 font-medium text-[13px] py-1.5 pl-3 pr-7 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary/10 cursor-pointer transition-all outline-none"
+                  >
+                    {[2024, 2025, 2026, 2027, 2028, 2029].map(y => <option key={y} value={y}>{y}</option>)}
+                  </select>
+                  <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-hover:text-primary transition-colors" />
+                </div>
               </div>
+
+              <button onClick={nextMonth} className="hidden sm:flex px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-primary rounded-lg transition-colors items-center gap-1">Selanjutnya <ChevronRight size={16} /></button>
+              <button onClick={nextMonth} className="sm:hidden p-2 text-slate-600 hover:bg-slate-100 hover:text-primary rounded-lg transition-colors"><ChevronRight size={18} /></button>
             </div>
             <div className="p-5">
               <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-slate-400 mb-3">
@@ -113,6 +208,7 @@ const Kalender = () => {
           </Card>
         </div>
       </div>
+      )}
     </div>
   );
 };

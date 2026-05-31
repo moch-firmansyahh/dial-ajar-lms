@@ -5,6 +5,7 @@ import {
   Home, BookOpen, CheckSquare, MessageSquare, Award,
   LogOut, PanelLeftClose, PanelLeftOpen
 } from 'lucide-react';
+import logo from '../../assets/logo.png';
 
 const Sidebar = ({ isExpanded, setIsExpanded }) => {
   const { logout } = useAuthStore();
@@ -23,7 +24,7 @@ const Sidebar = ({ isExpanded, setIsExpanded }) => {
 
   return (
     <div 
-      className={`fixed inset-y-0 left-0 z-40 bg-[#F8F9FA] border-r border-slate-200 flex flex-col transition-all duration-300 ease-in-out ${
+      className={`fixed inset-y-0 left-0 z-40 bg-[#F8F9FA] border-r border-slate-200 flex flex-col transition-all duration-300 ease-in-out transform-gpu [&::-webkit-scrollbar]:hidden ${
         isExpanded 
           ? 'w-64 translate-x-0' 
           : 'w-20 -translate-x-full md:translate-x-0'
@@ -40,14 +41,14 @@ const Sidebar = ({ isExpanded, setIsExpanded }) => {
 
       {/* Sidebar Header */}
       <div className="h-20 flex items-center border-b border-slate-200/50 overflow-hidden shrink-0">
-        <div className="w-20 flex items-center justify-center shrink-0">
-          <div className="w-8 h-8 bg-primary rounded-xl flex items-center justify-center text-white font-medium text-lg shadow-sm">
-            d;
-          </div>
+        <div className="flex items-center justify-center shrink-0 w-20 transition-all duration-300">
+          <img src={logo} alt="Dial Ajar" className="w-10 h-10 object-contain" />
         </div>
-        <span className={`font-medium text-slate-800 text-lg tracking-tight transition-all duration-300 ease-in-out whitespace-nowrap ${isExpanded ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0'}`}>
-          Dial Ajar
-        </span>
+        <div className={`flex items-center overflow-hidden transition-all duration-300 ease-in-out ${isExpanded ? 'max-w-[200px] opacity-100' : 'max-w-0 opacity-0'}`}>
+          <span className="font-['Plus_Jakarta_Sans'] font-extrabold text-[#193F6E] text-[22px] tracking-tight whitespace-nowrap ml-1 mt-0.5">
+            Dial Ajar
+          </span>
+        </div>
       </div>
 
       {/* Menu Items */}
@@ -71,12 +72,14 @@ const Sidebar = ({ isExpanded, setIsExpanded }) => {
             `}
             title={!isExpanded ? item.label : ''}
           >
-            <div className="w-[56px] h-full flex items-center justify-center shrink-0">
+            <div className="h-full w-14 flex items-center justify-center shrink-0">
               <item.icon size={22} className="transition-colors duration-300" />
             </div>
-            <span className={`font-semibold text-[15px] whitespace-nowrap transition-all duration-300 ease-in-out ${isExpanded ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0'}`}>
-              {item.label}
-            </span>
+            <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isExpanded ? 'max-w-[200px] opacity-100' : 'max-w-0 opacity-0'}`}>
+              <span className="font-semibold text-[15px] whitespace-nowrap block">
+                {item.label}
+              </span>
+            </div>
           </NavLink>
         ))}
       </div>
@@ -89,12 +92,14 @@ const Sidebar = ({ isExpanded, setIsExpanded }) => {
           className="flex items-center text-red-500 hover:text-red-600 hover:bg-red-50 transition-colors font-semibold text-[15px] h-[50px] rounded-[14px] w-full overflow-hidden"
           title={!isExpanded ? "Keluar" : ""}
         >
-          <div className="w-[56px] h-full flex items-center justify-center shrink-0">
+          <div className="h-full w-14 flex items-center justify-center shrink-0">
             <LogOut size={22} />
           </div>
-          <span className={`whitespace-nowrap transition-all duration-300 ease-in-out ${isExpanded ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0'}`}>
-            Keluar
-          </span>
+          <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isExpanded ? 'max-w-[200px] opacity-100' : 'max-w-0 opacity-0'}`}>
+            <span className="font-semibold whitespace-nowrap block">
+              Keluar
+            </span>
+          </div>
         </button>
       </div>
     </div>

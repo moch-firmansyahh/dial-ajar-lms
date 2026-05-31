@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Card from '../../components/ui/Card';
+import Skeleton from '../../components/ui/Skeleton';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
 import { Clock, CheckCircle, ChevronLeft, ChevronRight, AlertTriangle, X } from 'lucide-react';
@@ -23,11 +24,20 @@ const KuisKerjakan = () => {
   // State for modal
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, []);
+
   // Timer effect
   useEffect(() => {
     if (timeLeft <= 0) {
       // Auto submit immediately when time is up without confirmation
-      navigate(`/kuis/${id}/${kuisId}/hasil`);
+      navigate(`/tugas/${id}/${kuisId}/hasil`);
       return;
     }
     const timerId = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
@@ -45,7 +55,7 @@ const KuisKerjakan = () => {
   const isAnswered = (qId) => answers[qId] !== undefined && answers[qId] !== '';
 
   const handleConfirmSubmit = () => {
-    navigate(`/kuis/${id}/${kuisId}/hasil`);
+    navigate(`/tugas/${id}/${kuisId}/hasil`);
   };
 
   const answeredCount = Object.keys(answers).length;
@@ -66,6 +76,39 @@ const KuisKerjakan = () => {
         </div>
       </div>
 
+      {isLoading ? (
+        <div className="flex flex-col lg:flex-row gap-6 animate-slide-up-fade">
+          <div className="flex-1 space-y-5">
+            <Card className="min-h-[320px] flex flex-col p-6 shadow-sm border-slate-200/80">
+              <div className="flex justify-between items-center border-b border-slate-100 pb-4 mb-5">
+                <Skeleton className="h-6 w-32" />
+                <Skeleton className="h-6 w-24 rounded-full" />
+              </div>
+              <Skeleton className="h-6 w-3/4 mb-6" />
+              <div className="mt-auto space-y-3">
+                {Array(4).fill(0).map((_, i) => (
+                  <Skeleton key={`skel-opt-${i}`} className="h-14 w-full rounded-xl" />
+                ))}
+              </div>
+            </Card>
+            <div className="flex justify-between items-center mt-6">
+              <Skeleton className="h-10 w-32 rounded-lg" />
+              <Skeleton className="h-10 w-32 rounded-lg" />
+            </div>
+          </div>
+          <div className="w-full lg:w-72 shrink-0">
+            <Card className="sticky top-24 p-5 shadow-sm border-slate-200/80">
+              <Skeleton className="h-6 w-32 mb-4" />
+              <div className="grid grid-cols-5 gap-2.5">
+                {Array(10).fill(0).map((_, i) => (
+                  <Skeleton key={`skel-nav-${i}`} className="h-11 w-full rounded-xl" />
+                ))}
+              </div>
+              <Skeleton className="h-10 w-full mt-6 rounded-lg" />
+            </Card>
+          </div>
+        </div>
+      ) : (
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Main: Question */}
         <div className="flex-1 space-y-5">
@@ -176,8 +219,9 @@ const KuisKerjakan = () => {
           </Card>
         </div>
       </div>
+      )}
 
-      {/* Custom Confirmation Modal */}
+      {/* Modal Konfirmasi */}
       {showConfirmModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setShowConfirmModal(false)} />

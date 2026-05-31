@@ -8,19 +8,21 @@
 // jika API key tidak tersedia atau request gagal.
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
 
-export const generateQuizWithAI = async (materiText, jumlahPg = 5, jumlahEssay = 2) => {
+
+
+export const generateQuizWithAI = async (materiText) => {
+  const topic = "Materi Umum";
   const prompt = `
-Buatkan kuis berdasarkan materi berikut:
+Teks berikut adalah dokumen yang berisi daftar soal kuis (pilihan ganda dan/atau essay):
 "${materiText}"
 
-Buatkan ${jumlahPg} soal pilihan ganda dan ${jumlahEssay} soal essay.
-Format balasannya HARUS berupa JSON murni (tanpa markdown backticks) dengan struktur berikut:
+Tugas Anda adalah membaca teks di atas, mengekstrak SEMUA soal yang ada, lalu memformatnya menjadi JSON murni (tanpa markdown backticks) dengan struktur berikut:
 {
   "pilihan_ganda": [
     {
       "pertanyaan": "Pertanyaan 1...",
       "opsi": ["A. Opsi 1", "B. Opsi 2", "C. Opsi 3", "D. Opsi 4"],
-      "jawaban_benar": 0 // index dari opsi yang benar (0-3)
+      "jawaban_benar": 0 // index dari opsi yang benar (0-3). Coba tebak jawaban benarnya jika tidak ada kunci jawaban.
     }
   ],
   "essay": [
@@ -29,12 +31,12 @@ Format balasannya HARUS berupa JSON murni (tanpa markdown backticks) dengan stru
     }
   ]
 }
-Hanya kembalikan JSON, jangan ada teks pembuka atau penutup.
+Ekstrak sebanyak mungkin soal yang Anda temukan di teks. Hanya kembalikan JSON, jangan ada teks pembuka atau penutup.
 `;
 
   try {
     if (!API_KEY) {
-      throw new Error('API Key tidak ditemukan, beralih ke Fallback Mode.');
+      throw new Error("Untuk menggunakan fitur ini secara 'real', Anda harus mengatur VITE_GEMINI_API_KEY di file .env terlebih dahulu.");
     }
 
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {

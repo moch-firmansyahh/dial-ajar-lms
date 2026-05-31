@@ -3,7 +3,7 @@ import { useParams, NavLink, Outlet } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { getMataKuliahById } from '../../api/matakuliah.api';
 import PageHeader from '../../components/shared/PageHeader';
-import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import Skeleton from '../../components/ui/Skeleton';
 import Badge from '../../components/ui/Badge';
 import { BookOpen, Video } from 'lucide-react';
 
@@ -18,7 +18,21 @@ const MataKuliahDetail = () => {
     }
   });
 
-  if (isLoading) return <LoadingSpinner />;
+  if (isLoading) {
+    return (
+      <div className="max-w-[1200px] mx-auto pb-10">
+        <div className="mb-6 flex flex-col gap-2">
+          <Skeleton className="h-4 w-24 mb-2" />
+          <Skeleton className="h-8 w-64" />
+        </div>
+        <div className="flex gap-6 border-b border-slate-200 mb-6 px-1">
+          <Skeleton className="h-6 w-32 mb-2" />
+          <Skeleton className="h-6 w-24 mb-2" />
+        </div>
+        <Skeleton className="h-64 w-full rounded-2xl" />
+      </div>
+    );
+  }
   if (isError || !matkul) return <div className="text-red-500 p-4">Gagal memuat mata kuliah.</div>;
 
   // Hanya menampilkan Materi sesuai permintaan terbaru

@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Card from '../../components/ui/Card';
+import Skeleton from '../../components/ui/Skeleton';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import { useAuthStore } from '../../store/authStore';
@@ -23,6 +24,14 @@ const TugasDetail = () => {
   // State
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, []);
 
   const tugas = tugasId === '2' ? {
     judul: 'Kuis 1: Pemahaman JSX Dasar',
@@ -52,37 +61,53 @@ const TugasDetail = () => {
         <ArrowLeft size={18} className="mr-2" /> Batal / Kembali
       </Button>
 
-      <div className="mb-6">
-        <h1 className="text-2xl font-medium text-slate-900 mb-2">{tugas.judul}</h1>
-        <div className="flex items-center gap-3 flex-wrap">
-          <Badge type="peringatan" label={`Deadline: ${tugas.deadline}`} />
-          {!isDosen && (
-            isSubmitted ? (
-              <Badge type="sukses" label="Selesai (Sudah Dikumpulkan)" />
-            ) : (
-              <Badge type="bahaya" label="Belum Dikumpulkan" />
-            )
-          )}
-          {!isDosen && submission?.nilai && (
-            <Badge type="info" label={`Nilai: ${submission.nilai}`} />
-          )}
-        </div>
-      </div>
-
-      <Card className="mb-5">
-        <h3 className="font-medium text-slate-800 mb-3">Deskripsi Tugas</h3>
-        <div className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">{tugas.deskripsi}</div>
-      </Card>
-
-      {tugas.type === 'tugas' && (
-        <Card className="mb-5">
-          <h3 className="font-medium text-slate-800 mb-3">Lampiran</h3>
-          <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
-            <FileText size={20} className="text-primary" />
-            <span className="text-sm text-slate-700 font-medium flex-1">template_tugas.pdf</span>
-            <Button variant="ghost" size="sm" className="bg-white"><Download size={14} className="mr-1" /> Unduh</Button>
+      {isLoading ? (
+        <div className="animate-slide-up-fade">
+          <div className="mb-6">
+            <Skeleton className="h-8 w-3/4 mb-4" />
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-6 w-40 rounded-full" />
+              <Skeleton className="h-6 w-32 rounded-full" />
+            </div>
           </div>
-        </Card>
+          <Skeleton className="h-48 w-full rounded-2xl mb-8" />
+          <Skeleton className="h-32 w-full rounded-2xl" />
+        </div>
+      ) : (
+        <div className="animate-slide-up-fade">
+          <div className="mb-6">
+            <h1 className="text-2xl font-medium text-slate-900 mb-2">{tugas.judul}</h1>
+            <div className="flex items-center gap-3 flex-wrap">
+              <Badge type="peringatan" label={`Deadline: ${tugas.deadline}`} />
+              {!isDosen && (
+                isSubmitted ? (
+                  <Badge type="sukses" label="Selesai (Sudah Dikumpulkan)" />
+                ) : (
+                  <Badge type="bahaya" label="Belum Dikumpulkan" />
+                )
+              )}
+              {!isDosen && submission?.nilai && (
+                <Badge type="info" label={`Nilai: ${submission.nilai}`} />
+              )}
+            </div>
+          </div>
+
+          <Card className="mb-5">
+            <h3 className="font-medium text-slate-800 mb-3">Deskripsi Tugas</h3>
+            <div className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">{tugas.deskripsi}</div>
+          </Card>
+
+          {tugas.type === 'tugas' && (
+            <Card className="mb-5">
+              <h3 className="font-medium text-slate-800 mb-3">Lampiran</h3>
+              <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                <FileText size={20} className="text-primary" />
+                <span className="text-sm text-slate-700 font-medium flex-1">template_tugas.pdf</span>
+                <Button variant="ghost" size="sm" className="bg-white"><Download size={14} className="mr-1" /> Unduh</Button>
+              </div>
+            </Card>
+          )}
+      </div>
       )}
 
       {!isDosen && (

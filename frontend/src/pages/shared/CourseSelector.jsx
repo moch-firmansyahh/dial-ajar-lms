@@ -2,13 +2,13 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import MataKuliahList from './MataKuliahList';
 
-const CourseSelector = ({ targetFeature, title, subtitle }) => {
+const CourseSelector = ({ targetFeature, targetPath = '', title, subtitle }) => {
   const navigate = useNavigate();
 
   const handleSelectCourse = (courseId) => {
     // Navigasi ke fitur spesifik untuk course yang dipilih
-    // Contoh: /tugas/1
-    navigate(`/${targetFeature}/${courseId}`);
+    // Contoh: /tugas/1 atau /tugas/1/buat
+    navigate(`/${targetFeature}/${courseId}${targetPath}`);
   };
 
   return (

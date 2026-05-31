@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import PageHeader from '../../components/shared/PageHeader';
 import Card from '../../components/ui/Card';
+import Skeleton from '../../components/ui/Skeleton';
 import InputField from '../../components/ui/InputField';
 import Button from '../../components/ui/Button';
 import { Upload, FileUp, Link as LinkIcon, FileVideo, BookOpen, Video as VideoIcon } from 'lucide-react';
@@ -13,9 +14,49 @@ const MateriUpload = () => {
   const [tipeMateri, setTipeMateri] = useState('pdf'); // pdf, word, video
   const [tipeVideo, setTipeVideo] = useState('link'); // link, upload
 
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <div className="max-w-2xl mx-auto pb-10 -mt-2">
       <PageHeader title="Upload Materi Baru" />
+      {isLoading ? (
+        <div className="animate-slide-up-fade">
+          <Card className="space-y-5">
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-12 w-full rounded-xl" />
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-32" />
+              <div className="grid grid-cols-3 gap-3">
+                <Skeleton className="h-20 w-full rounded-xl" />
+                <Skeleton className="h-20 w-full rounded-xl" />
+                <Skeleton className="h-20 w-full rounded-xl" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-32 w-full rounded-xl" />
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-24 w-full rounded-xl" />
+            </div>
+            <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+              <Skeleton className="h-10 w-24 rounded-lg" />
+              <Skeleton className="h-10 w-32 rounded-lg" />
+            </div>
+          </Card>
+        </div>
+      ) : (
+      <div className="animate-slide-up-fade">
       <Card className="space-y-5">
         <InputField label="Judul Materi" placeholder="Contoh: Pertemuan 1 - Intro React" />
         
@@ -109,6 +150,8 @@ const MateriUpload = () => {
           </Button>
         </div>
       </Card>
+      </div>
+      )}
     </div>
   );
 };

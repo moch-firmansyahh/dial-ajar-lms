@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
+import { useQuery } from '@tanstack/react-query';
+import { getDashboardMahasiswa } from '../../api/dashboard.api';
 import Skeleton from '../../components/ui/Skeleton';
 import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
@@ -13,22 +15,23 @@ const DashboardMahasiswa = () => {
 
   const [filterType, setFilterType] = useState('semua'); // 'semua', 'tugas', 'kuis'
   const [sortBy, setSortBy] = useState('terdekat'); // 'terdekat', 'terlama'
-  const [isLoading, setIsLoading] = useState(true);
 
-  // Simulasi loading data dari API
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, []);
+  const { data: dashboardData, isLoading: queryLoading } = useQuery({
+    queryKey: ['dashboard', user?.id],
+    queryFn: async () => {
+      return await getDashboardMahasiswa(user.id);
+    },
+    enabled: !!user?.id
+  });
 
-  // Nanti nilai ini akan diganti dengan state/data hasil fetch API backend
-  const dashboardStats = {
-    mataKuliah: 5,
-    tugasMendatang: 2,
-    kuisMendatang: 1,
-    ipkSementara: '3.85',
+  const isLoading = queryLoading;
+
+  const dashboardStats = dashboardData || {
+    mataKuliah: 0,
+    tugasMendatang: 0,
+    kuisMendatang: 0,
+    ipkSementara: '0.00',
+    deadlines: []
   };
 
   const stats = [
@@ -38,18 +41,17 @@ const DashboardMahasiswa = () => {
     { label: 'IPK Sementara', value: dashboardStats.ipkSementara, icon: Trophy, color: 'text-emerald-600', bg: 'bg-emerald-50' },
   ];
 
-  const deadlines = [
-    { id: 1, courseId: 1, type: 'tugas', title: 'Tugas 3: React Router', matkul: 'IF3110 - Pengembangan Aplikasi Berbasis Web', time: 'Hari ini, 23:59', urgency: 'bahaya' },
-    { id: 2, courseId: 2, type: 'kuis', title: 'Kuis 2: Inheritance & Polymorphism', matkul: 'IF3111 - Pemrograman Berorientasi Objek', time: 'Besok, 10:00', urgency: 'peringatan' },
-    { id: 3, courseId: 3, type: 'tugas', title: 'Tugas Besar Laporan', matkul: 'IF3112 - Rekayasa Perangkat Lunak', time: 'Lusa, 08:00', urgency: 'normal' },
-  ];
+  const deadlines = dashboardStats.deadlines || [];
 
-  // Logic Filter & Sort Dummy
+  // Logic Filter & Sort
   const filteredDeadlines = deadlines
-    .filter(item => filterType === 'semua' || item.type === filterType)
+    .filter(item => filterType === 'semua' || item.type.toLowerCase() === filterType)
     .sort((a, b) => {
-      if (sortBy === 'terdekat') return a.id - b.id;
-      return b.id - a.id;
+      // Sort by date (time field has the ISO string from backend)
+      const dateA = new Date(a.time).getTime();
+      const dateB = new Date(b.time).getTime();
+      if (sortBy === 'terdekat') return dateA - dateB;
+      return dateB - dateA;
     });
 
   return (
@@ -175,7 +177,7 @@ const DashboardMahasiswa = () => {
                   </div>
                   <div>
                     <div className="flex items-center gap-2 mb-1.5">
-                      <Badge type={item.urgency} label={item.time} />
+                      <Badge type={item.urgency} label={new Date(item.time).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })} />
                       <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider bg-slate-100 px-2 py-0.5 rounded-full">
                         {item.type}
                       </span>

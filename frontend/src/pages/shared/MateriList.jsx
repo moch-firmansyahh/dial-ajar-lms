@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
+import { useQuery } from '@tanstack/react-query';
+import { getCourseContent } from '../../api/matakuliah.api';
 import Card from '../../components/ui/Card';
 import Skeleton from '../../components/ui/Skeleton';
 import Button from '../../components/ui/Button';
@@ -21,27 +23,46 @@ const MateriList = () => {
   // State for filter
   const [filterType, setFilterType] = useState('all'); // 'all', 'modul', 'video'
 
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: contentData, isLoading: queryLoading } = useQuery({
+    queryKey: ['courseContent', id],
+    queryFn: async () => {
+      const res = await getCourseContent(id);
+      return res;
+    }
+  });
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, []);
+  const isLoading = queryLoading;
 
-  const setViewMode = (mode) => {
-    setViewModeState(mode);
-    localStorage.setItem('materiViewMode', mode);
-  };
-
-  const dummyMateri = [
-    { id: '1', title: 'Modul 1: Pengenalan Dasar React', size: '2.4 MB', date: '10 Jun 2026', type: 'pdf', category: 'modul' },
-    { id: '2', title: 'Modul 2: JSX & Component', size: '3.1 MB', date: '15 Jun 2026', type: 'ppt', category: 'modul' },
-    { id: '3', title: 'Video: Belajar React dari Nol', duration: '12:45', date: '18 Jun 2026', type: 'youtube', category: 'video', isCompleted: false },
-    { id: '4', title: 'Modul 3: Lifecycle, Props & State', size: '1.8 MB', date: '20 Jun 2026', type: 'doc', category: 'modul' },
-    { id: '5', title: 'Video: Props & State Lanjutan', duration: '20:10', date: '22 Jun 2026', type: 'upload', category: 'video', isCompleted: true },
-  ];
+  const combinedMateri = [];
+  if (contentData) {
+    if (contentData.modules) {
+      contentData.modules.forEach(m => {
+        combinedMateri.push({
+          id: `modul-${m.id}`,
+          title: m.judul,
+          size: 'Unknown', // Can be enhanced later
+          date: new Date(m.createdAt).toLocaleDateString('id-ID'),
+          type: 'pdf',
+          category: 'modul',
+          url: m.fileUrl
+        });
+      });
+    }
+    if (contentData.videos) {
+      contentData.videos.forEach(v => {
+        combinedMateri.push({
+          id: `video-${v.id}`,
+          title: v.judul,
+          duration: 'Unknown',
+          date: new Date(v.createdAt).toLocaleDateString('id-ID'),
+          type: 'youtube',
+          category: 'video',
+          url: v.linkVideo,
+          isCompleted: false
+        });
+      });
+    }
+  }
 
   const getFileStyle = (type, category) => {
     if (category === 'video') {
@@ -107,10 +128,14 @@ const MateriList = () => {
     }
   };
 
-  const filteredMateri = dummyMateri.filter(m => {
+  const filteredMateri = combinedMateri.filter(m => {
     if (filterType === 'all') return true;
     return m.category === filterType;
   });
+
+  const handleDownload = (url) => {
+    window.open(url, '_blank');
+  };
 
   return (
     <div>
@@ -252,6 +277,7 @@ const MateriList = () => {
 
                 {/* Premium Button */}
                 <button 
+                  onClick={() => handleDownload(materi.url)}
                   className={`relative z-10 flex items-center justify-center gap-2 transition-all duration-300 shadow-sm shrink-0 hover:shadow-primary/20 hover:scale-[1.02] active:scale-[0.98]
                     ${isGrid ? 'w-full py-2.5 rounded-xl font-medium mt-auto text-[13px]' : 'w-11 h-11 rounded-full'}
                     ${isVideo 

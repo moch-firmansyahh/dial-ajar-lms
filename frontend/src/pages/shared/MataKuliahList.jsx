@@ -25,23 +25,25 @@ const MataKuliahList = ({ selectMode = false, title = "Mata Kuliah", subtitle = 
   }, []);
 
   const { data: matkulData } = useQuery({
-    queryKey: ['matakuliah'],
+    queryKey: ['matakuliah', user?.id],
     queryFn: async () => {
-      const res = await getMataKuliah();
+      if (!user) return [];
+      const res = await getMataKuliah(user.id, user.role);
       return res.data;
-    }
+    },
+    enabled: !!user
   });
 
-  // Dummy mapping to match screenshot card data needs (deterministic to avoid render errors)
+  // Mapping real data from API to course card props
   const courses = (matkulData || []).map(mk => ({
     id: mk.id,
     nama: mk.nama,
-    kode: mk.kode,
+    kode: mk.kodeKelas || mk.kode || 'N/A',
     enrolled: ((mk.id * 17) % 30) + 10,
     accuracy: ((mk.id * 23) % 80) + 20,
     completion: ((mk.id * 31) % 60) + 40,
     tags: [],
-    questions: ((mk.id * 7) % 20) + 5,
+    questions: mk.forumCount || 0,
     edited: `Dosen: ${mk.dosen}`
   }));
 

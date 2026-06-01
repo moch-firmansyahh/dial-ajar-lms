@@ -47,8 +47,7 @@ function App() {
 
   return (
     <>
-      <PageLoader />
-      <Suspense fallback={null}>
+      <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/login" element={<Login />} />
       

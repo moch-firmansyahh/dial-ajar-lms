@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
+import { useQuery } from '@tanstack/react-query';
+import { getForumByMatkul, createForum } from '../../api/forum.api';
 import Card from '../../components/ui/Card';
 import Skeleton from '../../components/ui/Skeleton';
 import Button from '../../components/ui/Button';
@@ -23,41 +25,34 @@ const ForumList = () => {
     localStorage.setItem('forumViewMode', mode);
   };
 
-  // State for forums
-  const [forums, setForums] = useState([
-    { id: '1', title: 'Diskusi Pertemuan 1: Pengenalan Dasar React', author: 'Budi Dosen, M.Kom', replies: 12, date: '10 Jun 2026', isNew: false },
-    { id: '2', title: 'Tanya Jawab Tugas 3 (Routing Navigation)', author: 'Andi Mahasiswa', replies: 5, date: '15 Jun 2026', isNew: true },
-    { id: '3', title: 'Sharing Resource: Tutorial Zustand Bahasa Indonesia', author: 'Cici Mahasiswa', replies: 3, date: '18 Jun 2026', isNew: true },
-  ]);
-
   // State for create modal
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newContent, setNewContent] = useState('');
 
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: forumsData, isLoading: queryLoading, refetch } = useQuery({
+    queryKey: ['forumByMatkul', id],
+    queryFn: async () => {
+      const res = await getForumByMatkul(id);
+      return res.data;
+    }
+  });
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, []);
+  const forums = forumsData || [];
+  const isLoading = queryLoading;
 
-  const handleCreateForum = () => {
+  const handleCreateForum = async () => {
     if (!newTitle.trim()) return;
-    const newForum = {
-      id: Date.now().toString(),
-      title: newTitle,
-      author: user?.nama || 'Pengguna',
-      replies: 0,
-      date: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
-      isNew: true
-    };
-    setForums([newForum, ...forums]);
-    setShowCreateModal(false);
-    setNewTitle('');
-    setNewContent('');
+    try {
+      await createForum(id, user.id, { judul: newTitle, content: newContent });
+      setShowCreateModal(false);
+      setNewTitle('');
+      setNewContent('');
+      refetch(); // Reload data
+    } catch (e) {
+      console.error(e);
+      alert('Gagal membuat diskusi');
+    }
   };
 
   return (

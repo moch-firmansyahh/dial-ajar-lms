@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useAuthStore } from '../../store/authStore';
+import { useQuery } from '@tanstack/react-query';
+import { getNilaiMahasiswa } from '../../api/nilai.api';
 import Skeleton from '../../components/ui/Skeleton';
 import { Award, LayoutGrid, List, Search, BookOpen } from 'lucide-react';
 
@@ -8,36 +10,26 @@ const NilaiSaya = () => {
   const [viewMode, setViewMode] = useState('grid');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Persist view mode
-  useEffect(() => {
-    const saved = localStorage.getItem('nilaiViewMode');
-    if (saved) setViewMode(saved);
-  }, []);
+  const { data: nilaiData, isLoading: queryLoading } = useQuery({
+    queryKey: ['nilaiSaya', user?.id],
+    queryFn: async () => {
+      const res = await getNilaiMahasiswa(user.id);
+      return res.data;
+    },
+    enabled: !!user?.id
+  });
 
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, []);
+  const isLoading = queryLoading;
+  const nilaiList = nilaiData || [];
 
   const handleViewMode = (mode) => {
     setViewMode(mode);
     localStorage.setItem('nilaiViewMode', mode);
   };
 
-  const dummyNilai = [
-    { matkul: 'Pengembangan Aplikasi Berbasis Web', tugas: 85, kuis: 90, akhir: 87.5 },
-    { matkul: 'Pemrograman Berorientasi Objek', tugas: 80, kuis: 85, akhir: 82.5 },
-    { matkul: 'Basis Data', tugas: 78, kuis: 82, akhir: 80.0 },
-    { matkul: 'Struktur Data', tugas: 65, kuis: 70, akhir: 67.5 },
-  ];
-
   // Filter & Search logic
-  const filteredNilai = dummyNilai.filter(item => 
-    item.matkul.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredNilai = nilaiList.filter(item => 
+    item.mataKuliah?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const getScoreBarColor = (score) => {
@@ -147,7 +139,7 @@ const NilaiSaya = () => {
                 </div>
                 <div>
                   <h3 className="font-medium text-[16px] text-slate-800 leading-tight group-hover:text-primary transition-colors line-clamp-2 mt-1">
-                    {item.matkul}
+                    {item.mataKuliah}
                   </h3>
                 </div>
               </div>
@@ -158,11 +150,11 @@ const NilaiSaya = () => {
               <div className="flex items-center justify-between gap-3 mb-5">
                 <div className="text-center bg-slate-50/80 px-4 py-2.5 rounded-xl border border-slate-100 flex-1">
                   <p className="text-[10px] font-medium text-slate-400 uppercase tracking-widest mb-0.5">Tugas</p>
-                  <p className="text-[15px] font-semibold text-slate-700">{item.tugas}</p>
+                  <p className="text-[15px] font-semibold text-slate-700">{item.nilaiTugas || 0}</p>
                 </div>
                 <div className="text-center bg-slate-50/80 px-4 py-2.5 rounded-xl border border-slate-100 flex-1">
                   <p className="text-[10px] font-medium text-slate-400 uppercase tracking-widest mb-0.5">Kuis</p>
-                  <p className="text-[15px] font-semibold text-slate-700">{item.kuis}</p>
+                  <p className="text-[15px] font-semibold text-slate-700">{item.nilaiKuis || 0}</p>
                 </div>
               </div>
 
@@ -170,12 +162,12 @@ const NilaiSaya = () => {
               <div>
                 <div className="flex justify-between items-end mb-2">
                   <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Nilai Akhir</span>
-                  <span className="text-xl font-bold text-slate-800">{item.akhir}</span>
+                  <span className="text-xl font-bold text-slate-800">{item.nilaiAkhir || 0}</span>
                 </div>
                 <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
                   <div 
-                    className={`h-full rounded-full transition-all duration-1000 ease-out ${getScoreBarColor(item.akhir)}`}
-                    style={{ width: `${item.akhir}%` }}
+                    className={`h-full rounded-full transition-all duration-1000 ease-out ${getScoreBarColor(item.nilaiAkhir || 0)}`}
+                    style={{ width: `${item.nilaiAkhir || 0}%` }}
                   />
                 </div>
               </div>

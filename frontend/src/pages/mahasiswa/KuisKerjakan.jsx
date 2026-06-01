@@ -37,12 +37,12 @@ const KuisKerjakan = () => {
   useEffect(() => {
     if (timeLeft <= 0) {
       // Auto submit immediately when time is up without confirmation
-      navigate(`/tugas/${id}/${kuisId}/hasil`);
+      navigate(`/tugas/${id}/${kuisId}/hasil`, { state: { submittedAnswers: answers } });
       return;
     }
     const timerId = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
     return () => clearInterval(timerId);
-  }, [timeLeft, navigate, id, kuisId]);
+  }, [timeLeft, navigate, id, kuisId, answers]);
 
   const formatTime = (seconds) => {
     const m = Math.floor(seconds / 60);
@@ -55,7 +55,7 @@ const KuisKerjakan = () => {
   const isAnswered = (qId) => answers[qId] !== undefined && answers[qId] !== '';
 
   const handleConfirmSubmit = () => {
-    navigate(`/tugas/${id}/${kuisId}/hasil`);
+    navigate(`/tugas/${id}/${kuisId}/hasil`, { state: { submittedAnswers: answers } });
   };
 
   const answeredCount = Object.keys(answers).length;

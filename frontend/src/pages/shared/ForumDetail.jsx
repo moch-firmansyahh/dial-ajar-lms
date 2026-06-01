@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { getForumDetail, replyForum } from '../../api/forum.api';
 import Card from '../../components/ui/Card';
 import Skeleton from '../../components/ui/Skeleton';
 import { useAuthStore } from '../../store/authStore';
@@ -10,80 +12,54 @@ const ForumDetail = () => {
   const navigate = useNavigate();
   const { user } = useAuthStore();
 
-  const thread = {
-    title: 'Diskusi Pertemuan 1: Pengenalan Dasar React',
-    author: 'Budi Dosen, M.Kom',
-    role: 'DOSEN',
-    date: '10 Jun 2026, 08:30',
-    date: '10 Jun 2026, 08:30',
-    content: 'Selamat pagi semuanya! Silakan diskusikan materi yang sudah kita bahas pada pertemuan pertama mengenai pengenalan ekosistem React. \n\nApa yang paling menarik dari React menurut kalian? Dan apa tantangan terbesar yang kalian rasakan saat pertama kali mencoba menggunakan JSX?',
-  };
+  const { data: forumData, isLoading: queryLoading, refetch } = useQuery({
+    queryKey: ['forumDetail', forumId],
+    queryFn: async () => {
+      const res = await getForumDetail(forumId);
+      return res.data;
+    }
+  });
 
-  const dummyReplies = [
-    { 
-      id: 1, 
-      author: 'Andi Mahasiswa', 
-      role: 'MAHASISWA',
-      date: '10 Jun 2026, 15:30', 
-      content: 'Menurut saya React sangat menarik karena konsep component-based nya Pak. Kita bisa bikin UI seperti lego. Tantangannya mungkin memahami JSX di awal karena agak aneh melihat HTML di dalam Javascript.',
-      likes: 12,
-      isLiked: true,
-      replies: [
-        {
-          id: 101,
-          author: 'Budi Dosen, M.Kom',
-          role: 'DOSEN',
-          date: '10 Jun 2026, 16:15',
-          content: 'Tepat sekali Andi! Konsep lego itu analogi yang sangat pas. Untuk JSX, nanti lama-lama akan terbiasa karena sebenarnya sangat membantu proses development.',
-          likes: 5,
-          isLiked: false
-        }
-      ]
-    },
-    { 
-      id: 2, 
-      author: 'Cici Liana', 
-      role: 'MAHASISWA',
-      date: '11 Jun 2026, 09:00', 
-      content: 'Saya paling suka React Hooks Pak, terutama useState dan useEffect. Awalnya cukup membingungkan untuk mengatur life-cycle, tapi setelah dicoba ternyata sangat powerful!',
-      likes: 8,
-      isLiked: false,
-      replies: []
-    },
-  ];
+  const isLoading = queryLoading;
+  const thread = forumData ? {
+    id: forumData.id,
+    title: forumData.judul,
+    author: forumData.author || 'Pengguna',
+    role: forumData.authorRole?.toUpperCase() || 'MAHASISWA',
+    date: new Date(forumData.date).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}),
+    content: forumData.content
+  } : null;
 
-  const [replies, setReplies] = useState(dummyReplies);
+  const replies = forumData ? forumData.replies.map(r => ({
+    id: r.id,
+    author: r.author || 'Pengguna',
+    role: r.authorRole?.toUpperCase() || 'MAHASISWA',
+    date: new Date(r.date).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}),
+    content: r.content,
+    replies: [] // API only supports flat replies for now
+  })) : [];
+
   const [activeReply, setActiveReply] = useState(null);
   const [commentText, setCommentText] = useState('');
   const [subReplyText, setSubReplyText] = useState('');
 
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, []);
-
   const getAvatarColor = (name) => {
+    if (!name) return 'from-blue-400 to-indigo-500';
     const colors = ['from-blue-400 to-indigo-500', 'from-emerald-400 to-teal-500', 'from-rose-400 to-red-500', 'from-amber-400 to-orange-500', 'from-violet-400 to-purple-500'];
     const index = name.length % colors.length;
     return colors[index];
   };
 
-  const handleMainReply = () => {
+  const handleMainReply = async () => {
     if (!commentText.trim()) return;
-    const newReply = {
-      id: Date.now(),
-      author: user?.nama || 'Pengguna',
-      role: user?.role || 'MAHASISWA',
-      date: new Date().toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}) + ', ' + new Date().toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'}),
-      content: commentText,
-      replies: []
-    };
-    setReplies([...replies, newReply]);
-    setCommentText('');
+    try {
+      await replyForum(forumId, user.id, commentText);
+      setCommentText('');
+      refetch();
+    } catch (e) {
+      console.error(e);
+      alert('Gagal mengirim balasan');
+    }
   };
 
   const handleSubReply = (parentId) => {

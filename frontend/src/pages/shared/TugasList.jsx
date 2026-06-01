@@ -1,6 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
+import { useQuery } from '@tanstack/react-query';
+import { getTugasByMatkul } from '../../api/tugas.api';
 import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
@@ -37,62 +39,29 @@ const TugasList = () => {
   // State for Error Notification
   const [errorNotification, setErrorNotification] = useState('');
 
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: tugasData, isLoading: queryLoading } = useQuery({
+    queryKey: ['tugasByMatkul', id],
+    queryFn: async () => {
+      const res = await getTugasByMatkul(id);
+      return res.data;
+    }
+  });
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Dummy Data with types
-  const dummyTugas = [
-    { 
-      id: '1', 
-      judul: 'Tugas 1: Instalasi React & Vite', 
-      dueDate: new Date(Date.now() - 86400000 * 2), // 2 days ago
-      status: 'dikumpulkan', 
-      nilai: 95,
-      type: 'tugas'
-    },
-    { 
-      id: '2', 
-      judul: 'Kuis 1: Pemahaman JSX Dasar', 
-      dueDate: new Date(Date.now() - 86400000 * 5), // 5 days ago
-      status: 'terkunci', 
-      nilai: null,
-      type: 'kuis'
-    },
-    { 
-      id: '3', 
-      judul: 'Tugas 3: State Management dengan Zustand', 
-      dueDate: new Date(Date.now() + 86400000 * 3), // 3 days from now
-      status: 'belum', 
-      nilai: null,
-      type: 'tugas'
-    },
-    { 
-      id: '4', 
-      judul: 'Kuis 2: Hooks & Context API', 
-      dueDate: new Date(Date.now() + 86400000 * 7), // 7 days from now
-      status: 'belum', 
-      nilai: null,
-      type: 'kuis'
-    },
-  ];
+  const isLoading = queryLoading;
 
   const filteredAndSortedTugas = useMemo(() => {
-    let filtered = dummyTugas;
+    let filtered = tugasData || [];
     if (filterType !== 'all') {
-      filtered = dummyTugas.filter(t => t.type === filterType);
+      filtered = filtered.filter(t => t.type === filterType);
     }
 
     return filtered.sort((a, b) => {
-      if (sortOrder === 'asc') return a.dueDate - b.dueDate;
-      return b.dueDate - a.dueDate;
+      const dateA = new Date(a.deadline || 0);
+      const dateB = new Date(b.deadline || 0);
+      if (sortOrder === 'asc') return dateA - dateB;
+      return dateB - dateA;
     });
-  }, [dummyTugas, sortOrder, filterType]);
+  }, [tugasData, sortOrder, filterType]);
 
   const toggleSort = () => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
 
@@ -335,7 +304,7 @@ const TugasList = () => {
                       <Badge type={style.badgeType} label={style.badgeText} />
                       <span className="w-1 h-1 bg-slate-300 rounded-full hidden sm:block" />
                       <span className={`text-[11.5px] font-medium flex items-center gap-1.5 ${isLocked ? 'text-slate-400' : 'text-slate-500'}`}>
-                        <Clock size={12} /> {formatDate(tugas.dueDate)}
+                        <Clock size={12} /> {formatDate(tugas.deadline)}
                       </span>
                       {tugas.nilai !== null && (
                         <>
@@ -353,8 +322,17 @@ const TugasList = () => {
                     ${isGrid ? 'w-full py-2.5 rounded-xl font-medium mt-auto text-[13px]' : 'w-11 h-11 rounded-full'}
                   `}
                 >
-                  <ArrowRight size={18} className={`${isGrid && 'hidden'}`} />
-                  {isGrid && <span>Buka {tugas.type === 'kuis' ? 'Kuis' : 'Tugas'}</span>}
+                  {tugas.type === 'kuis' && tugas.status === 'dikumpulkan' ? (
+                    <>
+                      <Lock size={18} className={`${isGrid && 'hidden'}`} />
+                      {isGrid && <span>Kuis Terkunci</span>}
+                    </>
+                  ) : (
+                    <>
+                      <ArrowRight size={18} className={`${isGrid && 'hidden'}`} />
+                      {isGrid && <span>Buka {tugas.type === 'kuis' ? 'Kuis' : 'Tugas'}</span>}
+                    </>
+                  )}
                 </div>
               </Card>
             );

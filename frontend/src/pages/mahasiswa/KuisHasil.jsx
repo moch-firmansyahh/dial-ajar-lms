@@ -1,22 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import Card from '../../components/ui/Card';
 import Skeleton from '../../components/ui/Skeleton';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
 import { CheckCircle, ArrowLeft, RefreshCw } from 'lucide-react';
 
-const dummyQuestions = [
-  { id: 1, text: 'Apa fungsi dari React Router?', type: 'pg', correct: 'B', answer: 'B', isCorrect: true, explanation: 'React Router digunakan untuk navigasi antar halaman dalam SPA.' },
-  { id: 2, text: 'Zustand digunakan untuk...', type: 'pg', correct: 'A', answer: 'C', isCorrect: false, explanation: 'Zustand adalah library state management yang ringan dan cepat.' },
-  { id: 3, text: 'Jelaskan konsep Virtual DOM pada React!', type: 'essay', answer: 'Virtual DOM adalah representasi in-memory dari DOM asli...', isCorrect: null },
-  { id: 4, text: 'Tailwind adalah framework CSS berbasis...', type: 'pg', correct: 'B', answer: 'B', isCorrect: true, explanation: 'Tailwind menggunakan pendekatan utility-first.' },
-  { id: 5, text: 'Sebutkan 3 hooks dasar di React.', type: 'essay', answer: 'useState, useEffect, useContext', isCorrect: null },
+const dummyQuestionsBase = [
+  { id: 1, text: 'Apa fungsi dari React Router?', type: 'pg', correct: 'B', explanation: 'React Router digunakan untuk navigasi antar halaman dalam SPA.' },
+  { id: 2, text: 'Zustand digunakan untuk...', type: 'pg', correct: 'A', explanation: 'Zustand adalah library state management yang ringan dan cepat.' },
+  { id: 3, text: 'Jelaskan konsep Virtual DOM pada React!', type: 'essay' },
+  { id: 4, text: 'Tailwind adalah framework CSS berbasis...', type: 'pg', correct: 'B', explanation: 'Tailwind menggunakan pendekatan utility-first.' },
+  { id: 5, text: 'Sebutkan 3 hooks dasar di React.', type: 'essay' },
 ];
 
 const KuisHasil = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const submittedAnswers = location.state?.submittedAnswers || {};
 
   const [isLoading, setIsLoading] = useState(true);
 
@@ -27,9 +29,18 @@ const KuisHasil = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  const totalPG = dummyQuestions.filter(q => q.type === 'pg').length;
-  const correctPG = dummyQuestions.filter(q => q.type === 'pg' && q.isCorrect).length;
-  const score = Math.round((correctPG / totalPG) * 100);
+  const evaluatedQuestions = dummyQuestionsBase.map(q => {
+    const ans = submittedAnswers[q.id];
+    let isCorrect = null;
+    if (q.type === 'pg') {
+      isCorrect = ans === q.correct;
+    }
+    return { ...q, answer: ans, isCorrect };
+  });
+
+  const totalPG = evaluatedQuestions.filter(q => q.type === 'pg').length;
+  const correctPG = evaluatedQuestions.filter(q => q.type === 'pg' && q.isCorrect).length;
+  const score = totalPG > 0 ? Math.round((correctPG / totalPG) * 100) : 0;
 
   return (
     <div className="max-w-4xl mx-auto pb-10">
@@ -100,7 +111,7 @@ const KuisHasil = () => {
 
           <h2 className="text-xl font-medium text-slate-800 mb-4 px-1">Review Jawaban</h2>
           <div className="space-y-4">
-            {dummyQuestions.map((q, idx) => (
+            {evaluatedQuestions.map((q, idx) => (
               <Card key={q.id} className="p-5 border-slate-200/80 shadow-sm">
                 <div className="flex justify-between items-start mb-3 gap-4">
                   <div className="flex gap-3 items-start">

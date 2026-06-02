@@ -32,37 +32,26 @@ public class LmsApplication {
             PengumpulanTugasRepository pengumpulanTugasRepository,
             PasswordEncoder passwordEncoder) {
         return args -> {
-            // Wipe old data to ensure clean Mega Seeder execution
-            nilaiRepository.deleteAll();
-            komentarForumRepository.deleteAll();
-            forumDiskusiRepository.deleteAll();
-            soalRepository.deleteAll();
-            kuisRepository.deleteAll();
-            pengumpulanTugasRepository.deleteAll();
-            tugasRepository.deleteAll();
-            videoAjarRepository.deleteAll();
-            modulAjarRepository.deleteAll();
-            mataKuliahRepository.deleteAll();
-            userRepository.deleteAll();
+            if (userRepository.count() == 0) {
+                System.out.println("🌱 Database is empty. Running Data Seeder...");
 
-            // Seed 5 Dosen
-            Dosen[] dosens = new Dosen[5];
-            for (int i = 1; i <= 5; i++) {
-                String nip = "10" + i;
-                dosens[i-1] = new Dosen(nip, "Dosen " + i + ", M.Kom", "dosen" + i + "@univ.edu", passwordEncoder.encode("dosen123"));
-                userRepository.save(dosens[i-1]);
-            }
+                // Seed 5 Dosen
+                Dosen[] dosens = new Dosen[5];
+                for (int i = 1; i <= 5; i++) {
+                    String nip = "10" + i;
+                    dosens[i-1] = new Dosen(nip, "Dosen " + i + ", M.Kom", "dosen" + i + "@univ.edu", passwordEncoder.encode("dosen123"));
+                    userRepository.save(dosens[i-1]);
+                }
 
-            // Seed 5 Mahasiswa
-            Mahasiswa[] mahasiswas = new Mahasiswa[5];
-            for (int i = 1; i <= 5; i++) {
-                String nim = "20" + i;
-                mahasiswas[i-1] = new Mahasiswa(nim, "Mahasiswa " + i, "mhs" + i + "@student.edu", passwordEncoder.encode("mhs123"), 4);
-                userRepository.save(mahasiswas[i-1]);
-            }
+                // Seed 5 Mahasiswa
+                Mahasiswa[] mahasiswas = new Mahasiswa[5];
+                for (int i = 1; i <= 5; i++) {
+                    String nim = "20" + i;
+                    mahasiswas[i-1] = new Mahasiswa(nim, "Mahasiswa " + i, "mhs" + i + "@student.edu", passwordEncoder.encode("mhs123"), 4);
+                    userRepository.save(mahasiswas[i-1]);
+                }
 
-            // Seed 5 Mata Kuliah
-            if (mataKuliahRepository.count() == 0) {
+                // Seed 5 Mata Kuliah
                 String[] mkNames = {
                     "Pemrograman Berorientasi Objek",
                     "Struktur Data",
@@ -152,6 +141,8 @@ public class LmsApplication {
                     }
                 }
                 System.out.println("✅ Data Seeder (Mega) berhasil dijalankan: 5 MK, masing-masing 5 Modul, 5 Video, 5 Tugas, 5 Kuis, 5 Forum, & 5 Nilai per Mhs.");
+            } else {
+                System.out.println("ℹ️ Database sudah memiliki data. Seeding dilewati.");
             }
         };
     }

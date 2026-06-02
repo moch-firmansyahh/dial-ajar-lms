@@ -20,6 +20,11 @@ const MateriList = () => {
     return localStorage.getItem('materiViewMode') || 'list';
   });
 
+  const setViewMode = (mode) => {
+    setViewModeState(mode);
+    localStorage.setItem('materiViewMode', mode);
+  };
+
   // State for filter
   const [filterType, setFilterType] = useState('all'); // 'all', 'modul', 'video'
 
@@ -37,14 +42,17 @@ const MateriList = () => {
   if (contentData) {
     if (contentData.modules) {
       contentData.modules.forEach(m => {
+        // filePath may be a relative API path like /api/modules/files/xxx.pdf
+        const fileUrl = m.filePath?.startsWith('/api') 
+          ? `http://localhost:8080${m.filePath}` 
+          : (m.filePath || m.fileUrl);
         combinedMateri.push({
           id: `modul-${m.id}`,
           title: m.judul,
-          size: 'Unknown', // Can be enhanced later
-          date: new Date(m.createdAt).toLocaleDateString('id-ID'),
-          type: 'pdf',
+          date: m.createdAt ? new Date(m.createdAt).toLocaleDateString('id-ID') : '',
+          type: (m.tipe || 'pdf').toLowerCase(),
           category: 'modul',
-          url: m.fileUrl
+          url: fileUrl
         });
       });
     }
@@ -53,8 +61,7 @@ const MateriList = () => {
         combinedMateri.push({
           id: `video-${v.id}`,
           title: v.judul,
-          duration: 'Unknown',
-          date: new Date(v.createdAt).toLocaleDateString('id-ID'),
+          date: v.createdAt ? new Date(v.createdAt).toLocaleDateString('id-ID') : '',
           type: 'youtube',
           category: 'video',
           url: v.linkVideo,
@@ -178,21 +185,21 @@ const MateriList = () => {
 
           {/* Toggle View Buttons */}
           <div className="flex items-center bg-white border border-slate-200/80 rounded-xl p-1 shadow-sm h-10">
-            <div className="relative flex w-full">
+            <div className="relative flex w-[72px] h-full">
               {/* Sliding background indicator for toggle */}
               <div 
                 className={`absolute top-0 bottom-0 w-1/2 bg-slate-100 rounded-[8px] transition-transform duration-300 ease-in-out ${viewMode === 'grid' ? 'translate-x-0' : 'translate-x-full'}`}
               />
               <button 
                 onClick={() => setViewMode('grid')} 
-                className={`relative z-10 flex-1 flex justify-center items-center px-2.5 rounded-[8px] transition-colors duration-300 ${viewMode === 'grid' ? 'text-primary' : 'text-slate-400 hover:text-slate-600'}`}
+                className={`relative z-10 flex-1 flex justify-center items-center h-full rounded-[8px] transition-colors duration-300 ${viewMode === 'grid' ? 'text-primary' : 'text-slate-400 hover:text-slate-600'}`}
                 title="Tampilan Kotak (Grid)"
               >
                 <LayoutGrid size={16} />
               </button>
               <button 
                 onClick={() => setViewMode('list')} 
-                className={`relative z-10 flex-1 flex justify-center items-center px-2.5 rounded-[8px] transition-colors duration-300 ${viewMode === 'list' ? 'text-primary' : 'text-slate-400 hover:text-slate-600'}`}
+                className={`relative z-10 flex-1 flex justify-center items-center h-full rounded-[8px] transition-colors duration-300 ${viewMode === 'list' ? 'text-primary' : 'text-slate-400 hover:text-slate-600'}`}
                 title="Tampilan Memanjang (List)"
               >
                 <ListIcon size={16} />
@@ -267,8 +274,18 @@ const MateriList = () => {
                       <span className={`${style.badge} border px-2 py-0.5 rounded-md font-medium uppercase text-[10px] tracking-wider`}>
                         {isVideo ? 'Video' : materi.type}
                       </span>
-                      <span className="w-1 h-1 bg-slate-300 rounded-full" />
-                      <span>{isVideo ? <span className="flex items-center gap-1"><Clock size={12}/> {materi.duration}</span> : materi.size}</span>
+                      {(!isVideo && materi.size && materi.size !== 'Unknown') && (
+                        <>
+                          <span className="w-1 h-1 bg-slate-300 rounded-full" />
+                          <span>{materi.size}</span>
+                        </>
+                      )}
+                      {(isVideo && materi.duration && materi.duration !== 'Unknown') && (
+                        <>
+                          <span className="w-1 h-1 bg-slate-300 rounded-full" />
+                          <span className="flex items-center gap-1"><Clock size={12}/> {materi.duration}</span>
+                        </>
+                      )}
                       <span className="w-1 h-1 bg-slate-300 rounded-full" />
                       <span>{materi.date}</span>
                     </div>

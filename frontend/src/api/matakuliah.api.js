@@ -1,44 +1,34 @@
-import axios from 'axios';
-
-const API_URL = 'http://localhost:8080/api';
+import axiosInstance from "../utils/axiosInstance";
 
 export const getMataKuliah = async (userId, role) => {
-  try {
-    const token = localStorage.getItem('token');
-    const response = await axios.get(`${API_URL}/courses/user/${userId}?role=${role}`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-    // Map data to match frontend format
-    const mapped = response.data.map(mk => ({
-      id: mk.id,
-      kode: mk.kodeKelas,
-      nama: mk.nama,
-      sks: 3,
-      dosen: "Dosen" // Simplified
-    }));
-    return { data: mapped };
-  } catch (err) {
-    console.error("Error fetching courses", err);
-    return { data: [] };
+  if (!userId || !role) {
+    throw new Error("userId dan role diperlukan");
   }
+
+  const response = await axiosInstance.get(`/courses/user/${userId}`, {
+    params: { role },
+  });
+
+  const mapped = response.data.map((mk) => ({
+    id: mk.id,
+    kode: mk.kodeKelas,
+    nama: mk.nama,
+    sks: 3,
+    dosen: "Dosen",
+  }));
+
+  return { data: mapped };
 };
 
 export const getMataKuliahById = async (id) => {
-  // We'll just fetch content here if needed, but for now dummy fallback or fetch from API
-  return { data: { id, kode: 'IFX', nama: 'Mata Kuliah API', sks: 3 } };
+  const response = await axiosInstance.get(`/courses/${id}`);
+  return { data: response.data };
 };
 
 export const getCourseContent = async (courseId) => {
   try {
-    const token = localStorage.getItem('token');
-    const response = await axios.get(`${API_URL}/courses/${courseId}/content`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-    return response.data; // { modules: [], videos: [], tugas: [] }
+    const response = await axiosInstance.get(`/courses/${courseId}/content`);
+    return response.data;
   } catch (err) {
     console.error("Error fetching content", err);
     return { modules: [], videos: [], tugas: [] };

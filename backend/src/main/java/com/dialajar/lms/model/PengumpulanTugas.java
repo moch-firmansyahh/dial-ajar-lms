@@ -13,9 +13,14 @@ public class PengumpulanTugas {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "tugas_id", nullable = false)
+    @JoinColumn(name = "tugas_id", nullable = true)
     @JsonIgnore
     private Tugas tugas;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "kuis_id", nullable = true)
+    @JsonIgnore
+    private Kuis kuis;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "mahasiswa_id", nullable = false)
@@ -38,12 +43,19 @@ public class PengumpulanTugas {
         this.tugas = tugas;
         this.mahasiswa = mahasiswa;
     }
+    
+    public PengumpulanTugas(Kuis kuis, Mahasiswa mahasiswa) {
+        this.kuis = kuis;
+        this.mahasiswa = mahasiswa;
+    }
 
     // Getters and setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public Tugas getTugas() { return tugas; }
     public void setTugas(Tugas tugas) { this.tugas = tugas; }
+    public Kuis getKuis() { return kuis; }
+    public void setKuis(Kuis kuis) { this.kuis = kuis; }
     public Mahasiswa getMahasiswa() { return mahasiswa; }
     public void setMahasiswa(Mahasiswa mahasiswa) { this.mahasiswa = mahasiswa; }
     public String getFileJawaban() { return fileJawaban; }

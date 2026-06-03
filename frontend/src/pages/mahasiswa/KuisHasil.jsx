@@ -5,42 +5,91 @@ import Skeleton from '../../components/ui/Skeleton';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
 import { CheckCircle, ArrowLeft, RefreshCw } from 'lucide-react';
+import axios from 'axios';
 
-const dummyQuestionsBase = [
-  { id: 1, text: 'Apa fungsi dari React Router?', type: 'pg', correct: 'B', explanation: 'React Router digunakan untuk navigasi antar halaman dalam SPA.' },
-  { id: 2, text: 'Zustand digunakan untuk...', type: 'pg', correct: 'A', explanation: 'Zustand adalah library state management yang ringan dan cepat.' },
-  { id: 3, text: 'Jelaskan konsep Virtual DOM pada React!', type: 'essay' },
-  { id: 4, text: 'Tailwind adalah framework CSS berbasis...', type: 'pg', correct: 'B', explanation: 'Tailwind menggunakan pendekatan utility-first.' },
-  { id: 5, text: 'Sebutkan 3 hooks dasar di React.', type: 'essay' },
-];
+import { getSoalKuis, getTugasDetail } from '../../api/tugas.api';
+import { useAuthStore } from '../../store/authStore';
 
 const KuisHasil = () => {
-  const { id } = useParams();
+  const { id, tugasId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuthStore();
   const submittedAnswers = location.state?.submittedAnswers || {};
-
+  
+  const [kuisDetail, setKuisDetail] = useState(null);
+  const [evaluatedQuestions, setEvaluatedQuestions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, []);
+    const fetchData = async () => {
+      try {
+        const [tugasRes, soalRes] = await Promise.all([
+          getTugasDetail(id, tugasId, user?.id),
+          getSoalKuis(tugasId)
+        ]);
 
-  const evaluatedQuestions = dummyQuestionsBase.map(q => {
-    const ans = submittedAnswers[q.id];
-    let isCorrect = null;
-    if (q.type === 'pg') {
-      isCorrect = ans === q.correct;
-    }
-    return { ...q, answer: ans, isCorrect };
-  });
+          if (tugasRes.data) {
+          setKuisDetail(tugasRes.data);
+          
+          let answersToUse = submittedAnswers;
+          
+          // Jika tidak ada di state (misal buka dari detail tugas langsung), fetch dari backend
+          if (Object.keys(answersToUse).length === 0 && tugasRes.data.fileJawaban) {
+            try {
+              const res = await axios.get(`http://localhost:8080${tugasRes.data.fileJawaban}`);
+              answersToUse = res.data;
+            } catch (err) {
+              console.error("Gagal mengambil file jawaban dari backend", err);
+            }
+          }
+
+          if (soalRes.data) {
+            const evaluated = soalRes.data.map(q => {
+              const ans = answersToUse[q.id];
+              const isPg = q.tipe === 'PILIHAN_GANDA';
+              let isCorrect = null;
+              if (isPg) {
+                isCorrect = ans === q.kunciJawaban;
+              }
+              return {
+                id: q.id,
+                text: q.pertanyaan,
+                type: isPg ? 'pg' : 'essay',
+                correct: q.kunciJawaban,
+                explanation: '-',
+                answer: ans,
+                isCorrect,
+                skor: q.skor || 10
+              };
+            });
+            setEvaluatedQuestions(evaluated);
+          }
+        }
+      } catch (err) {
+        console.error("Gagal memuat hasil kuis", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, [id, tugasId, user, submittedAnswers]);
 
   const totalPG = evaluatedQuestions.filter(q => q.type === 'pg').length;
   const correctPG = evaluatedQuestions.filter(q => q.type === 'pg' && q.isCorrect).length;
-  const score = totalPG > 0 ? Math.round((correctPG / totalPG) * 100) : 0;
+  
+  // Calculate proportional PG score over max score of entire quiz
+  let totalPgScore = 0;
+  let totalMaxScore = 0;
+  evaluatedQuestions.forEach(q => {
+    totalMaxScore += (q.skor || 10);
+    if (q.type === 'pg' && q.isCorrect) {
+      totalPgScore += (q.skor || 10);
+    }
+  });
+  
+  const score = totalMaxScore > 0 ? Math.round((totalPgScore / totalMaxScore) * 100) : 0;
+  const totalEssay = evaluatedQuestions.filter(q => q.type === 'essay').length;
 
   return (
     <div className="max-w-4xl mx-auto pb-10">
@@ -81,7 +130,7 @@ const KuisHasil = () => {
       ) : (
         <div className="animate-slide-up-fade">
           <Card className="p-8 mb-8 text-center bg-gradient-to-br from-white to-blue-50/30 border-blue-100 shadow-sm">
-            <h1 className="text-3xl font-semibold text-slate-800 mb-2">Kuis 1: Pengenalan React</h1>
+            <h1 className="text-3xl font-semibold text-slate-800 mb-2">{kuisDetail?.judul || 'Hasil Kuis'}</h1>
             <p className="text-slate-500 mb-8">Pengerjaan Selesai pada {new Date().toLocaleDateString('id-ID')}</p>
 
             <div className="inline-flex flex-col items-center justify-center bg-white border-4 border-blue-100 shadow-lg rounded-full w-40 h-40 mb-6 relative">
@@ -103,7 +152,7 @@ const KuisHasil = () => {
                 <div className="text-[11px] font-medium text-slate-400 uppercase">Salah</div>
               </div>
               <div className="bg-white rounded-xl p-3 border border-slate-100 shadow-sm">
-                <div className="text-2xl font-medium text-blue-500">2</div>
+                <div className="text-2xl font-medium text-blue-500">{totalEssay}</div>
                 <div className="text-[11px] font-medium text-slate-400 uppercase">Esai Menunggu</div>
               </div>
             </div>

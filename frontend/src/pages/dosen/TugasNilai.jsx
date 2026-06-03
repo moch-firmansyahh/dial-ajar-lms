@@ -4,33 +4,60 @@ import Skeleton from '../../components/ui/Skeleton';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import { Download, Users, CheckCircle, Clock, Save, FileBox, Edit3, X, Eye } from 'lucide-react';
-import { useTugasStore } from '../../store/tugasStore';
 import { useParams } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { getSubmissionsByTugas, getSubmissionsByKuis, gradeTugas, getSoalKuis, getTugasDetail } from '../../api/tugas.api';
+import axios from 'axios';
+import { useAuthStore } from '../../store/authStore';
 
 const TugasNilai = () => {
   const { id, tugasId } = useParams();
-  const { submissions, gradeTugas } = useTugasStore();
+  const queryClient = useQueryClient();
+  const { user } = useAuthStore();
   
-  // Filter submissions by current tugasId (if multiple tasks exist in future, here we just use '1' for demo or tugasId from params)
-  const taskSubmissions = submissions.filter(s => s.id_tugas === (tugasId || '1'));
+  const { data: tugasDetailRes } = useQuery({
+    queryKey: ['tugasDetail', tugasId],
+    queryFn: () => getTugasDetail(id, tugasId, user?.id),
+    enabled: !!tugasId
+  });
+  const tugasDetail = tugasDetailRes?.data || null;
+
+  const { data: submissionsRes, isLoading, refetch } = useQuery({
+    queryKey: ['submissions', tugasId, tugasDetail?.tipe],
+    queryFn: () => {
+      if (tugasDetail?.tipe === 'kuis') {
+        return getSubmissionsByKuis(tugasId);
+      }
+      return getSubmissionsByTugas(tugasId);
+    },
+    enabled: !!tugasId && !!tugasDetail
+  });
+
+  const { data: soalRes } = useQuery({
+    queryKey: ['soalKuis', tugasId],
+    queryFn: () => getSoalKuis(tugasId),
+    enabled: !!tugasId
+  });
+  
+  const soalList = soalRes?.data || [];
+  const isKuis = soalList.length > 0;
+  const pgSoalList = soalList.filter(s => s.tipe === 'PILIHAN_GANDA');
+  const essaySoalList = soalList.filter(s => s.tipe !== 'PILIHAN_GANDA');
+
+  const taskSubmissions = submissionsRes?.data || [];
   const [grades, setGrades] = React.useState({});
   const [editingGrade, setEditingGrade] = React.useState({});
   
   // State for Kuis Answer Modal
   const [selectedStudent, setSelectedStudent] = React.useState(null);
+  const [studentAnswers, setStudentAnswers] = React.useState({});
   const [essayScore, setEssayScore] = React.useState('');
+  const [pgScore, setPgScore] = React.useState(0);
   
   // Custom Notification State
   const [notification, setNotification] = React.useState({ show: false, message: '' });
 
-  const [isLoading, setIsLoading] = React.useState(true);
 
-  React.useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, []);
 
   const showToast = (message) => {
     setNotification({ show: true, message });
@@ -40,14 +67,28 @@ const TugasNilai = () => {
   };
 
   const handleGradeChange = (nim, value) => {
-    setGrades(prev => ({ ...prev, [nim]: value }));
+    if (value === '') {
+      setGrades(prev => ({ ...prev, [nim]: '' }));
+      return;
+    }
+    let numValue = parseInt(value, 10);
+    if (isNaN(numValue)) return;
+    if (numValue < 0) numValue = 0;
+    if (numValue > 100) numValue = 100;
+    
+    setGrades(prev => ({ ...prev, [nim]: numValue.toString() }));
   };
 
-  const handleSaveGrade = (nim) => {
+  const handleSaveGrade = async (nim, subId) => {
     if (grades[nim]) {
-      gradeTugas(nim, tugasId || '1', grades[nim]);
-      setEditingGrade(prev => ({ ...prev, [nim]: false }));
-      showToast('Nilai berhasil disimpan!');
+      try {
+        await gradeTugas(subId, grades[nim]);
+        setEditingGrade(prev => ({ ...prev, [nim]: false }));
+        showToast('Nilai berhasil disimpan!');
+        refetch();
+      } catch (err) {
+        showToast('Gagal menyimpan nilai');
+      }
     }
   };
 
@@ -56,24 +97,45 @@ const TugasNilai = () => {
     setEditingGrade(prev => ({ ...prev, [nim]: true }));
   };
 
-  const handleDownload = (fileName) => {
-    alert(`Mengunduh file: ${fileName}`);
+  const handleDownload = (fileUrl) => {
+    if (fileUrl) {
+       window.open(`http://localhost:8080${fileUrl}`, '_blank');
+    }
   };
 
-  const openAnswerModal = (student) => {
+  const openAnswerModal = async (student) => {
     setSelectedStudent(student);
-    // Asumsi nilai PG fix 60 untuk demo
+    try {
+      if (student.file) {
+        const res = await axios.get(`http://localhost:8080${student.file}`);
+        setStudentAnswers(res.data);
+      }
+    } catch (e) {
+      console.error("Failed to load answers", e);
+    }
     const currentTotal = student.nilai || 0;
-    const initialEssay = currentTotal > 60 ? currentTotal - 60 : 0;
-    setEssayScore(initialEssay > 0 ? initialEssay : '');
+    // Assuming PG score is the current total if essay is not graded.
+    // Or we can just use the submission nilai as PG if it's auto-graded.
+    setPgScore(currentTotal);
+    // Since we don't have separate DB field for essay, let's just make it simple: 
+    // Dosen inputs the new total or adds to PG.
+    setEssayScore(0);
   };
 
-  const saveFromModal = () => {
-    const total = 60 + (parseInt(essayScore) || 0);
-    gradeTugas(selectedStudent.nim, tugasId || '1', total);
-    setEditingGrade(prev => ({ ...prev, [selectedStudent.nim]: false }));
-    setSelectedStudent(null);
-    showToast('Nilai akhir kuis berhasil disimpan!');
+  const saveFromModal = async () => {
+    const essay = parseInt(essayScore) || 0;
+    const finalEssay = essay < 0 ? 0 : essay; // max check can be added
+    const total = pgScore + finalEssay;
+    const finalTotal = total > 100 ? 100 : total;
+    try {
+      await gradeTugas(selectedStudent.id, finalTotal);
+      setEditingGrade(prev => ({ ...prev, [selectedStudent.nim]: false }));
+      setSelectedStudent(null);
+      showToast('Nilai akhir kuis berhasil disimpan!');
+      refetch();
+    } catch (err) {
+       showToast('Gagal menyimpan nilai');
+    }
   };
 
   return (
@@ -120,8 +182,8 @@ const TugasNilai = () => {
       <div className="animate-slide-up-fade">
         <div className="flex justify-between items-center mb-5 relative">
           <div>
-            <h2 className="text-lg font-medium text-slate-800">Penilaian {tugasId === '2' ? 'Kuis' : 'Tugas'}</h2>
-            <p className="text-sm text-slate-500">{tugasId === '2' ? 'Kuis 1: Pemahaman JSX Dasar' : 'Tugas 1: Instalasi React'}</p>
+            <h2 className="text-lg font-medium text-slate-800">Penilaian {isKuis ? 'Kuis' : 'Tugas'}</h2>
+            <p className="text-sm text-slate-500">{tugasDetail ? tugasDetail.judul : (isKuis ? 'Kuis' : 'Tugas')}</p>
           </div>
           
           {/* Custom Toast Notification */}
@@ -146,7 +208,7 @@ const TugasNilai = () => {
                 <th className="text-left px-5 py-3.5 text-xs font-medium text-slate-400 uppercase tracking-wider">NIM</th>
                 <th className="text-left px-5 py-3.5 text-xs font-medium text-slate-400 uppercase tracking-wider">Nama</th>
                 <th className="text-left px-5 py-3.5 text-xs font-medium text-slate-400 uppercase tracking-wider">Waktu</th>
-                <th className="text-left px-5 py-3.5 text-xs font-medium text-slate-400 uppercase tracking-wider">{tugasId === '2' ? 'Jawaban' : 'File'}</th>
+                <th className="text-left px-5 py-3.5 text-xs font-medium text-slate-400 uppercase tracking-wider">{isKuis ? 'Jawaban' : 'File'}</th>
                 <th className="text-center px-5 py-3.5 text-xs font-medium text-slate-400 uppercase tracking-wider">Nilai Akhir</th>
                 <th className="text-center px-5 py-3.5 text-xs font-medium text-slate-400 uppercase tracking-wider">Aksi</th>
               </tr>
@@ -158,7 +220,7 @@ const TugasNilai = () => {
                   <td className="px-5 py-3.5 text-sm font-semibold text-slate-800">{sub.nama}</td>
                   <td className="px-5 py-3.5 text-sm text-slate-500">{sub.waktu}</td>
                   <td className="px-5 py-3.5">
-                    {tugasId === '2' ? (
+                    {isKuis ? (
                       <button 
                         onClick={() => openAnswerModal(sub)}
                         className="flex items-center gap-2 text-[13px] font-medium text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors"
@@ -183,7 +245,7 @@ const TugasNilai = () => {
                       </div>
                     ) : (
                       <div className="flex flex-col items-center gap-1">
-                        {tugasId === '2' && <span className="text-[10px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full mb-1">PG: 60</span>}
+                        {isKuis && <span className="text-[10px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full mb-1">Cek Jawaban</span>}
                         <input 
                           type="number" 
                           min="0" max="100"
@@ -207,7 +269,7 @@ const TugasNilai = () => {
                     ) : (
                       <Button 
                         size="sm" 
-                        onClick={() => handleSaveGrade(sub.nim)}
+                        onClick={() => handleSaveGrade(sub.nim, sub.id)}
                         disabled={!grades[sub.nim]}
                         className="shadow-sm"
                       >
@@ -254,10 +316,10 @@ const TugasNilai = () => {
               <div className="border border-slate-200 rounded-xl overflow-hidden">
                 <div className="bg-slate-50 px-4 py-3 border-b border-slate-200 flex justify-between items-center">
                   <h3 className="font-semibold text-slate-700">Nilai Pilihan Ganda (Otomatis)</h3>
-                  <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-sm font-bold">60 / 60 Poin</span>
+                  <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-sm font-bold">{pgScore} Poin</span>
                 </div>
                 <div className="p-4 text-sm text-slate-600">
-                  <p>Siswa telah menjawab 6 soal Pilihan Ganda dengan benar secara otomatis oleh sistem AI.</p>
+                  <p>Siswa telah menjawab soal Pilihan Ganda dengan nilai terhitung otomatis sebesar {pgScore} oleh sistem.</p>
                 </div>
               </div>
 
@@ -267,18 +329,17 @@ const TugasNilai = () => {
                   <h3 className="font-semibold text-slate-700">Jawaban Essay</h3>
                 </div>
                 <div className="p-4 space-y-5">
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-slate-800">1. Jelaskan secara singkat bagaimana Virtual DOM bekerja pada React!</p>
-                    <div className="bg-amber-50/50 border border-amber-100 p-3 rounded-lg text-sm text-slate-700">
-                      "Virtual DOM adalah representasi ringan dari DOM asli di memori. React membandingkan Virtual DOM baru dengan yang lama (diffing), lalu hanya memperbarui bagian DOM asli yang benar-benar berubah, sehingga lebih cepat."
+                  {essaySoalList.map((soal, idx) => (
+                    <div key={soal.id} className="space-y-2">
+                      <p className="text-sm font-medium text-slate-800">{idx + 1}. {soal.pertanyaan}</p>
+                      <div className="bg-amber-50/50 border border-amber-100 p-3 rounded-lg text-sm text-slate-700">
+                        "{studentAnswers[soal.id] || '-'}"
+                      </div>
                     </div>
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-slate-800">2. Sebutkan 3 hooks dasar di React dan fungsinya!</p>
-                    <div className="bg-amber-50/50 border border-amber-100 p-3 rounded-lg text-sm text-slate-700">
-                      "1. useState: untuk menyimpan state lokal.<br/>2. useEffect: untuk mengatur side effects seperti fetch data.<br/>3. useContext: untuk mengambil data dari context API tanpa prop drilling."
-                    </div>
-                  </div>
+                  ))}
+                  {essaySoalList.length === 0 && (
+                    <p className="text-sm text-slate-500 italic">Tidak ada soal essay pada kuis ini.</p>
+                  )}
                 </div>
               </div>
 
@@ -286,21 +347,21 @@ const TugasNilai = () => {
               <div className="bg-blue-50 p-5 rounded-xl border border-blue-100 flex items-center justify-between gap-4">
                 <div>
                   <h4 className="font-semibold text-blue-900">Berikan Penilaian Essay</h4>
-                  <p className="text-sm text-blue-700 mt-1">Nilai PG (60) akan otomatis dijumlahkan dengan nilai Essay ini.</p>
+                  <p className="text-sm text-blue-700 mt-1">Nilai PG ({pgScore}) akan otomatis dijumlahkan dengan nilai Essay ini.</p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-xl font-bold text-slate-400">60 +</span>
+                  <span className="text-xl font-bold text-slate-400">{pgScore} +</span>
                   <input 
                     type="number"
-                    min="0" max="40"
-                    placeholder="Maks 40"
+                    min="0" max="100"
+                    placeholder="Maks 100"
                     value={essayScore}
                     onChange={(e) => setEssayScore(e.target.value)}
                     className="w-24 text-center text-lg font-bold p-2 border-2 border-blue-200 rounded-lg focus:border-blue-500 outline-none text-blue-700 bg-white"
                   />
                   <span className="text-xl font-bold text-slate-400">=</span>
                   <span className="text-2xl font-bold text-blue-700 w-12 text-center">
-                    {60 + (parseInt(essayScore) || 0)}
+                    {pgScore + (parseInt(essayScore) || 0)}
                   </span>
                 </div>
               </div>

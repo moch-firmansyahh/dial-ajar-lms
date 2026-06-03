@@ -6,16 +6,11 @@ import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
 import { Clock, CheckCircle, ChevronLeft, ChevronRight, AlertTriangle, X } from 'lucide-react';
 
-const dummyQuestions = [
-  { id: 1, text: 'Apa fungsi dari React Router?', type: 'pg', options: ['A. Styling', 'B. Navigasi', 'C. Database', 'D. Hosting'] },
-  { id: 2, text: 'Zustand digunakan untuk...', type: 'pg', options: ['A. State Management', 'B. Routing', 'C. Animasi', 'D. API Fetching'] },
-  { id: 3, text: 'Jelaskan konsep Virtual DOM pada React!', type: 'essay' },
-  { id: 4, text: 'Tailwind adalah framework CSS berbasis...', type: 'pg', options: ['A. Component', 'B. Utility-first', 'C. OOCSS', 'D. BEM'] },
-  { id: 5, text: 'Sebutkan 3 hooks dasar di React.', type: 'essay' },
-];
+import { getKuisDetail, getSoalKuis, submitKuis } from '../../api/tugas.api';
+import { useAuthStore } from '../../store/authStore';
 
 const KuisKerjakan = () => {
-  const { id, kuisId } = useParams();
+  const { id, tugasId } = useParams();
   const navigate = useNavigate();
   const [currentIdx, setCurrentIdx] = useState(0);
   const [answers, setAnswers] = useState({});
@@ -26,23 +21,72 @@ const KuisKerjakan = () => {
 
   const [isLoading, setIsLoading] = useState(true);
 
+  const { user } = useAuthStore();
+  const [kuisDetail, setKuisDetail] = useState(null);
+  const [questions, setQuestions] = useState([]);
+
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, []);
+    if (tugasId === "undefined") {
+      alert("Terjadi kesalahan pada link kuis. Silakan kembali ke halaman sebelumnya dan ulangi.");
+      navigate(`/tugas/${id}`);
+      return;
+    }
+
+    const fetchData = async () => {
+      try {
+        const [tugasRes, soalRes] = await Promise.all([
+          getKuisDetail(tugasId),
+          getSoalKuis(tugasId)
+        ]);
+        
+        if (tugasRes.data) {
+          setKuisDetail(tugasRes.data);
+          // Set timer
+          const durasiMenit = tugasRes.data.durasiMenit || 60;
+          setTimeLeft(durasiMenit * 60);
+        }
+        
+        if (soalRes.data && soalRes.data.length > 0) {
+          // Format soal dari backend ke frontend
+          const formatted = soalRes.data.map((s, index) => {
+            const isPg = s.tipe === 'PILIHAN_GANDA';
+            return {
+              id: s.id,
+              text: s.pertanyaan,
+              type: isPg ? 'pg' : 'essay',
+              options: isPg ? [
+                `A. ${s.pilihanA}`,
+                `B. ${s.pilihanB}`,
+                `C. ${s.pilihanC}`,
+                `D. ${s.pilihanD}`
+              ] : null,
+              kunciJawaban: s.kunciJawaban,
+              skor: s.skor || 10
+            };
+          });
+          setQuestions(formatted);
+        }
+      } catch (err) {
+        console.error("Gagal memuat kuis", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchData();
+  }, [id, tugasId, user]);
 
   // Timer effect
   useEffect(() => {
+    if (isLoading) return;
+    
     if (timeLeft <= 0) {
-      // Auto submit immediately when time is up without confirmation
-      navigate(`/tugas/${id}/${kuisId}/hasil`, { state: { submittedAnswers: answers } });
+      handleConfirmSubmit();
       return;
     }
     const timerId = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
     return () => clearInterval(timerId);
-  }, [timeLeft, navigate, id, kuisId, answers]);
+  }, [timeLeft, isLoading]);
 
   const formatTime = (seconds) => {
     const m = Math.floor(seconds / 60);
@@ -50,16 +94,44 @@ const KuisKerjakan = () => {
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
-  const question = dummyQuestions[currentIdx];
+  const question = questions.length > 0 ? questions[currentIdx] : null;
   const handleAnswer = (val) => setAnswers(prev => ({ ...prev, [question.id]: val }));
   const isAnswered = (qId) => answers[qId] !== undefined && answers[qId] !== '';
 
-  const handleConfirmSubmit = () => {
-    navigate(`/tugas/${id}/${kuisId}/hasil`, { state: { submittedAnswers: answers } });
+  const handleConfirmSubmit = async () => {
+    if (!user?.id) {
+      alert("Sesi Anda kedaluwarsa atau tidak lengkap. Silakan logout dan login kembali untuk mengumpulkan kuis.");
+      return;
+    }
+    
+    setIsLoading(true);
+    try {
+      // Calculate PG score automatically
+      let totalPgScore = 0;
+      let totalMaxScore = 0;
+      
+      questions.forEach(q => {
+        totalMaxScore += (q.skor || 10);
+        if (q.type === 'pg' && answers[q.id] === q.kunciJawaban) {
+          totalPgScore += (q.skor || 10);
+        }
+      });
+      
+      // Nilai proporsional berdasarkan seluruh soal (PG + Esai)
+      // Jika hanya PG, maka akan jadi 100. Jika ada Esai, PG hanya sebagian dari 100.
+      const finalPgScore = totalMaxScore > 0 ? Math.round((totalPgScore / totalMaxScore) * 100) : 0;
+      
+      await submitKuis(tugasId, user.id, answers, finalPgScore);
+      navigate(`/tugas/${id}/${tugasId}/hasil`, { state: { submittedAnswers: answers, score: finalPgScore } });
+    } catch (err) {
+      console.error("Gagal mengumpulkan kuis", err);
+      alert("Gagal mengumpulkan kuis");
+      setIsLoading(false);
+    }
   };
 
   const answeredCount = Object.keys(answers).length;
-  const totalQuestions = dummyQuestions.length;
+  const totalQuestions = questions.length;
   const unansweredCount = totalQuestions - answeredCount;
 
   return (
@@ -67,8 +139,8 @@ const KuisKerjakan = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div>
-          <h1 className="text-2xl font-medium text-slate-900">Kuis 1: Pengenalan React</h1>
-          <p className="text-sm text-slate-500 mt-0.5">IF3110 • 5 Soal • Pilihan Ganda & Esai</p>
+          <h1 className="text-2xl font-medium text-slate-900">{kuisDetail?.judul || 'Memuat Kuis...'}</h1>
+          <p className="text-sm text-slate-500 mt-0.5">Tenggat Waktu: {kuisDetail?.deadline ? new Date(kuisDetail.deadline).toLocaleDateString() : '-'} • {questions.length} Soal</p>
         </div>
         <div className={`border px-4 py-2.5 rounded-xl flex items-center gap-2 font-mono text-lg font-medium shadow-sm transition-colors ${timeLeft < 300 ? 'bg-red-50 border-red-200 text-red-600 animate-pulse' : 'bg-white border-slate-200 text-slate-700'}`}>
           <Clock size={20} />
@@ -114,14 +186,14 @@ const KuisKerjakan = () => {
         <div className="flex-1 space-y-5">
           <Card className="min-h-[320px] flex flex-col p-6 shadow-sm border-slate-200/80">
             <div className="flex justify-between items-center border-b border-slate-100 pb-4 mb-5">
-              <span className="font-medium text-slate-700">Soal {currentIdx + 1} <span className="font-normal text-slate-400">dari {dummyQuestions.length}</span></span>
-              <Badge type={question.type === 'pg' ? 'info' : 'kuis'} label={question.type === 'pg' ? 'Pilihan Ganda' : 'Esai'} />
+              <span className="font-medium text-slate-700">Soal {currentIdx + 1} <span className="font-normal text-slate-400">dari {questions.length}</span></span>
+              <Badge type={question?.type === 'pg' ? 'info' : 'kuis'} label={question?.type === 'pg' ? 'Pilihan Ganda' : 'Esai'} />
             </div>
             
-            <p className="text-lg text-slate-800 font-medium mb-6 leading-relaxed">{question.text}</p>
+            <p className="text-lg text-slate-800 font-medium mb-6 leading-relaxed">{question?.text}</p>
             
             <div className="mt-auto space-y-3">
-              {question.type === 'pg' ? (
+              {question?.type === 'pg' ? (
                 question.options.map((opt, idx) => {
                   const letter = opt.charAt(0);
                   const isSelected = answers[question.id] === letter;
@@ -165,7 +237,7 @@ const KuisKerjakan = () => {
               <ChevronLeft size={16} /> Sebelumnya
             </Button>
             
-            {currentIdx < dummyQuestions.length - 1 ? (
+            {currentIdx < questions.length - 1 ? (
               <Button onClick={() => setCurrentIdx(prev => prev + 1)}>
                 Selanjutnya <ChevronRight size={16} />
               </Button>
@@ -182,7 +254,7 @@ const KuisKerjakan = () => {
           <Card className="sticky top-24 p-5 shadow-sm border-slate-200/80">
             <h3 className="font-medium text-slate-800 mb-4 pb-3 border-b border-slate-100">Navigasi Soal</h3>
             <div className="grid grid-cols-5 gap-2.5">
-              {dummyQuestions.map((q, idx) => {
+              {questions.map((q, idx) => {
                 const answered = isAnswered(q.id);
                 const active = currentIdx === idx;
                 

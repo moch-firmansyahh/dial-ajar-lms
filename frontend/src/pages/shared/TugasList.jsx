@@ -45,9 +45,9 @@ const TugasList = () => {
   const [errorNotification, setErrorNotification] = useState("");
 
   const { data: tugasData, isLoading } = useQuery({
-    queryKey: ["tugasByMatkul", id],
+    queryKey: ["tugasByMatkul", id, user?.id],
     queryFn: async () => {
-      const res = await getTugasByMatkul(id);
+      const res = await getTugasByMatkul(id, user?.id);
       return res.data;
     },
   });
@@ -175,7 +175,7 @@ const TugasList = () => {
 
           <div className="flex items-center gap-3 w-full sm:w-auto">
             <div className="flex items-center bg-white border border-slate-200/80 rounded-xl p-1 shadow-sm h-10">
-              <div className="relative flex w-full">
+              <div className="relative flex w-[72px] h-full">
                 <div
                   className={`absolute top-0 bottom-0 w-1/2 bg-slate-100 rounded-[8px] transition-transform duration-300 ease-in-out ${viewMode === "grid" ? "translate-x-0" : "translate-x-full"}`}
                 />
@@ -269,14 +269,21 @@ const TugasList = () => {
             }
 
             const isGrid = viewMode === "grid";
-            const isLocked = tugas.status === "terkunci";
+            
+            const isOverdue = !isDosen && new Date() > new Date(tugas.deadline) && (tugas.status === "belum" || !tugas.status);
+            const isLocked = tugas.status === "terkunci" || (!isDosen && new Date() > new Date(tugas.deadline));
+            
+            if (isOverdue) {
+              style.badgeText = "Overdue";
+              style.badgeType = "danger";
+            }
 
             const handleCardClick = () => {
               if (isDosen) {
                 navigate(`/tugas/${id}/${tugas.id}`);
               } else if (isLocked) {
                 setErrorNotification(
-                  "Tugas atau kuis ini sudah melewati batas waktu pengerjaan.",
+                  "Overdue: Waktu pengerjaan tugas atau kuis ini telah habis.",
                 );
                 setTimeout(() => setErrorNotification(""), 3000);
               } else if (tugas.type === "kuis") {
@@ -294,7 +301,7 @@ const TugasList = () => {
 
             return (
               <Card
-                key={tugas.id}
+                key={`${tugas.type}-${tugas.id}`}
                 onClick={handleCardClick}
                 className={`relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-300 border border-slate-200/60 p-5 animate-slide-up-fade cursor-pointer
                   flex ${isGrid ? "flex-col gap-5 items-start" : "flex-col sm:flex-row justify-between items-start sm:items-center gap-4"}
@@ -340,12 +347,12 @@ const TugasList = () => {
                       >
                         <Clock size={12} /> {formatDate(tugas.deadline)}
                       </span>
-                      {tugas.nilai !== null && (
+                      {!isDosen && (
                         <>
                           <span className="w-1 h-1 bg-slate-300 rounded-full" />
                           <Badge
-                            type="sukses"
-                            label={`Nilai: ${tugas.nilai}/100`}
+                            type={tugas.nilai ? "sukses" : "default"}
+                            label={`Nilai: ${tugas.nilai ?? 0}/100`}
                           />
                         </>
                       )}
@@ -365,14 +372,23 @@ const TugasList = () => {
                     </>
                   ) : (
                     <>
-                      <ArrowRight
-                        size={18}
-                        className={`${isGrid ? "hidden" : ""}`}
-                      />
-                      {isGrid && (
-                        <span>
-                          Buka {tugas.type === "kuis" ? "Kuis" : "Tugas"}
-                        </span>
+                      {isLocked ? (
+                        <>
+                          <Lock size={18} className={`${isGrid ? "hidden" : ""}`} />
+                          {isGrid && <span>Terkunci</span>}
+                        </>
+                      ) : (
+                        <>
+                          <ArrowRight
+                            size={18}
+                            className={`${isGrid ? "hidden" : ""}`}
+                          />
+                          {isGrid && (
+                            <span>
+                              Buka {tugas.type === "kuis" ? "Kuis" : "Tugas"}
+                            </span>
+                          )}
+                        </>
                       )}
                     </>
                   )}
@@ -428,7 +444,7 @@ const TugasList = () => {
                     Durasi Kuis
                   </span>
                   <span className="font-medium text-slate-700 text-lg flex items-center gap-2">
-                    <Clock size={18} className="text-primary" /> 45 Menit
+                    <Clock size={18} className="text-primary" /> {selectedQuiz.durasiMenit || 60} Menit
                   </span>
                 </div>
                 <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
@@ -436,7 +452,7 @@ const TugasList = () => {
                     Total Soal
                   </span>
                   <span className="font-medium text-slate-700 text-lg flex items-center gap-2">
-                    <LayoutGrid size={18} className="text-primary" /> 5 Soal
+                    <LayoutGrid size={18} className="text-primary" /> {selectedQuiz.totalSoal || 0} Soal
                   </span>
                 </div>
                 <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 col-span-2 md:col-span-1">
@@ -444,8 +460,7 @@ const TugasList = () => {
                     Jenis Soal
                   </span>
                   <span className="font-medium text-slate-700 text-lg flex items-center gap-2">
-                    <CheckCircle2 size={18} className="text-primary" /> Pilihan
-                    Ganda
+                    <CheckCircle2 size={18} className="text-primary" /> {selectedQuiz.jenisSoal || 'Campuran'}
                   </span>
                 </div>
               </div>

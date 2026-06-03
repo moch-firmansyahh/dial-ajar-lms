@@ -7,8 +7,9 @@ import Card from '../../components/ui/Card';
 import Skeleton from '../../components/ui/Skeleton';
 import InputField from '../../components/ui/InputField';
 import Button from '../../components/ui/Button';
-import { Save, FileUp, CheckCircle, Calendar, Clock, FileText, HelpCircle, ChevronDown } from 'lucide-react';
+import { Save, FileUp, CheckCircle, Calendar, Clock, FileText, HelpCircle, ChevronDown, Loader2 } from 'lucide-react';
 import KuisBuilder from '../../components/shared/KuisBuilder';
+import { addTugas, addKuis } from '../../api/tugas.api';
 
 const TugasForm = () => {
   const { id } = useParams();
@@ -16,6 +17,13 @@ const TugasForm = () => {
   const [tipeTugas, setTipeTugas] = useState('tugas');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
+
+  const [judul, setJudul] = useState('');
+  const [deskripsi, setDeskripsi] = useState('');
+  const [file, setFile] = useState(null);
+  const [durasiMenit, setDurasiMenit] = useState('60');
+  const fileInputRef2 = useRef(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -26,6 +34,7 @@ const TugasForm = () => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
   const [quizData, setQuizData] = useState({
     pilihan_ganda: [],
     essay: []
@@ -39,7 +48,7 @@ const TugasForm = () => {
   const [timeMinute, setTimeMinute] = useState('59');
 
   // Notification State
-  const [notification, setNotification] = useState({ show: false, message: '' });
+  const [notification, setNotification] = useState({ show: false, message: '', type: 'success' });
 
   const [isLoading, setIsLoading] = useState(true);
 
@@ -50,11 +59,77 @@ const TugasForm = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  const handleSimpanTugas = () => {
-    setNotification({ show: true, message: 'Tugas berhasil disimpan!' });
-    setTimeout(() => {
-      navigate(`/matakuliah/${id}/tugas`);
-    }, 1500);
+  const formatDeadline = () => {
+    if (!deadlineDate) return new Date().toISOString().slice(0, 19);
+    const d = new Date(deadlineDate);
+    d.setHours(parseInt(timeHour || '0'));
+    d.setMinutes(parseInt(timeMinute || '0'));
+    d.setSeconds(0);
+    
+    // Format to YYYY-MM-DDTHH:mm:ss for Java LocalDateTime
+    const pad = (num) => num.toString().padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:00`;
+  };
+
+  const handleSimpanTugas = async () => {
+    if (!judul || !deskripsi) {
+       setNotification({ show: true, message: 'Judul dan deskripsi wajib diisi!', type: 'error' });
+       setTimeout(() => setNotification({ show: false, message: '', type: 'success' }), 3000);
+       return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const deadlineISO = formatDeadline();
+      if (tipeTugas === 'tugas') {
+        await addTugas(id, {
+          judul,
+          deskripsi,
+          deadline: deadlineISO,
+          file: file
+        });
+      } else {
+        // Map quizData to soalList
+        const soalList = [];
+        quizData.pilihan_ganda.forEach(pg => {
+          soalList.push({
+            pertanyaan: pg.pertanyaan,
+            pilihanA: pg.opsi[0],
+            pilihanB: pg.opsi[1],
+            pilihanC: pg.opsi[2],
+            pilihanD: pg.opsi[3],
+            kunciJawaban: String.fromCharCode(65 + (pg.jawaban_benar || 0)),
+            tipe: "PILIHAN_GANDA"
+          });
+        });
+        
+        quizData.essay.forEach(es => {
+          soalList.push({
+            pertanyaan: es.pertanyaan,
+            kunciJawaban: "-",
+            tipe: "ESSAY"
+          });
+        });
+
+        await addKuis(id, {
+          judul,
+          deskripsi,
+          deadline: deadlineISO,
+          durasiMenit: parseInt(durasiMenit || '60'),
+          soalList
+        });
+      }
+      
+      setNotification({ show: true, message: 'Berhasil disimpan!', type: 'success' });
+      setTimeout(() => {
+        navigate(`/matakuliah/${id}/tugas`);
+      }, 1500);
+    } catch (error) {
+      setNotification({ show: true, message: 'Gagal menyimpan data', type: 'error' });
+      setTimeout(() => setNotification({ show: false, message: '', type: 'success' }), 3000);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -62,7 +137,7 @@ const TugasForm = () => {
       
       {/* Toast Notification */}
       {notification.show && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[100] animate-slide-up-fade bg-emerald-500 text-white px-5 py-3 rounded-xl shadow-xl flex items-center gap-2 text-sm font-bold">
+        <div className={`fixed top-20 left-1/2 -translate-x-1/2 z-[100] animate-slide-up-fade text-white px-5 py-3 rounded-xl shadow-xl flex items-center gap-2 text-sm font-bold ${notification.type === 'error' ? 'bg-red-500' : 'bg-emerald-500'}`}>
           <CheckCircle size={18} />
           {notification.message}
         </div>
@@ -105,7 +180,7 @@ const TugasForm = () => {
       <div className="animate-slide-up-fade">
         <PageHeader title="Buat Tugas Baru" />
         <Card className="space-y-5">
-        <InputField label="Judul Tugas" placeholder="Contoh: Tugas 1 - Instalasi React" required />
+        <InputField label="Judul Tugas" placeholder="Contoh: Tugas 1 - Instalasi React" value={judul} onChange={(e) => setJudul(e.target.value)} required />
         
         <div className="space-y-2">
           <label className="block text-sm font-semibold text-slate-700">Tipe Tugas</label>
@@ -207,18 +282,28 @@ const TugasForm = () => {
           </div>
         </div>
 
+        {tipeTugas === 'kuis' && (
+          <div className="space-y-2">
+            <label className="block text-sm font-semibold text-slate-700">Durasi Pengerjaan (Menit)</label>
+            <div className="relative group flex items-center bg-white border border-slate-200 rounded-xl focus-within:border-primary transition-all">
+               <input type="number" value={durasiMenit} onChange={(e) => setDurasiMenit(e.target.value)} className="w-full bg-transparent px-4 py-3 outline-none transition-colors" placeholder="60" />
+            </div>
+          </div>
+        )}
+
         <div className="space-y-2">
           <label className="block text-sm font-semibold text-slate-700">Deskripsi Tugas</label>
-          <textarea className="w-full border-2 border-slate-200 rounded-xl p-4 focus:border-primary outline-none transition-colors min-h-[120px] resize-none" placeholder="Instruksi dan persyaratan tugas..." />
+          <textarea value={deskripsi} onChange={(e) => setDeskripsi(e.target.value)} className="w-full border-2 border-slate-200 rounded-xl p-4 focus:border-primary outline-none transition-colors min-h-[120px] resize-none" placeholder="Instruksi dan persyaratan tugas..." />
         </div>
         
         {tipeTugas === 'tugas' ? (
           <div className="space-y-2">
             <label className="block text-sm font-semibold text-slate-700">Lampiran (Opsional)</label>
-            <div className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:border-primary/50 hover:bg-primary/[0.02] transition-colors cursor-pointer">
-              <FileUp size={28} className="mx-auto text-slate-400 mb-2" />
-              <p className="text-sm text-slate-600 font-medium">Klik untuk mengunggah file</p>
-              <p className="text-xs text-slate-400 mt-1">PDF, DOC, ZIP (maks. 25MB)</p>
+            <div onClick={() => fileInputRef2.current.click()} className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:border-primary/50 hover:bg-primary/[0.02] transition-colors cursor-pointer">
+              <input type="file" className="hidden" ref={fileInputRef2} onChange={(e) => setFile(e.target.files[0])} />
+              <FileUp size={28} className={`mx-auto mb-2 ${file ? 'text-emerald-500' : 'text-slate-400'}`} />
+              <p className="text-sm text-slate-600 font-medium">{file ? file.name : 'Klik untuk mengunggah file'}</p>
+              {!file && <p className="text-xs text-slate-400 mt-1">PDF, DOC, ZIP (maks. 25MB)</p>}
             </div>
           </div>
         ) : (
@@ -229,11 +314,12 @@ const TugasForm = () => {
         )}
 
         <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
-          <Button variant="outline" onClick={() => navigate(`/matakuliah/${id}/tugas`)}>
+          <Button variant="outline" onClick={() => navigate(`/matakuliah/${id}/tugas`)} disabled={isSubmitting}>
             Batal
           </Button>
-          <Button onClick={handleSimpanTugas}>
-            <Save size={16} /> Simpan Tugas
+          <Button onClick={handleSimpanTugas} disabled={isSubmitting}>
+            {isSubmitting ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />} 
+            {isSubmitting ? 'Menyimpan...' : 'Simpan'}
           </Button>
         </div>
       </Card>

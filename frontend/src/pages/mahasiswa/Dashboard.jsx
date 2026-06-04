@@ -30,7 +30,6 @@ const DashboardMahasiswa = () => {
     mataKuliah: 0,
     tugasMendatang: 0,
     kuisMendatang: 0,
-    ipkSementara: '0.00',
     deadlines: []
   };
 
@@ -38,7 +37,6 @@ const DashboardMahasiswa = () => {
     { label: 'Mata Kuliah', value: dashboardStats.mataKuliah, icon: BookOpen, color: 'text-indigo-600', bg: 'bg-indigo-50' },
     { label: 'Tugas Mendatang', value: dashboardStats.tugasMendatang, icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50' },
     { label: 'Kuis Mendatang', value: dashboardStats.kuisMendatang, icon: FileText, color: 'text-amber-600', bg: 'bg-amber-50' },
-    { label: 'IPK Sementara', value: dashboardStats.ipkSementara, icon: Trophy, color: 'text-emerald-600', bg: 'bg-emerald-50' },
   ];
 
   const deadlines = dashboardStats.deadlines || [];
@@ -58,9 +56,9 @@ const DashboardMahasiswa = () => {
     <div className="max-w-[1200px] mx-auto pb-10">
       
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
         {isLoading 
-          ? Array(4).fill(0).map((_, idx) => (
+          ? Array(3).fill(0).map((_, idx) => (
               <Card key={`skel-stat-${idx}`} className="flex items-center gap-4 h-[104px]">
                 <Skeleton className="w-14 h-14 rounded-2xl shrink-0" />
                 <div className="flex flex-col gap-2 flex-1">

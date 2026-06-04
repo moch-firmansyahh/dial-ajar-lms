@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "modul_ajar")
-public class ModulAjar {
+public class ModulAjar implements Downloadable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -56,4 +56,9 @@ public class ModulAjar {
     public void setMataKuliah(MataKuliah mataKuliah) { this.mataKuliah = mataKuliah; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    @Override
+    public void unduhFile() {
+        // Logika download file akan dihandle di controller/service
+    }
 }

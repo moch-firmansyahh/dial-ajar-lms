@@ -13,14 +13,12 @@ const MataKuliahForm = lazy(() => import('./pages/dosen/MataKuliahForm'));
 const MateriUpload = lazy(() => import('./pages/dosen/MateriUpload'));
 const TugasForm = lazy(() => import('./pages/dosen/TugasForm'));
 const TugasNilai = lazy(() => import('./pages/dosen/TugasNilai'));
-const NilaiRekap = lazy(() => import('./pages/dosen/NilaiRekap'));
 
 // Mahasiswa
 const DashboardMahasiswa = lazy(() => import('./pages/mahasiswa/Dashboard'));
 const TugasSubmit = lazy(() => import('./pages/mahasiswa/TugasSubmit'));
 const KuisKerjakan = lazy(() => import('./pages/mahasiswa/KuisKerjakan'));
 const KuisHasil = lazy(() => import('./pages/mahasiswa/KuisHasil'));
-const NilaiSaya = lazy(() => import('./pages/mahasiswa/NilaiSaya'));
 
 // Shared
 const Kalender = lazy(() => import('./pages/shared/Kalender'));
@@ -102,10 +100,7 @@ function App() {
             <Route path="/forum/:id/buat" element={<ForumForm />} />
             <Route path="/forum/:id/:forumId" element={<ForumDetail />} />
 
-            {/* Nilai (Global) */}
-            <Route path="/nilai" element={
-              user?.role === 'DOSEN' ? <NilaiRekap /> : <NilaiSaya />
-            } />
+
 
             {/* Kalender & Profil */}
             <Route path="/kalender" element={<Kalender />} />

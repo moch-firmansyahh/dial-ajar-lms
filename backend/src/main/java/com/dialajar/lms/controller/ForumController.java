@@ -20,7 +20,7 @@ public class ForumController {
     private ForumDiskusiRepository forumRepository;
 
     @Autowired
-    private KomentarForumRepository komentarRepository;
+    private KomentarForumDiskusiRepository komentarRepository;
 
     @Autowired
     private MataKuliahRepository mataKuliahRepository;
@@ -38,7 +38,13 @@ public class ForumController {
             map.put("id", f.getId());
             map.put("judul", f.getJudul());
             map.put("isiForum", f.getIsiForum());
-            map.put("pembuat", f.getPembuat());
+            
+            Map<String, Object> pembuatMap = new HashMap<>();
+            pembuatMap.put("id", f.getPembuat().getId());
+            pembuatMap.put("nama", f.getPembuat().getNama());
+            pembuatMap.put("role", f.getPembuat().getRole());
+            map.put("pembuat", pembuatMap);
+            
             map.put("createdAt", f.getCreatedAt());
             
             Long count = komentarRepository.countByForumDiskusiId(f.getId());
@@ -55,11 +61,39 @@ public class ForumController {
         Optional<ForumDiskusi> forumOpt = forumRepository.findById(forumId);
         if (forumOpt.isEmpty()) return ResponseEntity.notFound().build();
 
-        List<KomentarForum> comments = komentarRepository.findByForumDiskusiId(forumId);
+        ForumDiskusi f = forumOpt.get();
+        Map<String, Object> forumMap = new HashMap<>();
+        forumMap.put("id", f.getId());
+        forumMap.put("judul", f.getJudul());
+        forumMap.put("isiForum", f.getIsiForum());
+        forumMap.put("createdAt", f.getCreatedAt());
+        
+        Map<String, Object> pembuatMap = new HashMap<>();
+        pembuatMap.put("id", f.getPembuat().getId());
+        pembuatMap.put("nama", f.getPembuat().getNama());
+        pembuatMap.put("role", f.getPembuat().getRole());
+        forumMap.put("pembuat", pembuatMap);
+
+        List<KomentarForumDiskusi> comments = komentarRepository.findByForumDiskusiId(forumId);
+        List<Map<String, Object>> commentsList = new java.util.ArrayList<>();
+        for (KomentarForumDiskusi k : comments) {
+            Map<String, Object> kMap = new HashMap<>();
+            kMap.put("id", k.getId());
+            kMap.put("isi", k.getIsi());
+            kMap.put("createdAt", k.getCreatedAt());
+            
+            Map<String, Object> penulisMap = new HashMap<>();
+            penulisMap.put("id", k.getPenulis().getId());
+            penulisMap.put("nama", k.getPenulis().getNama());
+            penulisMap.put("role", k.getPenulis().getRole());
+            kMap.put("penulis", penulisMap);
+            
+            commentsList.add(kMap);
+        }
 
         Map<String, Object> response = new HashMap<>();
-        response.put("forum", forumOpt.get());
-        response.put("comments", comments);
+        response.put("forum", forumMap);
+        response.put("comments", commentsList);
 
         return ResponseEntity.ok(response);
     }
@@ -81,7 +115,21 @@ public class ForumController {
         forum.setPembuat(user.get());
 
         forumRepository.save(forum);
-        return ResponseEntity.ok(forum);
+        
+        Map<String, Object> map = new HashMap<>();
+        map.put("id", forum.getId());
+        map.put("judul", forum.getJudul());
+        map.put("isiForum", forum.getIsiForum());
+        map.put("createdAt", forum.getCreatedAt());
+        
+        Map<String, Object> p = new HashMap<>();
+        p.put("id", user.get().getId());
+        p.put("nama", user.get().getNama());
+        p.put("role", user.get().getRole());
+        map.put("pembuat", p);
+        map.put("repliesCount", 0);
+
+        return ResponseEntity.ok(map);
     }
 
     @PostMapping("/comment")
@@ -94,12 +142,24 @@ public class ForumController {
 
         if (forum.isEmpty() || user.isEmpty()) return ResponseEntity.badRequest().body("Forum atau user tidak ditemukan");
 
-        KomentarForum komentar = new KomentarForum();
+        KomentarForumDiskusi komentar = new KomentarForumDiskusi();
         komentar.setIsi(request.get("isi"));
         komentar.setForumDiskusi(forum.get());
         komentar.setPenulis(user.get());
 
         komentarRepository.save(komentar);
-        return ResponseEntity.ok(komentar);
+        
+        Map<String, Object> kMap = new HashMap<>();
+        kMap.put("id", komentar.getId());
+        kMap.put("isi", komentar.getIsi());
+        kMap.put("createdAt", komentar.getCreatedAt());
+        
+        Map<String, Object> p = new HashMap<>();
+        p.put("id", user.get().getId());
+        p.put("nama", user.get().getNama());
+        p.put("role", user.get().getRole());
+        kMap.put("penulis", p);
+
+        return ResponseEntity.ok(kMap);
     }
 }

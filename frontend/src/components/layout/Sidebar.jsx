@@ -16,7 +16,6 @@ const Sidebar = ({ isExpanded, setIsExpanded }) => {
     { icon: BookOpen, label: 'Mata Kuliah', path: '/matakuliah' },
     { icon: CheckSquare, label: 'Tugas & Kuis', path: '/tugas' },
     { icon: MessageSquare, label: 'Forum', path: '/forum' },
-    { icon: Award, label: 'Nilai', path: '/nilai' },
   ];
 
   // Cari index menu aktif untuk animasi pill. Jika tidak ada yang cocok, sembunyikan pill (-1)

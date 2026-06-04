@@ -47,7 +47,6 @@ const Topbar = ({ onMenuClick }) => {
     if (path.startsWith('/matakuliah')) return 'Mata Kuliah';
     if (path.startsWith('/tugas')) return 'Tugas';
     if (path.startsWith('/forum')) return 'Forum Diskusi';
-    if (path.startsWith('/nilai')) return 'Nilai Akademik';
     if (path.startsWith('/kalender')) return 'Kalender';
     if (path.startsWith('/profile')) return 'Profil Saya';
     

@@ -102,13 +102,7 @@ const DashboardDosen = () => {
       color: "text-purple-600",
       bg: "bg-purple-50 border-purple-100 hover:border-purple-300",
     },
-    {
-      label: "Input Nilai",
-      icon: Award,
-      path: "/nilai",
-      color: "text-emerald-600",
-      bg: "bg-emerald-50 border-emerald-100 hover:border-emerald-300",
-    },
+
     {
       label: "Buka Forum",
       icon: MessageSquare,

@@ -21,22 +21,23 @@ const ForumDetail = () => {
   });
 
   const isLoading = queryLoading;
+  
   const thread = forumData ? {
-    id: forumData.id,
-    title: forumData.judul,
-    author: forumData.author || 'Pengguna',
-    role: forumData.authorRole?.toUpperCase() || 'MAHASISWA',
-    date: new Date(forumData.date).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}),
-    content: forumData.content
+    id: forumData.forum.id,
+    title: forumData.forum.judul,
+    author: forumData.forum.pembuat?.nama || 'Pengguna',
+    role: forumData.forum.pembuat?.role?.toUpperCase() || 'MAHASISWA',
+    date: new Date(forumData.forum.createdAt).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}),
+    content: forumData.forum.isiForum
   } : null;
 
-  const replies = forumData ? forumData.replies.map(r => ({
+  const replies = forumData ? forumData.comments.map(r => ({
     id: r.id,
-    author: r.author || 'Pengguna',
-    role: r.authorRole?.toUpperCase() || 'MAHASISWA',
-    date: new Date(r.date).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}),
-    content: r.content,
-    replies: [] // API only supports flat replies for now
+    author: r.penulis?.nama || 'Pengguna',
+    role: r.penulis?.role?.toUpperCase() || 'MAHASISWA',
+    date: new Date(r.createdAt).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}),
+    content: r.isi,
+    replies: []
   })) : [];
 
   const [activeReply, setActiveReply] = useState(null);
@@ -62,18 +63,19 @@ const ForumDetail = () => {
     }
   };
 
-  const handleSubReply = (parentId) => {
+  const handleSubReply = async (parentId, parentAuthor) => {
     if (!subReplyText.trim()) return;
-    const newSub = {
-      id: Date.now(),
-      author: user?.nama || 'Pengguna',
-      role: user?.role || 'MAHASISWA',
-      date: new Date().toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}) + ', ' + new Date().toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'}),
-      content: subReplyText,
-    };
-    setReplies(replies.map(r => r.id === parentId ? {...r, replies: [...(r.replies||[]), newSub]} : r));
-    setSubReplyText('');
-    setActiveReply(null);
+    try {
+      // Create a mention format for the sub-reply since API only supports flat comments
+      const textToSend = `@${parentAuthor} ${subReplyText}`;
+      await replyForum(forumId, user.id, textToSend);
+      setSubReplyText('');
+      setActiveReply(null);
+      refetch();
+    } catch (e) {
+      console.error(e);
+      alert('Gagal mengirim balasan');
+    }
   };
 
   const renderComment = (reply, isSubReply = false, parentId = null) => (
@@ -136,12 +138,12 @@ const ForumDetail = () => {
                 type="text" 
                 value={subReplyText}
                 onChange={(e) => setSubReplyText(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSubReply(reply.id)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSubReply(reply.id, reply.author)}
                 placeholder={`Balas ${reply.author}...`}
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-4 pr-12 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                 autoFocus
               />
-              <button onClick={() => handleSubReply(reply.id)} className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors shadow-sm">
+              <button onClick={() => handleSubReply(reply.id, reply.author)} className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors shadow-sm">
                 <Send size={14} className="ml-0.5" />
               </button>
             </div>

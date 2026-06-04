@@ -3,11 +3,9 @@ package com.dialajar.lms.controller;
 import com.dialajar.lms.model.MataKuliah;
 import com.dialajar.lms.model.Tugas;
 import com.dialajar.lms.model.Kuis;
-import com.dialajar.lms.model.Nilai;
 import com.dialajar.lms.repository.MataKuliahRepository;
 import com.dialajar.lms.repository.TugasRepository;
 import com.dialajar.lms.repository.KuisRepository;
-import com.dialajar.lms.repository.NilaiRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -29,8 +27,6 @@ public class DashboardController {
     @Autowired
     private KuisRepository kuisRepository;
 
-    @Autowired
-    private NilaiRepository nilaiRepository;
 
     @GetMapping("/mahasiswa/{userId}")
     public ResponseEntity<?> getDashboardStats(@PathVariable Long userId) {
@@ -39,7 +35,6 @@ public class DashboardController {
         int mataKuliahCount = courses.size();
         int tugasMendatang = 0;
         int kuisMendatang = 0;
-        double ipkSementara = 0.0;
         
         List<Map<String, Object>> deadlines = new ArrayList<>();
         
@@ -79,23 +74,12 @@ public class DashboardController {
             }
         }
         
-        // Calculate IPK
-        List<Nilai> nilaiList = nilaiRepository.findByMahasiswaId(userId);
-        if (!nilaiList.isEmpty()) {
-            double total = 0;
-            for (Nilai n : nilaiList) {
-                total += (n.getNilaiAkhir() != null ? n.getNilaiAkhir() : 0);
-            }
-            double average = total / nilaiList.size();
-            // Convert scale 0-100 to 0-4.0
-            ipkSementara = (average / 100.0) * 4.0;
-        }
+        
 
         Map<String, Object> response = new HashMap<>();
         response.put("mataKuliah", mataKuliahCount);
         response.put("tugasMendatang", tugasMendatang);
         response.put("kuisMendatang", kuisMendatang);
-        response.put("ipkSementara", String.format(Locale.US, "%.2f", ipkSementara));
         response.put("deadlines", deadlines);
         
         return ResponseEntity.ok(response);

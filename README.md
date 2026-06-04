@@ -78,32 +78,33 @@ Ibu Putri Nurika Adila, S.Kom., M.Kom
 - **Node.js** (Minimal v18 ke atas).
 - **MySQL Server** aktif dan berjalan.
 
-### 1. Menyiapkan Database (MySQL)
+### 1. Menyiapkan Database (Otomatis)
 
-1. Buka DBMS MySQL (contoh: via XAMPP, MySQL Workbench, atau terminal).
-2. Buat satu database baru untuk aplikasi ini dengan perintah:
-   ```sql
-   CREATE DATABASE lms_db;
-   ```
+1. Pastikan Anda sudah menginstal **XAMPP** (atau aplikasi MySQL sejenisnya).
+2. Buka XAMPP Control Panel, lalu klik **Start** pada modul **MySQL** dan **Apache**.
+3. Selesai! Anda tidak perlu membuat database secara manual karena sistem akan membuatnya secara otomatis dengan nama `lms_pbo`.
 
-### 2. Konfigurasi & Menjalankan Backend (Spring Boot)
+### 2. Menjalankan Backend (Menggunakan Terminal / CMD)
 
-1. Buka jendela terminal (Command Prompt/PowerShell) lalu arahkan ke _folder_ `backend`:
+Berikut adalah langkah-langkah detail agar tidak terjadi _error_:
+
+1. Buka aplikasi **Terminal**, **Command Prompt (CMD)**, atau **PowerShell** di komputer Anda.
+2. Arahkan direktori terminal tersebut ke dalam folder `backend` dari repositori ini. Anda bisa menggunakan perintah `cd`:
    ```bash
-   cd backend
+   cd path/ke/folder/dial-ajar-lms/backend
    ```
-2. Pastikan file konfigurasi yang terletak di `src/main/resources/application.properties` sudah memiliki akses database yang sesuai.
-   _(Catatan: Konfigurasi default menggunakan user `root` tanpa password di port `3306`.)_
-3. Jalankan aplikasi menggunakan Maven Wrapper:
-   - Untuk pengguna **Windows**:
+   _(Pastikan terminal Anda benar-benar berada di dalam folder `backend` sebelum melanjutkan ke langkah berikutnya)._
+3. Ketik perintah berikut untuk mengunduh dependensi dan menjalankan server Spring Boot:
+   - **Bagi Pengguna Windows:**
      ```cmd
-     mvnw.cmd spring-boot:run
+     .\mvnw spring-boot:run
      ```
-   - Untuk pengguna **Mac/Linux**:
+   - **Bagi Pengguna Mac/Linux:**
      ```bash
      ./mvnw spring-boot:run
      ```
-4. Tunggu beberapa saat. Backend API siap melayani dan berjalan di alamat port `http://localhost:8080`.
+4. Tekan **Enter** dan tunggu beberapa saat. Proses ini mungkin memakan waktu beberapa menit saat pertama kali dijalankan karena Maven harus mengunduh paket-paket yang dibutuhkan.
+5. Jika di terminal sudah muncul tulisan `Started LmsApplication in ... seconds` (tanpa ada tulisan _ERROR_ merah), artinya Backend API sudah sukses berjalan di alamat `http://localhost:8080`. Jangan tutup terminal ini selama Anda masih ingin menggunakan aplikasi.
 
 ### 3. Menjalankan Frontend (React Vite)
 

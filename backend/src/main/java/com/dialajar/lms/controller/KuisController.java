@@ -8,6 +8,7 @@ import com.dialajar.lms.model.Soal;
 import com.dialajar.lms.repository.KuisRepository;
 import com.dialajar.lms.repository.MataKuliahRepository;
 import com.dialajar.lms.repository.SoalRepository;
+import com.dialajar.lms.repository.PengumpulanTugasRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -25,6 +26,9 @@ public class KuisController {
 
     @Autowired
     private SoalRepository soalRepository;
+
+    @Autowired
+    private PengumpulanTugasRepository pengumpulanTugasRepository;
 
     @Autowired
     private MataKuliahRepository mataKuliahRepository;
@@ -81,13 +85,7 @@ public class KuisController {
     @GetMapping("/submissions/{kuisId}")
     public ResponseEntity<?> getSubmissions(@PathVariable Long kuisId) {
         java.util.List<com.dialajar.lms.model.PengumpulanTugas> submissions = 
-            org.springframework.web.context.support.WebApplicationContextUtils
-            .getRequiredWebApplicationContext(
-                ((org.springframework.web.context.request.ServletRequestAttributes) 
-                org.springframework.web.context.request.RequestContextHolder.getRequestAttributes())
-                .getRequest().getServletContext()
-            ).getBean(com.dialajar.lms.repository.PengumpulanTugasRepository.class)
-            .findByKuisId(kuisId);
+            pengumpulanTugasRepository.findByKuisId(kuisId);
 
         java.util.List<java.util.Map<String, Object>> result = new java.util.ArrayList<>();
         for (com.dialajar.lms.model.PengumpulanTugas sub : submissions) {
@@ -95,7 +93,7 @@ public class KuisController {
             map.put("id", sub.getId());
             
             java.util.Map<String, Object> tugasMap = new java.util.HashMap<>();
-            tugasMap.put("id", sub.getKuis().getId());
+            tugasMap.put("id", sub.getKuis() != null ? sub.getKuis().getId() : null);
             map.put("tugas", tugasMap);
             
             java.util.Map<String, Object> mhsMap = new java.util.HashMap<>();

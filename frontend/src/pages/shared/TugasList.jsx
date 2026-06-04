@@ -21,6 +21,8 @@ import {
   HelpCircle,
   Brain,
   X,
+  Filter,
+  ChevronDown,
 } from "lucide-react";
 
 const TugasList = () => {
@@ -40,6 +42,20 @@ const TugasList = () => {
 
   const [sortOrder, setSortOrder] = useState("asc");
   const [filterType, setFilterType] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("semua");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = React.useRef(null);
+
+  React.useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const [showQuizModal, setShowQuizModal] = useState(false);
   const [selectedQuiz, setSelectedQuiz] = useState(null);
   const [errorNotification, setErrorNotification] = useState("");
@@ -59,13 +75,33 @@ const TugasList = () => {
       filtered = filtered.filter((t) => t.type === filterType);
     }
 
+    if (statusFilter !== "semua") {
+      filtered = filtered.filter((t) => {
+        const isCompleted = t.status === "dikumpulkan" || t.status === "dinilai";
+        const isOverdue = !isDosen && new Date() > new Date(t.deadline) && !isCompleted;
+        const isLocked = t.status === "terkunci" || (!isDosen && new Date() > new Date(t.deadline) && !isCompleted);
+        
+        if (statusFilter === "selesai") {
+          return isCompleted;
+        }
+        if (statusFilter === "overdue") {
+          return isOverdue || isLocked;
+        }
+        if (statusFilter === "belum") {
+          return t.status === "belum" && !isOverdue && !isLocked;
+        }
+        return true;
+      });
+    }
+
     return [...filtered].sort((a, b) => {
+
       const dateA = a.deadline ? new Date(a.deadline).getTime() : 0;
       const dateB = b.deadline ? new Date(b.deadline).getTime() : 0;
       if (sortOrder === "asc") return dateA - dateB;
       return dateB - dateA;
     });
-  }, [tugasData, sortOrder, filterType]);
+  }, [tugasData, sortOrder, statusFilter, isDosen, filterType]);
 
   const toggleSort = () =>
     setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
@@ -85,6 +121,7 @@ const TugasList = () => {
 
   const getStatusStyle = (status) => {
     switch (status) {
+      case "dinilai":
       case "dikumpulkan":
         return {
           icon: CheckCircle2,
@@ -151,7 +188,7 @@ const TugasList = () => {
       )}
 
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
-        <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto relative z-30">
           <div className="flex items-center bg-white border border-slate-200/80 rounded-xl p-1 shadow-sm h-10 w-full sm:w-auto">
             <button
               onClick={() => setFilterType("all")}
@@ -171,6 +208,66 @@ const TugasList = () => {
             >
               <HelpCircle size={14} /> Kuis
             </button>
+          </div>
+
+          {/* Beautiful Custom Dropdown for Status Filter */}
+          <div className="relative w-full sm:w-[240px]" ref={dropdownRef}>
+            <button
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className="flex items-center justify-between gap-3 w-full bg-white border border-slate-200/80 hover:border-primary/50 shadow-sm rounded-xl px-4 h-10 text-[13px] font-medium text-slate-700 transition-all focus:outline-none focus:ring-4 focus:ring-primary/10"
+            >
+              <div className="flex items-center gap-2.5">
+                <Filter size={16} className="text-primary" />
+                <span>
+                  {statusFilter === "semua" && "Semua Status"}
+                  {statusFilter === "selesai" && "Sudah Selesai"}
+                  {statusFilter === "belum" && "Belum Dikerjakan"}
+                  {statusFilter === "overdue" && "Terlewat (Overdue)"}
+                </span>
+              </div>
+              <ChevronDown size={16} className={`text-slate-400 transition-transform duration-300 ${isDropdownOpen ? "rotate-180" : ""}`} />
+            </button>
+
+            <div className={`absolute top-full left-0 right-0 mt-2 bg-white border border-slate-100 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] overflow-hidden transition-all duration-200 origin-top ${isDropdownOpen ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-95 -translate-y-2 pointer-events-none"}`}>
+              <div className="p-1.5 flex flex-col gap-1">
+                <button
+                  onClick={() => { setStatusFilter("semua"); setIsDropdownOpen(false); }}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium transition-colors ${statusFilter === "semua" ? "bg-primary/5 text-primary" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"}`}
+                >
+                  <div className={`p-1 rounded-md ${statusFilter === "semua" ? "bg-white shadow-sm" : "bg-slate-100"}`}>
+                    <LayoutGrid size={14} className={statusFilter === "semua" ? "text-primary" : "text-slate-400"} />
+                  </div>
+                  Semua Status
+                </button>
+                <button
+                  onClick={() => { setStatusFilter("selesai"); setIsDropdownOpen(false); }}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium transition-colors ${statusFilter === "selesai" ? "bg-emerald-50 text-emerald-600" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"}`}
+                >
+                  <div className={`p-1 rounded-md ${statusFilter === "selesai" ? "bg-white shadow-sm" : "bg-slate-100"}`}>
+                    <CheckCircle2 size={14} className={statusFilter === "selesai" ? "text-emerald-500" : "text-slate-400"} />
+                  </div>
+                  Sudah Selesai
+                </button>
+                <button
+                  onClick={() => { setStatusFilter("belum"); setIsDropdownOpen(false); }}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium transition-colors ${statusFilter === "belum" ? "bg-blue-50 text-blue-600" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"}`}
+                >
+                  <div className={`p-1 rounded-md ${statusFilter === "belum" ? "bg-white shadow-sm" : "bg-slate-100"}`}>
+                    <FileText size={14} className={statusFilter === "belum" ? "text-blue-500" : "text-slate-400"} />
+                  </div>
+                  Belum Dikerjakan
+                </button>
+                <button
+                  onClick={() => { setStatusFilter("overdue"); setIsDropdownOpen(false); }}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium transition-colors ${statusFilter === "overdue" ? "bg-red-50 text-red-600" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"}`}
+                >
+                  <div className={`p-1 rounded-md ${statusFilter === "overdue" ? "bg-white shadow-sm" : "bg-slate-100"}`}>
+                    <Clock size={14} className={statusFilter === "overdue" ? "text-red-500" : "text-slate-400"} />
+                  </div>
+                  Terlewat (Overdue)
+                </button>
+              </div>
+            </div>
           </div>
 
           <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -252,20 +349,22 @@ const TugasList = () => {
         </div>
       ) : filteredAndSortedTugas.length > 0 ? (
         <div
-          key={viewMode + sortOrder + filterType}
+          key={viewMode + sortOrder + statusFilter}
           className={`${viewMode === "grid" ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5" : "flex flex-col space-y-4"}`}
         >
           {filteredAndSortedTugas.map((tugas, idx) => {
             const style = getStatusStyle(tugas.status);
 
             let StatusIcon = style.icon;
-            if (tugas.status === "belum" && tugas.type === "kuis") {
+            if (tugas.type === "kuis") {
               StatusIcon = Brain;
-              style.color = "text-purple-500";
-              style.bg = "bg-purple-50";
-              style.border = "border-purple-100/60";
-              style.gradient = "from-purple-50 to-fuchsia-50";
-              style.watermark = "text-purple-500";
+              if (tugas.status === "belum") {
+                style.color = "text-purple-500";
+                style.bg = "bg-purple-50";
+                style.border = "border-purple-100/60";
+                style.gradient = "from-purple-50 to-fuchsia-50";
+                style.watermark = "text-purple-500";
+              }
             }
 
             const isGrid = viewMode === "grid";
@@ -280,22 +379,24 @@ const TugasList = () => {
 
             const handleCardClick = () => {
               if (isDosen) {
-                navigate(`/tugas/${id}/${tugas.id}`);
+                navigate(`/tugas/${id}/${tugas.id}?type=${tugas.type || 'tugas'}`);
+              } else if (tugas.type === "kuis" && (tugas.status === "dikumpulkan" || tugas.status === "dinilai")) {
+                if (isLocked) {
+                  setErrorNotification("Kuis ini telah terkunci karena melewati deadline.");
+                  setTimeout(() => setErrorNotification(""), 3000);
+                  return;
+                }
+                navigate(`/tugas/${id}/${tugas.id}/hasil`);
               } else if (isLocked) {
                 setErrorNotification(
                   "Overdue: Waktu pengerjaan tugas atau kuis ini telah habis.",
                 );
                 setTimeout(() => setErrorNotification(""), 3000);
               } else if (tugas.type === "kuis") {
-                if (tugas.status === "dikumpulkan") {
-                  setErrorNotification("Kamu sudah mengerjakan kuis ini.");
-                  setTimeout(() => setErrorNotification(""), 3000);
-                  return;
-                }
                 setSelectedQuiz(tugas);
                 setShowQuizModal(true);
               } else {
-                navigate(`/tugas/${id}/${tugas.id}`);
+                navigate(`/tugas/${id}/${tugas.id}?type=${tugas.type || 'tugas'}`);
               }
             };
 
@@ -365,10 +466,19 @@ const TugasList = () => {
                     ${isGrid ? "w-full py-2.5 rounded-xl font-medium mt-auto text-[13px]" : "w-11 h-11 rounded-full"}
                   `}
                 >
-                  {tugas.type === "kuis" && tugas.status === "dikumpulkan" ? (
+                  {tugas.type === "kuis" && (tugas.status === "dikumpulkan" || tugas.status === "dinilai") ? (
                     <>
-                      <Lock size={18} className={`${isGrid ? "hidden" : ""}`} />
-                      {isGrid && <span>Kuis Terkunci</span>}
+                      {isLocked ? (
+                        <>
+                          <Lock size={18} className={`${isGrid ? "hidden" : ""}`} />
+                          {isGrid && <span>Terkunci</span>}
+                        </>
+                      ) : (
+                        <>
+                          <ArrowRight size={18} className={`${isGrid ? "hidden" : ""}`} />
+                          {isGrid && <span>Lihat Hasil</span>}
+                        </>
+                      )}
                     </>
                   ) : (
                     <>
@@ -399,13 +509,13 @@ const TugasList = () => {
         </div>
       ) : (
         <EmptyState
-          icon={filterType === "kuis" ? HelpCircle : FileText}
+          icon={statusFilter === "selesai" ? CheckCircle2 : statusFilter === "overdue" ? Clock : FileText}
           title={
-            filterType === "all"
+            statusFilter === "semua"
               ? "Belum Ada Tugas"
-              : `Belum Ada ${filterType === "kuis" ? "Kuis" : "Tugas"}`
+              : statusFilter === "selesai" ? "Belum Ada Tugas Selesai" : statusFilter === "overdue" ? "Tidak Ada Tugas Overdue" : "Semua Tugas Sudah Dikerjakan"
           }
-          description={`Saat ini belum ada ${filterType === "all" ? "tugas atau kuis" : filterType} yang ditugaskan pada kelas ini.`}
+          description={`Saat ini tidak ada data yang cocok dengan filter ${statusFilter} yang dipilih.`}
         />
       )}
 

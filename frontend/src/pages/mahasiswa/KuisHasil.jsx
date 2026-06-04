@@ -37,7 +37,10 @@ const KuisHasil = () => {
           // Jika tidak ada di state (misal buka dari detail tugas langsung), fetch dari backend
           if (Object.keys(answersToUse).length === 0 && tugasRes.data.fileJawaban) {
             try {
-              const res = await axios.get(`http://localhost:8080${tugasRes.data.fileJawaban}`);
+              const token = localStorage.getItem('token');
+              const res = await axios.get(`http://localhost:8080${tugasRes.data.fileJawaban}`, {
+                  headers: { Authorization: `Bearer ${token}` }
+              });
               answersToUse = res.data;
             } catch (err) {
               console.error("Gagal mengambil file jawaban dari backend", err);

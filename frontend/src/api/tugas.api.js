@@ -39,11 +39,11 @@ export const getTugasByMatkul = async (courseId, userId) => {
   }
 };
 
-export const getTugasDetail = async (courseId, taskId, userId) => {
+export const getTugasDetail = async (courseId, taskId, userId, type) => {
   try {
     const res = await getTugasByMatkul(courseId, userId);
     if (res.data) {
-      const tugas = res.data.find((t) => String(t.id) === String(taskId));
+      const tugas = res.data.find((t) => String(t.id) === String(taskId) && (!type || t.type === type));
       if (tugas) {
         return { data: tugas };
       }
@@ -67,13 +67,16 @@ export const getKuisDetail = async (kuisId) => {
   }
 };
 
-export const submitTugas = async (tugasId, userId, file) => {
+export const submitTugas = async (tugasId, userId, file, catatan) => {
   try {
     const formData = new FormData();
     formData.append("tugasId", tugasId);
     formData.append("mahasiswaId", userId);
     if (file) {
       formData.append("file", file);
+    }
+    if (catatan) {
+      formData.append("catatan", catatan);
     }
 
     const response = await axios.post(`${API_URL}/tugas/submit`, formData, {

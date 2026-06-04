@@ -77,6 +77,7 @@ public class TugasController {
                     map.put("status", "dikumpulkan");
                     map.put("nilai", sub.get().getNilai());
                     map.put("fileJawaban", sub.get().getFileJawaban());
+                    map.put("dikumpulkan", sub.get().getDikumpulkan());
                 } else {
                     map.put("status", "belum");
                 }
@@ -102,6 +103,7 @@ public class TugasController {
                     map.put("status", sub.get().getStatus().equals("SUDAH_DINILAI") ? "dinilai" : "dikumpulkan");
                     map.put("nilai", sub.get().getNilai());
                     map.put("fileJawaban", sub.get().getFileJawaban());
+                    map.put("dikumpulkan", sub.get().getDikumpulkan());
                 } else {
                     map.put("status", "belum");
                 }
@@ -277,42 +279,47 @@ public class TugasController {
             @RequestParam("jawaban") String jawabanJson,
             @RequestParam("nilaiPg") Double nilaiPg) {
 
-        Optional<Kuis> kuisOpt = kuisRepository.findById(tugasId);
-        Optional<Mahasiswa> mhsOpt = mahasiswaRepository.findById(mahasiswaId);
-
-        if (kuisOpt.isEmpty() || mhsOpt.isEmpty()) {
-            return ResponseEntity.badRequest().body("Kuis atau Mahasiswa tidak ditemukan");
-        }
-
-        String fileUrl = null;
         try {
-            Path uploadPath = Paths.get(uploadDir, "jawaban");
-            Files.createDirectories(uploadPath);
+            Optional<Kuis> kuisOpt = kuisRepository.findById(tugasId);
+            Optional<Mahasiswa> mhsOpt = mahasiswaRepository.findById(mahasiswaId);
 
-            String uniqueFilename = UUID.randomUUID().toString() + ".json";
-            Path filePath = uploadPath.resolve(uniqueFilename);
-            Files.writeString(filePath, jawabanJson);
+            if (kuisOpt.isEmpty() || mhsOpt.isEmpty()) {
+                return ResponseEntity.badRequest().body("Kuis atau Mahasiswa tidak ditemukan");
+            }
 
-            fileUrl = "/api/tugas/files/jawaban/" + uniqueFilename;
-        } catch (IOException e) {
-            return ResponseEntity.internalServerError().body("Gagal menyimpan file jawaban kuis: " + e.getMessage());
+            String fileUrl = null;
+            try {
+                Path uploadPath = Paths.get(uploadDir, "jawaban");
+                Files.createDirectories(uploadPath);
+
+                String uniqueFilename = UUID.randomUUID().toString() + ".json";
+                Path filePath = uploadPath.resolve(uniqueFilename);
+                Files.writeString(filePath, jawabanJson);
+
+                fileUrl = "/api/tugas/files/jawaban/" + uniqueFilename;
+            } catch (IOException e) {
+                return ResponseEntity.internalServerError().body("Gagal menyimpan file jawaban kuis: " + e.getMessage());
+            }
+
+            Optional<PengumpulanTugas> existing = pengumpulanTugasRepository.findByKuisIdAndMahasiswaId(tugasId, mahasiswaId);
+            PengumpulanTugas pengumpulan;
+            if (existing.isPresent()) {
+                pengumpulan = existing.get();
+            } else {
+                pengumpulan = new PengumpulanTugas(kuisOpt.get(), mhsOpt.get());
+            }
+            
+            pengumpulan.setFileJawaban(fileUrl);
+            pengumpulan.setNilai(nilaiPg);
+            pengumpulan.setStatus("SUDAH_KUMPUL");
+            pengumpulan.setDikumpulkan(LocalDateTime.now());
+            
+            pengumpulanTugasRepository.save(pengumpulan);
+            return ResponseEntity.ok(pengumpulan);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body("Internal Error: " + e.getMessage() + " (" + e.getClass().getName() + ")");
         }
-
-        Optional<PengumpulanTugas> existing = pengumpulanTugasRepository.findByKuisIdAndMahasiswaId(tugasId, mahasiswaId);
-        PengumpulanTugas pengumpulan;
-        if (existing.isPresent()) {
-            pengumpulan = existing.get();
-        } else {
-            pengumpulan = new PengumpulanTugas(kuisOpt.get(), mhsOpt.get());
-        }
-        
-        pengumpulan.setFileJawaban(fileUrl);
-        pengumpulan.setNilai(nilaiPg);
-        pengumpulan.setStatus("SUDAH_KUMPUL");
-        pengumpulan.setDikumpulkan(LocalDateTime.now());
-        
-        pengumpulanTugasRepository.save(pengumpulan);
-        return ResponseEntity.ok(pengumpulan);
     }
 
     @GetMapping("/submissions/{tugasId}")
@@ -324,7 +331,7 @@ public class TugasController {
             map.put("id", sub.getId());
             
             Map<String, Object> tugasMap = new HashMap<>();
-            tugasMap.put("id", sub.getTugas().getId());
+            tugasMap.put("id", sub.getTugas() != null ? sub.getTugas().getId() : null);
             map.put("tugas", tugasMap);
             
             Map<String, Object> mhsMap = new HashMap<>();

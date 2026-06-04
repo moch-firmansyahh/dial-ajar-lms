@@ -25,7 +25,7 @@ const TugasNilai = () => {
   const { data: submissionsRes, isLoading, refetch } = useQuery({
     queryKey: ['submissions', tugasId, tugasDetail?.tipe],
     queryFn: () => {
-      if (tugasDetail?.tipe === 'kuis') {
+      if (tugasDetail?.type === 'kuis') {
         return getSubmissionsByKuis(tugasId);
       }
       return getSubmissionsByTugas(tugasId);
@@ -40,7 +40,7 @@ const TugasNilai = () => {
   });
   
   const soalList = soalRes?.data || [];
-  const isKuis = soalList.length > 0;
+  const isKuis = tugasDetail?.type === 'kuis';
   const pgSoalList = soalList.filter(s => s.tipe === 'PILIHAN_GANDA');
   const essaySoalList = soalList.filter(s => s.tipe !== 'PILIHAN_GANDA');
 
@@ -107,7 +107,10 @@ const TugasNilai = () => {
     setSelectedStudent(student);
     try {
       if (student.file) {
-        const res = await axios.get(`http://localhost:8080${student.file}`);
+        const token = localStorage.getItem("token");
+        const res = await axios.get(`http://localhost:8080${student.file}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
         setStudentAnswers(res.data);
       }
     } catch (e) {

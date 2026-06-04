@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import Card from '../../components/ui/Card';
 import Skeleton from '../../components/ui/Skeleton';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import { useAuthStore } from '../../store/authStore';
-import { useTugasStore } from '../../store/tugasStore';
 import { FileText, ArrowRight, ArrowLeft, Calendar, Download, FileUp, Send, CheckCircle, X, Info, Trophy, File as FileIcon, Edit3 } from 'lucide-react';
 import TugasNilai from '../dosen/TugasNilai';
 import { submitTugas, getTugasDetail } from '../../api/tugas.api';
@@ -16,13 +15,15 @@ const TugasDetail = () => {
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const isDosen = user?.role === 'DOSEN';
-  const { getSubmission, cancelSubmit } = useTugasStore();
   const queryClient = useQueryClient();
+
+  const [searchParams] = useSearchParams();
+  const typeParam = searchParams.get('type');
 
   // Fetch real assignment data
   const { data: tugasRes, isLoading, refetch } = useQuery({
-    queryKey: ["tugasDetail", id, tugasId, user?.id],
-    queryFn: () => getTugasDetail(id, tugasId, user?.id),
+    queryKey: ["tugasDetail", id, tugasId, user?.id, typeParam],
+    queryFn: () => getTugasDetail(id, tugasId, user?.id, typeParam),
     enabled: !!id && !!tugasId
   });
 
@@ -36,6 +37,7 @@ const TugasDetail = () => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [catatan, setCatatan] = useState('');
   const fileInputRef = React.useRef(null);
 
 
@@ -44,8 +46,7 @@ const TugasDetail = () => {
     setShowConfirmModal(false);
     setIsSubmitting(true);
     try {
-      await submitTugas(tugasId || '1', user?.id, selectedFile);
-      setShowSubmitModal(false);
+      await submitTugas(tugasId || '1', user?.id, selectedFile, catatan);
       refetch();
     } catch (err) {
       console.error(err);
@@ -245,6 +246,8 @@ const TugasDetail = () => {
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-slate-700">Catatan Tambahan (Opsional)</label>
                   <textarea 
+                    value={catatan}
+                    onChange={(e) => setCatatan(e.target.value)}
                     className="w-full border-2 border-slate-200 rounded-xl p-4 focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all min-h-[100px] resize-none text-slate-700 font-medium text-sm" 
                     placeholder="Tuliskan catatan, pesan untuk dosen, atau jawaban singkat Anda di sini..." 
                   />

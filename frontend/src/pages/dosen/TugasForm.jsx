@@ -72,10 +72,27 @@ const TugasForm = () => {
   };
 
   const handleSimpanTugas = async () => {
-    if (!judul || !deskripsi) {
-       setNotification({ show: true, message: 'Judul dan deskripsi wajib diisi!', type: 'error' });
+    if (!judul) {
+       setNotification({ show: true, message: 'Judul wajib diisi!', type: 'error' });
        setTimeout(() => setNotification({ show: false, message: '', type: 'success' }), 3000);
        return;
+    }
+
+    if (tipeTugas === 'kuis') {
+        const totalSoal = quizData.pilihan_ganda.length + quizData.essay.length;
+        if (totalSoal === 0) {
+            setNotification({ show: true, message: 'Tambahkan minimal 1 soal!', type: 'error' });
+            setTimeout(() => setNotification({ show: false, message: '', type: 'success' }), 3000);
+            return;
+        }
+        const pgInvalid = quizData.pilihan_ganda.some(pg =>
+            !pg.pertanyaan || pg.opsi.some(o => !o) || pg.jawaban_benar === undefined
+        );
+        if (pgInvalid) {
+            setNotification({ show: true, message: 'Lengkapi semua soal PG!', type: 'error' });
+            setTimeout(() => setNotification({ show: false, message: '', type: 'success' }), 3000);
+            return;
+        }
     }
 
     setIsSubmitting(true);
@@ -292,7 +309,7 @@ const TugasForm = () => {
         )}
 
         <div className="space-y-2">
-          <label className="block text-sm font-semibold text-slate-700">Deskripsi Tugas</label>
+          <label className="block text-sm font-semibold text-slate-700">Deskripsi Tugas (Opsional)</label>
           <textarea value={deskripsi} onChange={(e) => setDeskripsi(e.target.value)} className="w-full border-2 border-slate-200 rounded-xl p-4 focus:border-primary outline-none transition-colors min-h-[120px] resize-none" placeholder="Instruksi dan persyaratan tugas..." />
         </div>
         

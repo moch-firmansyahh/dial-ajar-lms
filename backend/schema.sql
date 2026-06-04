@@ -83,13 +83,15 @@ CREATE TABLE tugas (
 -- ─── PENGUMPULAN TUGAS ────────────────────────────────────────────────────
 CREATE TABLE pengumpulan_tugas (
     id           BIGINT AUTO_INCREMENT PRIMARY KEY,
-    tugas_id     BIGINT NOT NULL,
+    tugas_id     BIGINT,
+    kuis_id      BIGINT,
     mahasiswa_id BIGINT NOT NULL,
     file_jawaban VARCHAR(500),
     nilai        DOUBLE,
     status       ENUM('BELUM_KUMPUL', 'SUDAH_KUMPUL', 'SUDAH_DINILAI') DEFAULT 'BELUM_KUMPUL',
     dikumpulkan  TIMESTAMP,
     FOREIGN KEY (tugas_id)     REFERENCES tugas(id) ON DELETE CASCADE,
+    FOREIGN KEY (kuis_id)      REFERENCES kuis(id) ON DELETE CASCADE,
     FOREIGN KEY (mahasiswa_id) REFERENCES users(id)
 );
 

@@ -2,17 +2,24 @@
  * aiGenerator.js
  * Utilitas untuk memanggil API AI (Google Gemini) untuk membuat kuis otomatis.
  */
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// Kunci API seharusnya diletakkan di .env (misal VITE_GEMINI_API_KEY)
-// Untuk demo ini, kita asumsikan kosong dan akan menggunakan sistem Fallback Cerdas (Mock) 
-// jika API key tidak tersedia atau request gagal.
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
-
-
+// Kunci API diambil dari file .env (wajib bernama VITE_GEMINI_API_KEY)
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "";
 
 export const generateQuizWithAI = async (materiText) => {
-  const topic = "Materi Umum";
-  const prompt = `
+  try {
+    if (!API_KEY) {
+      throw new Error(
+        "Untuk menggunakan fitur ini, Anda harus mengatur VITE_GEMINI_API_KEY di file .env terlebih dahulu.",
+      );
+    }
+
+    // Inisialisasi SDK resmi alih-alih menggunakan fetch manual
+    const genAI = new GoogleGenerativeAI(API_KEY);
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+    const prompt = `
 Teks berikut adalah dokumen yang berisi daftar soal kuis (pilihan ganda dan/atau essay):
 "${materiText}"
 
@@ -22,7 +29,7 @@ Tugas Anda adalah membaca teks di atas, mengekstrak SEMUA soal yang ada, lalu me
     {
       "pertanyaan": "Pertanyaan 1...",
       "opsi": ["A. Opsi 1", "B. Opsi 2", "C. Opsi 3", "D. Opsi 4"],
-      "jawaban_benar": 0 // index dari opsi yang benar (0-3). Coba tebak jawaban benarnya jika tidak ada kunci jawaban.
+      "jawaban_benar": 0
     }
   ],
   "essay": [
@@ -34,45 +41,26 @@ Tugas Anda adalah membaca teks di atas, mengekstrak SEMUA soal yang ada, lalu me
 Ekstrak sebanyak mungkin soal yang Anda temukan di teks. Hanya kembalikan JSON, jangan ada teks pembuka atau penutup.
 `;
 
-  try {
-    if (!API_KEY) {
-      throw new Error("Untuk menggunakan fitur ini secara 'real', Anda harus mengatur VITE_GEMINI_API_KEY di file .env terlebih dahulu.");
-    }
-
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+    // Eksekusi request menggunakan SDK (otomatis menangani URL endpoint dan headers)
+    const result = await model.generateContent({
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generationConfig: {
+        temperature: 0.2,
+        responseMimeType: "application/json", // Memaksa AI memberikan output berformat JSON
       },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.2,
-          responseMimeType: "application/json",
-        }
-      })
     });
 
-    if (!response.ok) {
-      throw new Error(`Gagal menghubungi API AI. Status: ${response.status}`);
-    }
+    const resultText = result.response.text();
 
-    const data = await response.json();
-    if (!data.candidates || data.candidates.length === 0) {
-      throw new Error('API tidak mengembalikan hasil yang valid.');
-    }
-    
-    const resultText = data.candidates[0].content.parts[0].text;
-    
-    // Parse JSON
+    // Parse teks menjadi JSON Object
     try {
-      // Membersihkan markdown backticks jika ada (terkadang AI tetap mereturn markdown)
-      const cleanText = resultText.replace(/```json\n?|```\n?/g, '');
+      const cleanText = resultText.replace(/```json\n?|```\n?/g, "").trim();
       return JSON.parse(cleanText);
     } catch (e) {
-      throw new Error('Gagal membaca struktur kuis dari AI (Format tidak sesuai JSON).');
+      throw new Error(
+        "Gagal membaca struktur kuis dari AI (Format tidak sesuai JSON).",
+      );
     }
-
   } catch (error) {
     console.error("AI Generation Error:", error.message);
     throw error;

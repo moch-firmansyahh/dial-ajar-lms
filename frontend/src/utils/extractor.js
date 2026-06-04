@@ -52,13 +52,13 @@ export async function extractTextFromFile(file) {
 export async function generateQuizFromText(text, apiKey) {
   if (!apiKey) {
     throw new Error(
-      "Gemini API Key tidak ditemukan. Silakan restart terminal npm run dev.",
+      "Gemini API Key tidak ditemukan. Pastikan kuncinya sudah dimasukkan dan coba restart terminal (npm run dev).",
     );
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
 
-  // Model terbaru yang masih aktif (urutan prioritas)
+  // Model diurutkan dari yang paling stabil dan cepat
   const modelNames = [
     "gemini-1.5-flash",
     "gemini-1.5-pro",
@@ -73,6 +73,7 @@ Aturan:
 2. Setiap soal harus memiliki tepat 4 opsi jawaban (A, B, C, D).
 3. Tentukan indeks jawaban yang benar (0 untuk A, 1 untuk B, 2 untuk C, 3 untuk D).
 4. OUTPUT HARUS BERUPA JSON ARRAY VALID, tanpa ada karakter markdown \`\`\`json atau penjelasan apapun. HANYA ARRAY.
+
 Format JSON yang diharapkan:
 [
   {
@@ -86,25 +87,31 @@ Teks sumber:
 ${text.substring(0, 30000)}
 `;
 
-  let result;
-  let lastError;
+  let result = null;
+  let lastError = null;
+  let isSuccess = false;
+  let modelIndex = 0;
 
-  for (const name of modelNames) {
+  // Menggunakan while loop dan flag boolean sebagai ganti instruksi break
+  while (modelIndex < modelNames.length && !isSuccess) {
+    const name = modelNames[modelIndex];
     try {
       const currentModel = genAI.getGenerativeModel({ model: name });
       result = await currentModel.generateContent(prompt);
+
       if (result) {
-        break;
+        isSuccess = true;
       }
     } catch (error) {
       console.warn(`Model ${name} gagal: ${error.message}`);
       lastError = error;
     }
+    modelIndex++;
   }
 
-  if (!result) {
+  if (!isSuccess || !result) {
     throw new Error(
-      `Semua model AI gagal. Pastikan API Key sudah aktif di Google AI Studio. Error: ${lastError?.message}`,
+      `Semua model AI gagal merespons. Pastikan API Key valid dan coba lagi. Error terakhir: ${lastError?.message}`,
     );
   }
 
@@ -119,7 +126,7 @@ ${text.substring(0, 30000)}
 
     return parsed.map((item, index) => ({
       id: Date.now() + index,
-      text: item.text || "Pertanyaan",
+      text: item.text || "Pertanyaan tidak terbaca",
       options:
         item.options && item.options.length === 4
           ? item.options
@@ -128,9 +135,9 @@ ${text.substring(0, 30000)}
         typeof item.correctIndex === "number" ? item.correctIndex : 0,
     }));
   } catch (error) {
-    console.error("Gagal parse respons AI:", responseText);
+    console.error("Gagal memproses respons AI:", responseText);
     throw new Error(
-      "AI gagal menghasilkan format kuis yang valid. Silakan coba lagi.",
+      "AI gagal menghasilkan format kuis JSON yang valid. Silakan coba unggah ulang dokumennya.",
     );
   }
 }

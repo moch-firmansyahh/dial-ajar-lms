@@ -122,17 +122,17 @@ Ibu Putri Nurika Adila, S.Kom., M.Kom
 4. Terminal akan memberikan alamat lokal (biasanya `http://localhost:5173`). Buka _link_ tersebut di browser Anda (Google Chrome/Edge/Firefox).
 
 ### Akun Testing (Demo)
+
 Aplikasi ini sudah menyediakan data uji coba (seeder) yang bisa Anda gunakan langsung untuk login:
 
 **Akun Dosen:**
+
 - **NIP:** `101`, `102`, `103`, `104`, atau `105`
 - **Password:** `dosen123`
 
 **Akun Mahasiswa:**
+
 - **NIM:** `201`, `202`, `203`, ... sampai `2010`
 - **Password:** `mhs123`
 
 ---
-
-**Selesai! ✨**  
-Aplikasi LMS siap digunakan. Anda dapat menggunakan akun *testing* di atas untuk mengeksplorasi seluruh fitur yang ada!

@@ -52,6 +52,9 @@ public class TugasController {
     @Autowired
     private KuisRepository kuisRepository;
 
+    @Autowired
+    private NotifikasiRepository notifikasiRepository;
+
     @Value("${file.upload-dir:uploads}")
     private String uploadDir;
 
@@ -180,6 +183,14 @@ public class TugasController {
                 mk.get()
         );
         tugasRepository.save(tugas);
+
+        // Create Notifications for all enrolled Mahasiswa
+        String message = "Tugas baru: " + judul + " telah ditambahkan di mata kuliah " + mk.get().getNama();
+        for (Mahasiswa mhs : mk.get().getMahasiswas()) {
+            Notifikasi notif = new Notifikasi(mhs.getId(), message, "TUGAS_BARU");
+            notifikasiRepository.save(notif);
+        }
+
         return ResponseEntity.ok(tugas);
     }
 

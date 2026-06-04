@@ -21,6 +21,17 @@ export const addVideo = async (courseId, judul, linkVideo) => {
   return response;
 };
 
+// Upload a video file
+export const uploadVideo = async (courseId, judul, file) => {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("judul", judul);
+  formData.append("courseId", courseId);
+
+  const response = await axiosInstance.post(`/modules/video/upload`, formData);
+  return response;
+};
+
 // Delete a modul
 export const deleteModul = async (id) => {
   const response = await axiosInstance.delete(`/modules/${id}`);

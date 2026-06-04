@@ -138,9 +138,7 @@ const TugasForm = () => {
       }
       
       setNotification({ show: true, message: 'Berhasil disimpan!', type: 'success' });
-      setTimeout(() => {
-        navigate(`/matakuliah/${id}/tugas`);
-      }, 1500);
+      navigate(-1);
     } catch (error) {
       setNotification({ show: true, message: 'Gagal menyimpan data', type: 'error' });
       setTimeout(() => setNotification({ show: false, message: '', type: 'success' }), 3000);
@@ -331,7 +329,7 @@ const TugasForm = () => {
         )}
 
         <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
-          <Button variant="outline" onClick={() => navigate(`/matakuliah/${id}/tugas`)} disabled={isSubmitting}>
+          <Button variant="outline" onClick={() => navigate(-1)} disabled={isSubmitting}>
             Batal
           </Button>
           <Button onClick={handleSimpanTugas} disabled={isSubmitting}>

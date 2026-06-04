@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getDashboardMahasiswa } from '../../api/dashboard.api';
+import { joinMataKuliah } from '../../api/matakuliah.api';
 import Skeleton from '../../components/ui/Skeleton';
 import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
-import { BookOpen, Clock, FileText, Trophy, ArrowRight, ArrowUpDown } from 'lucide-react';
+import InputField from '../../components/ui/InputField';
+import Modal from '../../components/ui/Modal';
+import { BookOpen, Clock, FileText, Trophy, ArrowRight, ArrowUpDown, Plus } from 'lucide-react';
 
 const DashboardMahasiswa = () => {
   const navigate = useNavigate();
@@ -16,6 +19,13 @@ const DashboardMahasiswa = () => {
   const [filterType, setFilterType] = useState('semua'); // 'semua', 'tugas', 'kuis'
   const [sortBy, setSortBy] = useState('terdekat'); // 'terdekat', 'terlama'
 
+  const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
+  const [kodeKelas, setKodeKelas] = useState('');
+  const [isJoining, setIsJoining] = useState(false);
+  const [joinSuccess, setJoinSuccess] = useState(false);
+
+  const queryClient = useQueryClient();
+
   const { data: dashboardData, isLoading: queryLoading } = useQuery({
     queryKey: ['dashboard', user?.id],
     queryFn: async () => {
@@ -23,6 +33,29 @@ const DashboardMahasiswa = () => {
     },
     enabled: !!user?.id
   });
+
+  const handleJoinClass = async () => {
+    if (!kodeKelas) return;
+    setIsJoining(true);
+    try {
+      await joinMataKuliah({
+        kodeKelas,
+        mahasiswaId: user.id
+      });
+      setJoinSuccess(true);
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+        queryClient.invalidateQueries({ queryKey: ['matakuliah'] });
+        setIsJoinModalOpen(false);
+        setJoinSuccess(false);
+        setKodeKelas('');
+      }, 1500);
+    } catch (err) {
+      alert(err.response?.data || 'Gagal bergabung ke kelas');
+    } finally {
+      setIsJoining(false);
+    }
+  };
 
   const isLoading = queryLoading;
 
@@ -55,6 +88,25 @@ const DashboardMahasiswa = () => {
   return (
     <div className="max-w-[1200px] mx-auto pb-10">
       
+      {/* Header Actions */}
+      <div className="flex justify-between items-end mb-6">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-medium text-slate-900 tracking-tight">Halo, {user?.nama || 'Mahasiswa'} 👋</h1>
+          <p className="text-slate-500 font-medium mt-1">Siap untuk belajar hari ini?</p>
+        </div>
+        <div className="hidden sm:block">
+          <Button onClick={() => setIsJoinModalOpen(true)}>
+            <Plus size={18} className="mr-2" /> Gabung Kelas
+          </Button>
+        </div>
+      </div>
+
+      <div className="sm:hidden mb-6">
+        <Button onClick={() => setIsJoinModalOpen(true)} className="w-full justify-center">
+          <Plus size={18} className="mr-2" /> Gabung Kelas
+        </Button>
+      </div>
+
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
         {isLoading 
@@ -203,6 +255,37 @@ const DashboardMahasiswa = () => {
         </div>
       </div>
       
+      {/* Modal Gabung Kelas */}
+      <Modal isOpen={isJoinModalOpen} onClose={() => setIsJoinModalOpen(false)} title="Gabung Kelas">
+        {joinSuccess ? (
+          <div className="text-center py-6">
+            <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+            </div>
+            <h2 className="text-xl font-semibold text-slate-800 mb-2">Berhasil Bergabung!</h2>
+            <p className="text-slate-500 mb-6">Mata kuliah akan segera muncul di dashboard Anda.</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <p className="text-sm text-slate-500 mb-4">
+              Mintalah kode kelas kepada Dosen Anda dan masukkan kode tersebut di sini untuk bergabung.
+            </p>
+            <InputField 
+              label="Kode Kelas" 
+              placeholder="Contoh: PBO-123" 
+              value={kodeKelas} 
+              onChange={(e) => setKodeKelas(e.target.value)} 
+            />
+            <div className="flex justify-end gap-3 mt-6">
+              <Button variant="outline" onClick={() => setIsJoinModalOpen(false)}>Batal</Button>
+              <Button onClick={handleJoinClass} disabled={isJoining || !kodeKelas}>
+                {isJoining ? 'Bergabung...' : 'Gabung'}
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
     </div>
   );
 };

@@ -5,10 +5,13 @@ import com.dialajar.lms.dto.SoalRequest;
 import com.dialajar.lms.model.Kuis;
 import com.dialajar.lms.model.MataKuliah;
 import com.dialajar.lms.model.Soal;
+import com.dialajar.lms.model.Mahasiswa;
+import com.dialajar.lms.model.Notifikasi;
 import com.dialajar.lms.repository.KuisRepository;
 import com.dialajar.lms.repository.MataKuliahRepository;
 import com.dialajar.lms.repository.SoalRepository;
 import com.dialajar.lms.repository.PengumpulanTugasRepository;
+import com.dialajar.lms.repository.NotifikasiRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -32,6 +35,9 @@ public class KuisController {
 
     @Autowired
     private MataKuliahRepository mataKuliahRepository;
+
+    @Autowired
+    private NotifikasiRepository notifikasiRepository;
 
     @PostMapping
     public ResponseEntity<?> createKuis(@RequestBody KuisRequest request) {
@@ -62,6 +68,13 @@ public class KuisController {
                 
                 soalRepository.save(soal);
             }
+        }
+
+        // Create Notifications for all enrolled Mahasiswa
+        String message = "Kuis baru: " + request.getJudul() + " telah ditambahkan di mata kuliah " + mk.get().getNama();
+        for (Mahasiswa mhs : mk.get().getMahasiswas()) {
+            Notifikasi notif = new Notifikasi(mhs.getId(), message, "KUIS_BARU");
+            notifikasiRepository.save(notif);
         }
 
         return ResponseEntity.ok(kuis);

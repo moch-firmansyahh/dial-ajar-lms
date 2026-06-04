@@ -1,60 +1,95 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import Holidays from 'date-holidays';
 import PageHeader from '../../components/shared/PageHeader';
 import Card from '../../components/ui/Card';
 import Skeleton from '../../components/ui/Skeleton';
 import Badge from '../../components/ui/Badge';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { useAuthStore } from '../../store/authStore';
+import { getKalenderEvents } from '../../api/kalender.api';
 
 const months = ['JAN', 'FEB', 'MAR', 'APR', 'MEI', 'JUN', 'JUL', 'AGU', 'SEP', 'OKT', 'NOV', 'DES'];
 const fullMonths = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
 const Kalender = () => {
   const [currentDate, setCurrentDate] = useState(new Date(2026, 5, 1)); // Juni 2026 sebagai default
+  const [showMonthPicker, setShowMonthPicker] = useState(false);
+  const [showYearPicker, setShowYearPicker] = useState(false);
+  const monthRef = useRef(null);
+  const yearRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (monthRef.current && !monthRef.current.contains(event.target)) {
+        setShowMonthPicker(false);
+      }
+      if (yearRef.current && !yearRef.current.contains(event.target)) {
+        setShowYearPicker(false);
+      }
+    };
+    if (showMonthPicker || showYearPicker) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showMonthPicker, showYearPicker]);
 
   const [holidays, setHolidays] = useState([]);
 
-  const [isLoading, setIsLoading] = useState(true);
+  const { user } = useAuthStore();
+
+  const { data: academicEventsData, isLoading: queryLoading } = useQuery({
+    queryKey: ['kalender', user?.id],
+    queryFn: () => getKalenderEvents(user.id, user.role),
+    enabled: !!user?.id
+  });
+
+  const isLoading = queryLoading || !user;
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, []);
+    // Generate holidays using date-holidays library
+    const hd = new Holidays('ID');
+    const year = currentDate.getFullYear();
+    const hdList = hd.getHolidays(year);
+    
+    // Convert to our format
+    const formattedHolidays = hdList.map(h => {
+      const d = new Date(h.date);
+      return {
+        day: d.getDate(),
+        month: d.getMonth(),
+        year: d.getFullYear(),
+        title: h.name,
+        type: 'libur',
+        tag: 'Hari Libur'
+      };
+    });
 
-  useEffect(() => {
-    // Fetch real public holidays for Indonesia
-    const fetchHolidays = async () => {
-      try {
-        const response = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${currentDate.getFullYear()}/ID`);
-        if (response.ok) {
-          const data = await response.json();
-          const formattedHolidays = data.map(h => {
-            const d = new Date(h.date);
-            return {
-              day: d.getDate(),
-              month: d.getMonth(),
-              year: d.getFullYear(),
-              title: h.localName,
-              type: 'bahaya',
-              tag: 'Hari Libur'
-            };
-          });
-          setHolidays(formattedHolidays);
-        }
-      } catch (error) {
-        console.error("Gagal mengambil data hari libur:", error);
-      }
-    };
-    fetchHolidays();
+    // Add specific national days requested by user
+    const nationalDays = [
+      { date: new Date(year, 9, 28), name: "Hari Sumpah Pemuda" }, // 28 Oktober
+      { date: new Date(year, 3, 21), name: "Hari Kartini" }, // 21 April
+      { date: new Date(year, 4, 2), name: "Hari Pendidikan Nasional" }, // 2 Mei
+      { date: new Date(year, 9, 2), name: "Hari Batik Nasional" }, // 2 Oktober
+      { date: new Date(year, 10, 10), name: "Hari Pahlawan" }, // 10 November
+      { date: new Date(year, 10, 25), name: "Hari Guru Nasional" } // 25 November
+    ];
+
+    const extraHolidays = nationalDays.map(h => ({
+      day: h.date.getDate(),
+      month: h.date.getMonth(),
+      year: h.date.getFullYear(),
+      title: h.name,
+      type: 'libur',
+      tag: 'Peringatan Nasional'
+    }));
+
+    setHolidays([...formattedHolidays, ...extraHolidays]);
   }, [currentDate.getFullYear()]);
 
-  const academicEvents = [
-    { day: 9, month: 5, year: 2026, title: 'Deadline Tugas 3: React Router', type: 'peringatan', tag: 'Tugas' },
-    { day: 15, month: 5, year: 2026, title: 'Ujian Tengah Semester', type: 'info', tag: 'Akademik' },
-    { day: 20, month: 5, year: 2026, title: 'Kuis 2: PBO Java', type: 'kuis', tag: 'Kuis' },
-    { day: 28, month: 5, year: 2026, title: 'Deadline Makalah Basis Data', type: 'peringatan', tag: 'Tugas' },
-  ];
+  const academicEvents = academicEventsData || [];
 
   const events = [...holidays, ...academicEvents];
 
@@ -124,32 +159,71 @@ const Kalender = () => {
         {/* Calendar Grid */}
         <div className="lg:col-span-2">
           <Card noPadding>
-            <div className="px-5 py-4 border-b border-slate-100 flex justify-between items-center relative">
+            <div className="px-5 py-4 border-b border-slate-100 flex justify-between items-center relative z-20">
               <button onClick={prevMonth} className="hidden sm:flex px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-primary rounded-lg transition-colors items-center gap-1"><ChevronLeft size={16} /> Sebelumnya</button>
               <button onClick={prevMonth} className="sm:hidden p-2 text-slate-600 hover:bg-slate-100 hover:text-primary rounded-lg transition-colors"><ChevronLeft size={18} /></button>
               
               <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
-                {/* Month Dropdown */}
-                <div className="relative group">
-                  <select 
-                    value={currentMonth}
-                    onChange={(e) => setCurrentDate(new Date(currentYear, parseInt(e.target.value), 1))}
-                    className="appearance-none bg-slate-50 border border-slate-200 hover:border-primary/50 text-slate-700 font-medium text-[13px] py-1.5 pl-3 pr-7 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary/10 cursor-pointer transition-all outline-none"
+                {/* Month Dropdown Custom */}
+                <div className="relative" ref={monthRef}>
+                  <button 
+                    onClick={() => { setShowMonthPicker(!showMonthPicker); setShowYearPicker(false); }}
+                    className="flex items-center gap-2 bg-slate-50 border border-slate-200 hover:border-primary/50 text-slate-700 font-medium text-[13px] py-1.5 pl-3 pr-2.5 rounded-lg transition-all focus:outline-none focus:ring-4 focus:ring-primary/10"
                   >
-                    {fullMonths.map((m, idx) => <option key={m} value={idx}>{m}</option>)}
-                  </select>
-                  <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-hover:text-primary transition-colors" />
+                    <span className="w-16 text-left">{fullMonths[currentMonth]}</span>
+                    <ChevronDown size={14} className={`text-slate-400 transition-transform duration-200 ${showMonthPicker ? 'rotate-180 text-primary' : ''}`} />
+                  </button>
+                  {showMonthPicker && (
+                    <div className="absolute top-full mt-1.5 left-0 w-36 bg-white rounded-xl shadow-lg shadow-slate-200/50 border border-slate-100 py-1.5 z-50 animate-in fade-in zoom-in-95 duration-200 max-h-64 overflow-y-auto custom-scrollbar">
+                      {fullMonths.map((m, idx) => (
+                        <button
+                          key={m}
+                          onClick={() => {
+                            setCurrentDate(new Date(currentYear, idx, 1));
+                            setShowMonthPicker(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 text-sm transition-colors ${
+                            currentMonth === idx 
+                              ? 'bg-primary/10 text-primary font-semibold' 
+                              : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                          }`}
+                        >
+                          {m}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                {/* Year Dropdown */}
-                <div className="relative group">
-                  <select 
-                    value={currentYear}
-                    onChange={(e) => setCurrentDate(new Date(parseInt(e.target.value), currentMonth, 1))}
-                    className="appearance-none bg-slate-50 border border-slate-200 hover:border-primary/50 text-slate-700 font-medium text-[13px] py-1.5 pl-3 pr-7 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary/10 cursor-pointer transition-all outline-none"
+
+                {/* Year Dropdown Custom */}
+                <div className="relative" ref={yearRef}>
+                  <button 
+                    onClick={() => { setShowYearPicker(!showYearPicker); setShowMonthPicker(false); }}
+                    className="flex items-center gap-2 bg-slate-50 border border-slate-200 hover:border-primary/50 text-slate-700 font-medium text-[13px] py-1.5 pl-3 pr-2.5 rounded-lg transition-all focus:outline-none focus:ring-4 focus:ring-primary/10"
                   >
-                    {[2024, 2025, 2026, 2027, 2028, 2029].map(y => <option key={y} value={y}>{y}</option>)}
-                  </select>
-                  <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-hover:text-primary transition-colors" />
+                    <span>{currentYear}</span>
+                    <ChevronDown size={14} className={`text-slate-400 transition-transform duration-200 ${showYearPicker ? 'rotate-180 text-primary' : ''}`} />
+                  </button>
+                  {showYearPicker && (
+                    <div className="absolute top-full mt-1.5 left-0 w-28 bg-white rounded-xl shadow-lg shadow-slate-200/50 border border-slate-100 py-1.5 z-50 animate-in fade-in zoom-in-95 duration-200 max-h-64 overflow-y-auto custom-scrollbar">
+                      {[2024, 2025, 2026, 2027, 2028, 2029].map((y) => (
+                        <button
+                          key={y}
+                          onClick={() => {
+                            setCurrentDate(new Date(y, currentMonth, 1));
+                            setShowYearPicker(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 text-sm transition-colors ${
+                            currentYear === y 
+                              ? 'bg-primary/10 text-primary font-semibold' 
+                              : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                          }`}
+                        >
+                          {y}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -164,17 +238,32 @@ const Kalender = () => {
                 {/* Empty days at start of month */}
                 {Array.from({ length: firstDayOfMonth }).map((_, i) => <div key={`empty-${i}`} />)}
                 {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
-                  const hasEvent = currentEvents.find(e => e.day === day);
-                  const isToday = currentMonth === 5 && currentYear === 2026 && day === 15; // Simulate today as 15 June 2026
+                  const dayEvents = currentEvents.filter(e => e.day === day);
+                  const isToday = currentMonth === new Date().getMonth() && currentYear === new Date().getFullYear() && day === new Date().getDate();
+                  const isSunday = new Date(currentYear, currentMonth, day).getDay() === 0;
+                  const isHoliday = dayEvents.some(e => e.type === 'libur');
+                  const isRedDay = isSunday || isHoliday;
+                  const academicEvent = dayEvents.find(e => e.type !== 'libur');
+
                   return (
                     <div 
                       key={day} 
                       className={`relative aspect-square flex items-center justify-center rounded-xl text-sm transition-colors cursor-pointer ${
-                        hasEvent ? 'bg-primary/10 text-primary font-medium hover:bg-primary/20' : 'text-slate-700 hover:bg-slate-100'
+                        academicEvent 
+                          ? academicEvent.type === 'kuis' ? 'bg-amber-50 text-amber-600 font-medium hover:bg-amber-100' 
+                          : academicEvent.type === 'tugas' ? 'bg-indigo-50 text-indigo-600 font-medium hover:bg-indigo-100'
+                          : 'bg-slate-100 text-slate-600 font-medium hover:bg-slate-200' 
+                        : isRedDay ? 'bg-red-50 text-red-600 font-medium hover:bg-red-100'
+                        : 'text-slate-700 hover:bg-slate-100'
                       } ${isToday ? 'ring-2 ring-primary' : ''}`}
                     >
                       {day}
-                      {hasEvent && <div className="absolute bottom-1 w-1.5 h-1.5 bg-primary rounded-full" />}
+                      {academicEvent && (
+                        <div className={`absolute bottom-1 w-1.5 h-1.5 rounded-full ${
+                          academicEvent.type === 'kuis' ? 'bg-red-500' :
+                          academicEvent.type === 'tugas' ? 'bg-indigo-500' : 'bg-slate-400'
+                        }`} />
+                      )}
                     </div>
                   );
                 })}
@@ -197,7 +286,7 @@ const Kalender = () => {
                     <div className="text-xl font-medium text-slate-800">{event.day}</div>
                   </div>
                   <div>
-                    <Badge type={event.type} label={event.tag} />
+                    <Badge type={event.type === 'kuis' ? 'bahaya' : event.type === 'tugas' ? 'info' : event.type} label={event.tag} />
                     <h4 className="font-semibold text-slate-800 text-sm mt-1 leading-snug">{event.title}</h4>
                   </div>
                 </div>

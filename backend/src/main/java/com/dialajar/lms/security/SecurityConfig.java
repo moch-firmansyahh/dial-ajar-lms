@@ -37,6 +37,9 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/modules/files/**").permitAll()
+                .requestMatchers("/api/modules/video/files/**").permitAll()
+                .requestMatchers("/api/tugas/files/**").permitAll()
+                .requestMatchers("/api/profile/files/**").permitAll()
                 .requestMatchers("/error").permitAll()
                 .anyRequest().authenticated()
             )

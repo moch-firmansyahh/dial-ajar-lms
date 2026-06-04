@@ -29,26 +29,7 @@ export const getForumByMatkul = async (courseId) => {
 export const getForumDetail = async (forumId) => {
   try {
     const response = await axios.get(`${API_URL}/forum/${forumId}`, { headers: getAuthHeaders() });
-    const forum = response.data.forum;
-    const comments = response.data.comments;
-    
-    return {
-      data: {
-        id: forum.id,
-        judul: forum.judul,
-        content: forum.isiForum,
-        author: forum.pembuat?.nama,
-        authorRole: forum.pembuat?.role?.toLowerCase(),
-        date: forum.createdAt,
-        replies: comments.map(c => ({
-          id: c.id,
-          content: c.isi,
-          author: c.penulis?.nama,
-          authorRole: c.penulis?.role?.toLowerCase(),
-          date: c.createdAt
-        }))
-      }
-    };
+    return { data: response.data };
   } catch (err) {
     console.error("Error fetching forum details", err);
     return { data: null };

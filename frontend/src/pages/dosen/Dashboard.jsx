@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { getMataKuliah } from "../../api/matakuliah.api";
+import { getDashboardDosen } from "../../api/dashboard.api";
 import { useAuthStore } from "../../store/authStore";
 import Card from "../../components/ui/Card";
 import Skeleton from "../../components/ui/Skeleton";
@@ -25,21 +26,19 @@ const DashboardDosen = () => {
   const navigate = useNavigate();
   const { user } = useAuthStore();
 
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: dashboardData, isLoading: isStatsLoading } = useQuery({
+    queryKey: ["dashboardDosen", user?.id],
+    queryFn: () => getDashboardDosen(user.id),
+    enabled: !!user?.id
+  });
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, []);
+  const isLoading = isStatsLoading;
 
-  // Nanti nilai ini akan diganti dengan state/data hasil fetch API backend (misal via useQuery)
-  const dashboardStats = {
-    kelasAktif: 3,
-    totalMahasiswa: 120,
-    tugasPerluDinilai: 45,
-    kuisAktif: 2,
+  const dashboardStats = dashboardData || {
+    kelasAktif: 0,
+    totalMahasiswa: 0,
+    tugasPerluDinilai: 0,
+    kuisAktif: 0,
   };
 
   const stats = [

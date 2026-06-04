@@ -1,0 +1,17 @@
+# IDE & Editor folders
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# macOS
+.DS_Store
+
+# Frontend & Backend are handled by their own nested .gitignore files,
+# but we can add some safety fallbacks here:
+node_modules/
+target/
+uploads/

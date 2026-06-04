@@ -1,22 +1,11 @@
 import React from 'react';
-import { MoreHorizontal, BookOpen } from 'lucide-react';
-
-const LinearProgress = ({ percentage, colorClass }) => (
-  <div className="w-full">
-    <div className="flex justify-between items-center mb-1.5">
-      <span className="text-[12px] font-medium text-slate-700">Progres Belajar</span>
-      <span className="text-[12px] font-medium text-slate-500">{percentage}%</span>
-    </div>
-    <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-      <div 
-        className={`h-2 rounded-full transition-all duration-1000 ease-out ${colorClass}`} 
-        style={{ width: `${percentage}%` }}
-      />
-    </div>
-  </div>
-);
+import { BookOpen, MoreVertical } from 'lucide-react';
+import { useAuthStore } from '../../store/authStore';
+import { useNavigate } from 'react-router-dom';
 
 const CourseCard = ({ course, onClick }) => {
+  const { user } = useAuthStore();
+  const navigate = useNavigate();
   // Extracting data or using defaults
   const title = course.nama || course.title || "Mata Kuliah";
   const completion = course.completion || Math.floor(Math.random() * 40) + 40; // Default random 40-80 if not provided
@@ -36,10 +25,22 @@ const CourseCard = ({ course, onClick }) => {
   return (
     <div 
       onClick={onClick}
-      className="bg-white rounded-[24px] border border-slate-200/60 p-4 hover:-translate-y-1.5 hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-300 cursor-pointer group flex flex-col h-full"
+      className="bg-white rounded-[24px] border border-slate-200/60 p-4 hover:-translate-y-1.5 hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-300 cursor-pointer group flex flex-col h-full relative"
     >
       {/* Header Image Area with Smooth Animations */}
       <div className={`w-full h-40 ${scheme.bg} rounded-[16px] relative overflow-hidden mb-5 flex items-center justify-center transition-colors duration-300`}>
+        
+        {user?.role === 'DOSEN' && (
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/matakuliah/${course.id}/info`);
+            }}
+            className="absolute top-3 right-3 z-20 p-2 bg-white/70 hover:bg-white backdrop-blur-sm rounded-full shadow-sm text-slate-600 transition-all duration-200"
+          >
+            <MoreVertical size={18} />
+          </button>
+        )}
         
         {/* Abstract Illustration Container */}
         <div className="relative w-full h-full transform group-hover:scale-105 transition-transform duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]">
@@ -76,25 +77,11 @@ const CourseCard = ({ course, onClick }) => {
         ))}
       </div>
 
-      {/* Progress Bar */}
-      <div className="mb-5 mt-auto">
-        <LinearProgress percentage={completion} colorClass={scheme.progress} />
-      </div>
-
       {/* Footer */}
-      <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-        <div className="flex flex-col gap-1">
-          <p className="text-[12px] font-medium text-slate-700">
-            {dosen}
-          </p>
-          <p className="text-[11px] font-medium text-slate-500 flex items-center gap-1.5">
-            <MessageSquareIcon size={12} /> {questions} Diskusi
-          </p>
-        </div>
-        
-        <button className="w-8 h-8 rounded-full border border-slate-200/80 flex items-center justify-center text-slate-400 hover:bg-slate-50 hover:text-primary hover:border-primary/30 transition-all shadow-sm">
-          <MoreHorizontal size={16} />
-        </button>
+      <div className="pt-4 mt-auto border-t border-slate-100">
+        <p className="text-[12px] font-medium text-slate-700">
+          {dosen}
+        </p>
       </div>
     </div>
   );

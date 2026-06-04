@@ -33,7 +33,7 @@ const MainLayout = () => {
       {/* Mobile Backdrop */}
       {isSidebarExpanded && (
         <div 
-          className="fixed inset-0 bg-slate-900/50 z-30 md:hidden backdrop-blur-sm"
+          className="fixed inset-0 bg-slate-900/60 z-30 md:hidden transition-opacity duration-300"
           onClick={() => setIsSidebarExpanded(false)}
         />
       )}

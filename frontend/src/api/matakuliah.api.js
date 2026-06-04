@@ -34,3 +34,19 @@ export const getCourseContent = async (courseId) => {
     return { modules: [], videos: [], tugas: [] };
   }
 };
+
+export const createMataKuliah = async (data) => {
+  const response = await axiosInstance.post('/courses', data);
+  return response.data;
+};
+
+export const joinMataKuliah = async (data) => {
+  const response = await axiosInstance.post('/courses/join', data);
+  return response.data;
+};
+
+export const getCourseStudents = async (courseId) => {
+  const response = await axiosInstance.get(`/courses/${courseId}/students`);
+  return response.data;
+};
+

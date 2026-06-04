@@ -6,9 +6,12 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
+import java.util.Optional;
+
 @Repository
 public interface MataKuliahRepository extends JpaRepository<MataKuliah, Long> {
     List<MataKuliah> findByDosenId(Long dosenId);
     List<MataKuliah> findByMahasiswas_Id(Long mahasiswaId);
-    MataKuliah findByKodeKelas(String kodeKelas);
+    Optional<MataKuliah> findByKodeKelas(String kodeKelas);
+    boolean existsByKodeKelas(String kodeKelas);
 }

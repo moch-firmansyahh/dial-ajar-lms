@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "users")
 @Inheritance(strategy = InheritanceType.JOINED)
+@DiscriminatorColumn(name = "dtype", discriminatorType = DiscriminatorType.STRING)
 public abstract class User {
 
     @Id
@@ -26,6 +27,9 @@ public abstract class User {
 
     @Column(nullable = false, length = 20)
     private String role;
+
+    @Column(name = "profile_picture", length = 500)
+    private String profilePicture;
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -88,6 +92,13 @@ public abstract class User {
     }
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public String getProfilePicture() {
+        return profilePicture;
+    }
+    public void setProfilePicture(String profilePicture) {
+        this.profilePicture = profilePicture;
     }
 
     public LocalDateTime getCreatedAt() {

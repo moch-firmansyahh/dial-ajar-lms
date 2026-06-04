@@ -6,7 +6,7 @@ import Card from '../../components/ui/Card';
 import Skeleton from '../../components/ui/Skeleton';
 import InputField from '../../components/ui/InputField';
 import Button from '../../components/ui/Button';
-import { uploadModul, addVideo } from '../../api/modul.api';
+import { uploadModul, addVideo, uploadVideo } from '../../api/modul.api';
 import { Upload, FileUp, Link as LinkIcon, FileVideo, BookOpen, Video as VideoIcon, X, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 
 const MateriUpload = () => {
@@ -50,18 +50,23 @@ const MateriUpload = () => {
     if (!file) return;
 
     // Validate file type
-    const allowedTypes = tipeMateri === 'pdf' 
-      ? ['application/pdf']
-      : ['application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    let allowedTypes = [];
+    if (tipeMateri === 'pdf') allowedTypes = ['application/pdf'];
+    else if (tipeMateri === 'word') allowedTypes = ['application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    else if (tipeMateri === 'video') allowedTypes = ['video/mp4'];
     
     if (!allowedTypes.includes(file.type)) {
-      showToast(`File harus berformat ${tipeMateri === 'pdf' ? 'PDF' : 'DOC/DOCX'}`, 'error');
+      const typeLabel = tipeMateri === 'video' ? 'MP4' : (tipeMateri === 'pdf' ? 'PDF' : 'DOC/DOCX');
+      showToast(`File harus berformat ${typeLabel}`, 'error');
       return;
     }
 
-    // Validate file size (25MB)
-    if (file.size > 25 * 1024 * 1024) {
-      showToast('Ukuran file maksimal 25MB', 'error');
+    // Validate file size
+    const maxSize = tipeMateri === 'video' ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
+    const sizeLabel = tipeMateri === 'video' ? '50MB' : '10MB';
+
+    if (file.size > maxSize) {
+      showToast(`Ukuran file maksimal ${sizeLabel}`, 'error');
       return;
     }
 
@@ -113,8 +118,10 @@ const MateriUpload = () => {
           return;
         }
       } else {
-        showToast('Upload video MP4 belum didukung, gunakan tautan YouTube/Drive', 'error');
-        return;
+        if (!selectedFile) {
+          showToast('File video MP4 harus dipilih', 'error');
+          return;
+        }
       }
     } else {
       if (!selectedFile) {
@@ -127,8 +134,13 @@ const MateriUpload = () => {
 
     try {
       if (tipeMateri === 'video') {
-        await addVideo(id, judul, videoUrl);
-        showToast('Video berhasil ditambahkan!');
+        if (tipeVideo === 'link') {
+          await addVideo(id, judul, videoUrl);
+          showToast('Tautan video berhasil ditambahkan!');
+        } else {
+          await uploadVideo(id, judul, selectedFile);
+          showToast('Video MP4 berhasil diupload!');
+        }
       } else {
         await uploadModul(id, judul, selectedFile);
         showToast('Dokumen berhasil diupload!');
@@ -137,10 +149,8 @@ const MateriUpload = () => {
       // Invalidate course content cache so MateriList refreshes
       queryClient.invalidateQueries({ queryKey: ['courseContent', id] });
 
-      // Navigate back after short delay so user sees the toast
-      setTimeout(() => {
-        navigate(`/matakuliah/${id}/materi`);
-      }, 1200);
+      // Navigate back immediately
+      navigate(-1);
 
     } catch (err) {
       console.error('Upload error:', err);
@@ -281,11 +291,45 @@ const MateriUpload = () => {
             ) : (
               <div className="space-y-2 animate-fadeIn">
                 <label className="block text-sm font-semibold text-slate-700">File Video</label>
-                <div className="border-2 border-dashed border-slate-300 bg-white rounded-xl p-8 text-center hover:border-violet-500/50 hover:bg-violet-50/50 transition-colors cursor-pointer">
-                  <FileVideo size={32} className="mx-auto text-slate-400 mb-3" />
-                  <p className="text-sm text-slate-600 font-medium">Klik atau seret file MP4 ke sini</p>
-                  <p className="text-xs text-slate-400 mt-1">Maks. ukuran file 100MB</p>
-                </div>
+                
+                {/* Hidden file input specifically for video */}
+                <input 
+                  type="file"
+                  ref={fileInputRef}
+                  className="hidden"
+                  accept="video/mp4"
+                  onChange={handleFileSelect}
+                />
+
+                {selectedFile ? (
+                  <div className="border-2 border-violet-500/30 bg-violet-500/[0.03] rounded-xl p-5 flex items-center gap-4 transition-all">
+                    <div className="bg-violet-500/10 p-3 rounded-xl">
+                      <FileVideo size={24} className="text-violet-600" />
+                    </div>
+                    <div className="flex-1 min-w-0 overflow-hidden">
+                      <p className="text-sm font-semibold text-slate-800 truncate">{selectedFile.name}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">{formatFileSize(selectedFile.size)}</p>
+                    </div>
+                    <button 
+                      onClick={removeFile}
+                      className="p-2 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all"
+                      title="Hapus file"
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+                ) : (
+                  <div 
+                    onClick={() => fileInputRef.current?.click()}
+                    onDrop={handleDrop}
+                    onDragOver={handleDragOver}
+                    className="border-2 border-dashed border-slate-300 bg-white rounded-xl p-8 text-center hover:border-violet-500/50 hover:bg-violet-50/50 transition-colors cursor-pointer"
+                  >
+                    <FileVideo size={32} className="mx-auto text-slate-400 mb-3" />
+                    <p className="text-sm text-slate-600 font-medium">Klik atau seret file MP4 ke sini</p>
+                    <p className="text-xs text-slate-400 mt-1">Maks. ukuran file 50MB</p>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -308,7 +352,7 @@ const MateriUpload = () => {
                 <div className="bg-primary/10 p-3 rounded-xl">
                   <FileUp size={24} className="text-primary" />
                 </div>
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 overflow-hidden">
                   <p className="text-sm font-semibold text-slate-800 truncate">{selectedFile.name}</p>
                   <p className="text-xs text-slate-500 mt-0.5">{formatFileSize(selectedFile.size)}</p>
                 </div>
@@ -331,7 +375,7 @@ const MateriUpload = () => {
                 <FileUp size={32} className="mx-auto text-slate-400 mb-3" />
                 <p className="text-sm text-slate-600 font-medium">Klik atau seret file ke sini</p>
                 <p className="text-xs text-slate-400 mt-1">
-                  {tipeMateri === 'pdf' ? 'Hanya file PDF (maks. 25MB)' : 'Hanya file DOC, DOCX (maks. 25MB)'}
+                  {tipeMateri === 'pdf' ? 'Hanya file PDF (maks. 10MB)' : 'Hanya file DOC, DOCX (maks. 10MB)'}
                 </p>
               </div>
             )}
@@ -349,7 +393,7 @@ const MateriUpload = () => {
         </div>
         
         <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
-          <Button variant="outline" onClick={() => navigate(`/matakuliah/${id}/materi`)} disabled={isSubmitting}>
+          <Button variant="outline" onClick={() => navigate(-1)} disabled={isSubmitting}>
             Batal
           </Button>
           <Button onClick={handleSubmit} disabled={isSubmitting}>

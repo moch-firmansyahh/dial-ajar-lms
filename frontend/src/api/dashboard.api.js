@@ -16,3 +16,13 @@ export const getDashboardMahasiswa = async (userId) => {
     return null;
   }
 };
+
+export const getDashboardDosen = async (userId) => {
+  try {
+    const response = await axios.get(`${API_URL}/dosen/${userId}`, { headers: getAuthHeaders() });
+    return response.data;
+  } catch (err) {
+    console.error("Error fetching dosen dashboard", err);
+    return null;
+  }
+};

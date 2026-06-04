@@ -6,6 +6,8 @@ import com.dialajar.lms.model.Kuis;
 import com.dialajar.lms.repository.MataKuliahRepository;
 import com.dialajar.lms.repository.TugasRepository;
 import com.dialajar.lms.repository.KuisRepository;
+import com.dialajar.lms.repository.PengumpulanTugasRepository;
+import com.dialajar.lms.model.PengumpulanTugas;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -27,7 +29,49 @@ public class DashboardController {
     @Autowired
     private KuisRepository kuisRepository;
 
+    @Autowired
+    private PengumpulanTugasRepository pengumpulanTugasRepository;
 
+    @GetMapping("/dosen/{userId}")
+    public ResponseEntity<?> getDashboardStatsDosen(@PathVariable Long userId) {
+        List<MataKuliah> courses = mataKuliahRepository.findByDosenId(userId);
+        
+        int kelasAktif = courses.size();
+        Set<Long> uniqueMahasiswaIds = new HashSet<>();
+        int tugasPerluDinilai = 0;
+        int kuisAktif = 0;
+        
+        for (MataKuliah mk : courses) {
+            mk.getMahasiswas().forEach(m -> uniqueMahasiswaIds.add(m.getId()));
+            
+            // Hitung kuis yang belum lewat deadline
+            List<Kuis> kuisList = kuisRepository.findByMataKuliahId(mk.getId());
+            for (Kuis k : kuisList) {
+                if (k.getDeadline() != null && k.getDeadline().isAfter(LocalDateTime.now())) {
+                    kuisAktif++;
+                }
+            }
+            
+            // Hitung tugas yang sudah dikumpul tapi belum dinilai
+            List<Tugas> tugasList = tugasRepository.findByMataKuliahId(mk.getId());
+            for (Tugas t : tugasList) {
+                List<PengumpulanTugas> pengumpulan = pengumpulanTugasRepository.findByTugasId(t.getId());
+                for (PengumpulanTugas p : pengumpulan) {
+                    if ("SUDAH_KUMPUL".equals(p.getStatus())) {
+                        tugasPerluDinilai++;
+                    }
+                }
+            }
+        }
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("kelasAktif", kelasAktif);
+        response.put("totalMahasiswa", uniqueMahasiswaIds.size());
+        response.put("tugasPerluDinilai", tugasPerluDinilai);
+        response.put("kuisAktif", kuisAktif);
+        
+        return ResponseEntity.ok(response);
+    }
     @GetMapping("/mahasiswa/{userId}")
     public ResponseEntity<?> getDashboardStats(@PathVariable Long userId) {
         List<MataKuliah> courses = mataKuliahRepository.findByMahasiswas_Id(userId);

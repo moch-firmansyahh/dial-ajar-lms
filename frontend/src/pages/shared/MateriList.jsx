@@ -98,15 +98,19 @@ const MateriList = () => {
     }
     if (contentData.videos) {
       contentData.videos.forEach((v) => {
+        const videoUrl = v.linkVideo?.startsWith("/api")
+          ? `http://localhost:8080${v.linkVideo}`
+          : v.linkVideo;
+
         combinedMateri.push({
           id: `video-${v.id}`,
           title: v.judul,
           date: v.createdAt
             ? new Date(v.createdAt).toLocaleDateString("id-ID")
             : "",
-          type: "youtube",
+          type: v.linkVideo?.startsWith("/api") ? "mp4" : "youtube",
           category: "video",
-          url: v.linkVideo,
+          url: videoUrl,
           isCompleted: false,
         });
       });

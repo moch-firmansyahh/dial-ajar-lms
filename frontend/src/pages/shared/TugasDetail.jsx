@@ -47,6 +47,7 @@ const TugasDetail = () => {
     setIsSubmitting(true);
     try {
       await submitTugas(tugasId || '1', user?.id, selectedFile, catatan);
+      setShowSubmitModal(false);
       refetch();
     } catch (err) {
       console.error(err);
@@ -73,7 +74,7 @@ const TugasDetail = () => {
 
   return (
     <div className="max-w-3xl mx-auto pb-10 -mt-2">
-      <Button variant="ghost" className="mb-4 pl-0 text-slate-500 hover:text-slate-800" onClick={() => navigate(`/tugas/${id}`)}>
+      <Button variant="ghost" className="mb-4 pl-0 text-slate-500 hover:text-slate-800" onClick={() => navigate(-1)}>
         <ArrowLeft size={18} className="mr-2" /> Batal / Kembali
       </Button>
 
@@ -91,79 +92,81 @@ const TugasDetail = () => {
         </div>
       ) : (
         <div className="animate-slide-up-fade">
-          <div className="mb-6">
-            <h1 className="text-2xl font-medium text-slate-900 mb-2">{tugas.judul}</h1>
-            <div className="flex items-center gap-3 flex-wrap">
-              <Badge type="peringatan" label={`Deadline: ${tugas.deadline ? new Date(tugas.deadline).toLocaleString() : '-'}`} />
-              {!isDosen && (
-                isSubmitted ? (
-                  <Badge type="sukses" label="Selesai (Sudah Dikumpulkan)" />
-                ) : (
-                  <Badge type="bahaya" label="Belum Dikumpulkan" />
-                )
-              )}
-              {!isDosen && submission?.nilai && (
-                <Badge type="info" label={`Nilai: ${submission.nilai}`} />
-              )}
-            </div>
-          </div>
-
-          <Card className="mb-5">
-            <h3 className="font-medium text-slate-800 mb-3">Deskripsi Tugas</h3>
-            <div className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">{tugas.deskripsi}</div>
-          </Card>
-
-          {tugas.type === 'tugas' && (
-            <Card className="mb-5">
-              <h3 className="font-medium text-slate-800 mb-3">Lampiran</h3>
-              <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
-                <FileText size={20} className="text-primary" />
-                <span className="text-sm text-slate-700 font-medium flex-1">
-                  {tugas.fileUrl ? tugas.fileUrl.split('/').pop() : 'Tidak ada lampiran'}
-                </span>
-                {tugas.fileUrl && (
-                  <Button variant="ghost" size="sm" className="bg-white" onClick={() => window.open(`http://localhost:8080${tugas.fileUrl}`, '_blank')}>
-                    <Download size={14} className="mr-1" /> Unduh
-                  </Button>
-                )}
+          {!isDosen && (
+            <>
+              <div className="mb-6">
+                <h1 className="text-2xl font-medium text-slate-900 mb-2">{tugas.judul}</h1>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <Badge type="peringatan" label={`Deadline: ${tugas.deadline ? new Date(tugas.deadline).toLocaleString() : '-'}`} />
+                  {isSubmitted ? (
+                    <Badge type="sukses" label="Selesai (Sudah Dikumpulkan)" />
+                  ) : (
+                    <Badge type="bahaya" label="Belum Dikumpulkan" />
+                  )}
+                  {submission?.nilai && (
+                    <Badge type="info" label={`Nilai: ${submission.nilai}`} />
+                  )}
+                </div>
               </div>
-            </Card>
-          )}
 
-          {/* Bagian Jawaban Anda */}
-          {!isDosen && isSubmitted && (
-             <Card className="mb-5 border-emerald-100 bg-emerald-50/30">
-               <h3 className="font-medium text-slate-800 mb-3 flex items-center gap-2">
-                 <CheckCircle size={18} className="text-emerald-500" /> Jawaban Anda
-               </h3>
-               {tugas?.type === 'kuis' ? (
-                 <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-200">
-                   <div className="flex items-center gap-3">
-                     <Trophy size={20} className="text-emerald-600" />
-                     <span className="text-sm text-slate-700 font-medium flex-1">
-                       Kuis berhasil dikumpulkan
-                     </span>
-                   </div>
-                   <Button variant="ghost" size="sm" className="bg-emerald-50 text-emerald-700 hover:bg-emerald-100" onClick={() => navigate(`/tugas/${id}/${tugasId}/hasil`)}>
-                     <ArrowRight size={14} className="mr-1" /> Lihat Hasil
-                   </Button>
-                 </div>
-               ) : (
-                 <div className="flex items-center gap-3 p-3 bg-white rounded-xl border border-slate-200">
-                   <FileIcon size={20} className="text-emerald-600" />
-                   <span className="text-sm text-slate-700 font-medium flex-1">
-                     {submission?.fileJawaban ? submission.fileJawaban.split('/').pop() : 'Tugas berhasil dikumpulkan'}
-                   </span>
-                   {submission?.fileJawaban && (
-                     <Button variant="ghost" size="sm" className="bg-emerald-50 text-emerald-700" onClick={() => window.open(`http://localhost:8080${submission.fileJawaban}`, '_blank')}>
-                       <Download size={14} className="mr-1" /> Unduh
-                     </Button>
+              <Card className="mb-5">
+                <h3 className="font-medium text-slate-800 mb-3">Deskripsi Tugas</h3>
+                <div className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">{tugas.deskripsi}</div>
+              </Card>
+
+              {tugas.type === 'tugas' && (
+                <Card className="mb-5">
+                  <h3 className="font-medium text-slate-800 mb-3">Lampiran</h3>
+                  <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                    <FileText size={20} className="text-primary" />
+                    <span className="text-sm text-slate-700 font-medium flex-1">
+                      {tugas.fileUrl ? tugas.fileUrl.split('/').pop() : 'Tidak ada lampiran'}
+                    </span>
+                    {tugas.fileUrl && (
+                      <Button variant="ghost" size="sm" className="bg-white" onClick={() => window.open(`http://localhost:8080${tugas.fileUrl}`, '_blank')}>
+                        <Download size={14} className="mr-1" /> Unduh
+                      </Button>
+                    )}
+                  </div>
+                </Card>
+              )}
+
+              {/* Bagian Jawaban Anda */}
+              {isSubmitted && (
+                 <Card className="mb-5 border-emerald-100 bg-emerald-50/30">
+                   <h3 className="font-medium text-slate-800 mb-3 flex items-center gap-2">
+                     <CheckCircle size={18} className="text-emerald-500" /> Jawaban Anda
+                   </h3>
+                   {tugas?.type === 'kuis' ? (
+                     <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-200">
+                       <div className="flex items-center gap-3">
+                         <Trophy size={20} className="text-emerald-600" />
+                         <span className="text-sm text-slate-700 font-medium flex-1">
+                           Kuis berhasil dikumpulkan
+                         </span>
+                       </div>
+                       <Button variant="ghost" size="sm" className="bg-emerald-50 text-emerald-700 hover:bg-emerald-100" onClick={() => navigate(`/tugas/${id}/${tugasId}/hasil`)}>
+                         <ArrowRight size={14} className="mr-1" /> Lihat Hasil
+                       </Button>
+                     </div>
+                   ) : (
+                     <div className="flex items-center gap-3 p-3 bg-white rounded-xl border border-slate-200">
+                       <FileIcon size={20} className="text-emerald-600" />
+                       <span className="text-sm text-slate-700 font-medium flex-1">
+                         {submission?.fileJawaban ? submission.fileJawaban.split('/').pop() : 'Tugas berhasil dikumpulkan'}
+                       </span>
+                       {submission?.fileJawaban && (
+                         <Button variant="ghost" size="sm" className="bg-emerald-50 text-emerald-700" onClick={() => window.open(`http://localhost:8080${submission.fileJawaban}`, '_blank')}>
+                           <Download size={14} className="mr-1" /> Unduh
+                         </Button>
+                       )}
+                     </div>
                    )}
-                 </div>
-               )}
-             </Card>
+                 </Card>
+              )}
+            </>
           )}
-      </div>
+        </div>
       )}
 
       {!isDosen && !isLoading && tugas && (
@@ -222,7 +225,7 @@ const TugasDetail = () => {
       )}
 
       {isDosen && !isLoading && tugas && (
-        <div className="mt-8">
+        <div className="mt-2">
           <TugasNilai />
         </div>
       )}
@@ -282,7 +285,7 @@ const TugasDetail = () => {
                         <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center shrink-0">
                           <FileIcon size={20} />
                         </div>
-                        <div className="truncate">
+                        <div className="flex-1 min-w-0 overflow-hidden">
                           <p className="text-sm font-semibold text-slate-800 truncate">{selectedFile.name}</p>
                           <p className="text-xs text-slate-500">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
                         </div>

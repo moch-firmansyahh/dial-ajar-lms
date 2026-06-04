@@ -147,6 +147,78 @@ public class ModulController {
         return ResponseEntity.ok(video);
     }
 
+    // ─── Upload MP4 Video ────────────────────────────────────────────────
+    @PostMapping("/video/upload")
+    public ResponseEntity<?> uploadVideo(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("judul") String judul,
+            @RequestParam("courseId") Long courseId) {
+
+        Optional<MataKuliah> mk = mataKuliahRepository.findById(courseId);
+        if (mk.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Mata kuliah tidak ditemukan"));
+        }
+
+        try {
+            Path uploadPath = Paths.get(uploadDir, "video");
+            Files.createDirectories(uploadPath);
+
+            String originalFilename = file.getOriginalFilename();
+            String extension = "";
+            if (originalFilename != null && originalFilename.contains(".")) {
+                extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+            }
+            String uniqueFilename = UUID.randomUUID().toString() + extension;
+
+            Path filePath = uploadPath.resolve(uniqueFilename);
+            Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
+            String fileUrl = "/api/modules/video/files/" + uniqueFilename;
+            VideoAjar video = new VideoAjar(judul, fileUrl, mk.get());
+            videoAjarRepository.save(video);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("id", video.getId());
+            response.put("judul", video.getJudul());
+            response.put("linkVideo", video.getLinkVideo());
+            response.put("message", "Video berhasil diupload");
+
+            return ResponseEntity.ok(response);
+
+        } catch (IOException e) {
+            return ResponseEntity.internalServerError()
+                    .body(Map.of("error", "Gagal menyimpan video: " + e.getMessage()));
+        }
+    }
+
+    // ─── Serve uploaded videos ────────────────────────────────────────────
+    @GetMapping("/video/files/{filename}")
+    public ResponseEntity<Resource> serveVideoFile(@PathVariable String filename) {
+        try {
+            Path filePath = Paths.get(uploadDir, "video").resolve(filename).normalize();
+            Resource resource = new UrlResource(filePath.toUri());
+
+            if (!resource.exists()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            String contentType = Files.probeContentType(filePath);
+            if (contentType == null) {
+                contentType = "video/mp4";
+            }
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(contentType))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
+                    .body(resource);
+
+        } catch (MalformedURLException e) {
+            return ResponseEntity.badRequest().build();
+        } catch (IOException e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
     // ─── Delete modul ────────────────────────────────────────────────────
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteModul(@PathVariable Long id) {
@@ -177,6 +249,15 @@ public class ModulController {
         if (video.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
+        String linkVideo = video.get().getLinkVideo();
+        if (linkVideo != null && linkVideo.startsWith("/api/modules/video/files/")) {
+            String filename = linkVideo.replace("/api/modules/video/files/", "");
+            try {
+                Path path = Paths.get(uploadDir, "video").resolve(filename);
+                Files.deleteIfExists(path);
+            } catch (IOException ignored) {}
+        }
+
         videoAjarRepository.delete(video.get());
         return ResponseEntity.ok(Map.of("message", "Video berhasil dihapus"));
     }

@@ -13,6 +13,7 @@ const MataKuliahForm = lazy(() => import('./pages/dosen/MataKuliahForm'));
 const MateriUpload = lazy(() => import('./pages/dosen/MateriUpload'));
 const TugasForm = lazy(() => import('./pages/dosen/TugasForm'));
 const TugasNilai = lazy(() => import('./pages/dosen/TugasNilai'));
+const CourseInfo = lazy(() => import('./pages/dosen/CourseInfo'));
 
 // Mahasiswa
 const DashboardMahasiswa = lazy(() => import('./pages/mahasiswa/Dashboard'));
@@ -68,6 +69,7 @@ function App() {
             {/* Mata Kuliah */}
             <Route path="/matakuliah" element={<MataKuliahList />} />
             <Route path="/matakuliah/buat" element={<ProtectedRoute role="DOSEN"><MataKuliahForm /></ProtectedRoute>} />
+            <Route path="/matakuliah/:id/info" element={<ProtectedRoute role="DOSEN"><CourseInfo /></ProtectedRoute>} />
             
             <Route path="/matakuliah/:id" element={<MataKuliahDetail />}>
               <Route index element={<Navigate to="materi" replace />} />

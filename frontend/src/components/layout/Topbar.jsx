@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getNotifikasi, markNotifAsRead } from '../../api/notifikasi.api';
 import { Bell, Calendar, Menu, CheckCircle } from 'lucide-react';
 
 const Topbar = ({ onMenuClick }) => {
@@ -10,23 +12,39 @@ const Topbar = ({ onMenuClick }) => {
 
   const [showNotifications, setShowNotifications] = useState(false);
   const notifRef = useRef(null);
+  const queryClient = useQueryClient();
 
-  const [notifications, setNotifications] = useState([
-    { id: 1, text: 'Tugas "PBO Java" ditambahkan', time: '5 mnt lalu', unread: true },
-    { id: 2, text: 'Nilai Kuis 1 sudah keluar', time: '1 jam lalu', unread: true },
-    { id: 3, text: 'Dosen membalas diskusi Anda', time: '3 jam lalu', unread: false },
-  ]);
-  
+  const { data: notificationsData = [] } = useQuery({
+    queryKey: ['notifikasi', user?.id],
+    queryFn: () => getNotifikasi(user.id),
+    enabled: !!user?.id,
+    refetchInterval: 30000 // auto refresh every 30s
+  });
+
+  const markReadMutation = useMutation({
+    mutationFn: (notifId) => markNotifAsRead(notifId),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['notifikasi', user?.id]);
+    }
+  });
+
+  const notifications = notificationsData.map(n => ({
+    id: n.id,
+    text: n.message,
+    time: new Date(n.createdAt).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }),
+    unread: !n.readStatus
+  }));
+
   const unreadCount = notifications.filter(n => n.unread).length;
 
   const markAsRead = (id) => {
-    setNotifications(notifications.map(notif => 
-      notif.id === id ? { ...notif, unread: false } : notif
-    ));
+    markReadMutation.mutate(id);
   };
 
   const markAllAsRead = () => {
-    setNotifications(notifications.map(notif => ({ ...notif, unread: false })));
+    notifications.filter(n => n.unread).forEach(n => {
+      markReadMutation.mutate(n.id);
+    });
   };
 
   useEffect(() => {
@@ -151,8 +169,12 @@ const Topbar = ({ onMenuClick }) => {
             <p className="font-medium text-[15px] text-slate-800 leading-tight">{user?.nama || 'User'}</p>
             <p className="text-[13px] text-slate-500 capitalize leading-tight">{user?.role?.toLowerCase() || 'Role'}</p>
           </div>
-          <div className="w-9 h-9 md:w-11 md:h-11 bg-[#FCE588] text-slate-800 rounded-xl flex items-center justify-center font-medium text-[13px] md:text-sm shrink-0 shadow-sm border border-amber-200/50">
-            {user?.nama?.substring(0, 2).toUpperCase() || 'RF'}
+          <div className="w-9 h-9 md:w-11 md:h-11 bg-[#FCE588] text-slate-800 rounded-xl flex items-center justify-center font-medium text-[13px] md:text-sm shrink-0 shadow-sm border border-amber-200/50 overflow-hidden">
+            {user?.profilePicture ? (
+              <img src={`http://localhost:8080${user.profilePicture}`} alt="Profile" className="w-full h-full object-cover" />
+            ) : (
+              user?.nama?.substring(0, 2).toUpperCase() || 'RF'
+            )}
           </div>
         </div>
 

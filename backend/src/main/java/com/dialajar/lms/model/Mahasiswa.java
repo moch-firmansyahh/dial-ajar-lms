@@ -4,8 +4,11 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 
+import jakarta.persistence.DiscriminatorValue;
+
 @Entity
 @Table(name = "mahasiswa")
+@DiscriminatorValue("MAHASISWA")
 public class Mahasiswa extends User {
 
     @Column(nullable = false, unique = true, length = 20)

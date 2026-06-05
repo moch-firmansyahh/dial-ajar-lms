@@ -61,9 +61,6 @@ Ibu Putri Nurika Adila, S.Kom., M.Kom
 5. **Forum Diskusi**
    - Pembuatan utas (_thread_) baru per mata kuliah.
    - Sistem komentar dan balasan diskusi terpadu antar pengguna.
-6. **Kalender Akademik Pintar**
-   - Secara dinamis menarik semua data Tenggat Waktu (_Deadline_) Tugas & Kuis dari _database_.
-   - Terintegrasi secara otomatis dengan **Hari Libur Nasional Indonesia** (Tanggal Merah).
 
 ## Class Diagram
 

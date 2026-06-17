@@ -32,6 +32,9 @@ public class PengumpulanTugas {
 
     private Double nilai;
 
+    @Column(name = "detail_nilai", columnDefinition = "TEXT")
+    private String detailNilai;
+
     @Column(length = 20)
     private String status = "BELUM_KUMPUL"; // BELUM_KUMPUL, SUDAH_KUMPUL, SUDAH_DINILAI
 
@@ -62,6 +65,8 @@ public class PengumpulanTugas {
     public void setFileJawaban(String fileJawaban) { this.fileJawaban = fileJawaban; }
     public Double getNilai() { return nilai; }
     public void setNilai(Double nilai) { this.nilai = nilai; }
+    public String getDetailNilai() { return detailNilai; }
+    public void setDetailNilai(String detailNilai) { this.detailNilai = detailNilai; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
     public LocalDateTime getDikumpulkan() { return dikumpulkan; }

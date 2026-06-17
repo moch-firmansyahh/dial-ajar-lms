@@ -226,7 +226,7 @@ const TugasDetail = () => {
 
       {isDosen && !isLoading && tugas && (
         <div className="mt-2">
-          <TugasNilai />
+          <TugasNilai tugasDetail={tugas} />
         </div>
       )}
 

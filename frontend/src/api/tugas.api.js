@@ -3,7 +3,7 @@ import axios from "axios";
 const API_URL = "http://localhost:8080/api";
 
 const getAuthHeaders = () => {
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem('token') || sessionStorage.getItem('token');
   return { Authorization: `Bearer ${token}` };
 };
 
@@ -29,6 +29,7 @@ export const getTugasByMatkul = async (courseId, userId) => {
       fileUrl: t.fileSoal,
       status: t.status || "belum",
       nilai: t.nilai,
+      detailNilai: t.detailNilai,
       fileJawaban: t.fileJawaban,
     }));
 
@@ -183,6 +184,7 @@ export const getSubmissionsByTugas = async (tugasId) => {
       file: sub.fileJawaban,
       status: sub.status === "SUDAH_DINILAI" ? "dinilai" : "belum",
       nilai: sub.nilai,
+      detailNilai: sub.detailNilai,
     }));
     return { data: mapped };
   } catch (err) {
@@ -208,6 +210,7 @@ export const getSubmissionsByKuis = async (kuisId) => {
       file: sub.fileJawaban,
       status: sub.status === "SUDAH_DINILAI" ? "dinilai" : "belum",
       nilai: sub.nilai,
+      detailNilai: sub.detailNilai,
     }));
     return { data: mapped };
   } catch (err) {
@@ -216,11 +219,15 @@ export const getSubmissionsByKuis = async (kuisId) => {
   }
 };
 
-export const gradeTugas = async (submissionId, nilai) => {
+export const gradeTugas = async (submissionId, nilai, detailNilai = null) => {
   try {
+    const payload = { submissionId: submissionId.toString(), nilai: nilai.toString() };
+    if (detailNilai) {
+      payload.detailNilai = JSON.stringify(detailNilai);
+    }
     const response = await axios.post(
       `${API_URL}/tugas/grade`,
-      { submissionId: submissionId.toString(), nilai: nilai.toString() },
+      payload,
       { headers: getAuthHeaders() },
     );
     return response.data;

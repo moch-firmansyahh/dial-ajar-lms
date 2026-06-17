@@ -153,8 +153,8 @@ const TugasList = () => {
           border: "border-blue-100/60",
           gradient: "from-blue-50 to-indigo-50",
           watermark: "text-blue-500",
-          badgeText: "Belum Dikerjakan",
-          badgeType: "peringatan",
+          badgeText: isDosen ? "Tersedia" : "Belum Dikerjakan",
+          badgeType: isDosen ? "info" : "peringatan",
         };
     }
   };
@@ -221,7 +221,7 @@ const TugasList = () => {
                 <span>
                   {statusFilter === "semua" && "Semua Status"}
                   {statusFilter === "selesai" && "Sudah Selesai"}
-                  {statusFilter === "belum" && "Belum Dikerjakan"}
+                  {statusFilter === "belum" && (isDosen ? "Tersedia (Aktif)" : "Belum Dikerjakan")}
                   {statusFilter === "overdue" && "Terlewat (Overdue)"}
                 </span>
               </div>
@@ -255,7 +255,7 @@ const TugasList = () => {
                   <div className={`p-1 rounded-md ${statusFilter === "belum" ? "bg-white shadow-sm" : "bg-slate-100"}`}>
                     <FileText size={14} className={statusFilter === "belum" ? "text-blue-500" : "text-slate-400"} />
                   </div>
-                  Belum Dikerjakan
+                  {isDosen ? "Tersedia (Aktif)" : "Belum Dikerjakan"}
                 </button>
                 <button
                   onClick={() => { setStatusFilter("overdue"); setIsDropdownOpen(false); }}

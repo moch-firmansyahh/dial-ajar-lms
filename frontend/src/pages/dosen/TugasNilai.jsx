@@ -10,17 +10,10 @@ import { getSubmissionsByTugas, getSubmissionsByKuis, gradeTugas, getSoalKuis, g
 import axios from 'axios';
 import { useAuthStore } from '../../store/authStore';
 
-const TugasNilai = () => {
+const TugasNilai = ({ tugasDetail }) => {
   const { id, tugasId } = useParams();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
-  
-  const { data: tugasDetailRes } = useQuery({
-    queryKey: ['tugasDetail', tugasId],
-    queryFn: () => getTugasDetail(id, tugasId, user?.id),
-    enabled: !!tugasId
-  });
-  const tugasDetail = tugasDetailRes?.data || null;
 
   const { data: submissionsRes, isLoading, refetch } = useQuery({
     queryKey: ['submissions', tugasId, tugasDetail?.tipe],
@@ -51,7 +44,7 @@ const TugasNilai = () => {
   // State for Kuis Answer Modal
   const [selectedStudent, setSelectedStudent] = React.useState(null);
   const [studentAnswers, setStudentAnswers] = React.useState({});
-  const [essayScore, setEssayScore] = React.useState('');
+  const [essayScores, setEssayScores] = React.useState({});
   const [pgScore, setPgScore] = React.useState(0);
   
   // Custom Notification State
@@ -105,33 +98,60 @@ const TugasNilai = () => {
 
   const openAnswerModal = async (student) => {
     setSelectedStudent(student);
+    let answers = {};
     try {
       if (student.file) {
-        const token = localStorage.getItem("token");
+        const token = localStorage.getItem("token") || sessionStorage.getItem("token");
         const res = await axios.get(`http://localhost:8080${student.file}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        setStudentAnswers(res.data);
+        answers = res.data;
+        setStudentAnswers(answers);
       }
     } catch (e) {
       console.error("Failed to load answers", e);
     }
-    const currentTotal = student.nilai || 0;
-    // Assuming PG score is the current total if essay is not graded.
-    // Or we can just use the submission nilai as PG if it's auto-graded.
-    setPgScore(currentTotal);
-    // Since we don't have separate DB field for essay, let's just make it simple: 
-    // Dosen inputs the new total or adds to PG.
-    setEssayScore(0);
+    
+    let computedPg = 0;
+    pgSoalList.forEach(q => {
+      if (answers[q.id] === q.kunciJawaban) {
+         computedPg += (q.skor || 10);
+      }
+    });
+    setPgScore(computedPg);
+
+    let initialEssayScores = {};
+    if (student.detailNilai) {
+      try {
+        initialEssayScores = JSON.parse(student.detailNilai);
+      } catch(e){}
+    }
+    setEssayScores(initialEssayScores);
   };
 
   const saveFromModal = async () => {
-    const essay = parseInt(essayScore) || 0;
-    const finalEssay = essay < 0 ? 0 : essay; // max check can be added
-    const total = pgScore + finalEssay;
-    const finalTotal = total > 100 ? 100 : total;
+    let pgMax = 0;
+    pgSoalList.forEach(q => pgMax += (q.skor || 10));
+    const pgPercentage = pgMax > 0 ? (pgScore / pgMax) * 100 : 0;
+
+    let essayMax = essaySoalList.length * 100;
+    let essayGained = 0;
+    Object.values(essayScores).forEach(score => essayGained += (parseFloat(score) || 0));
+    const essayPercentage = essayMax > 0 ? (essayGained / essayMax) * 100 : 0;
+
+    let totalRaw = 0;
+    if (pgMax > 0 && essayMax > 0) {
+       totalRaw = (pgPercentage + essayPercentage) / 2;
+    } else if (pgMax > 0) {
+       totalRaw = pgPercentage;
+    } else if (essayMax > 0) {
+       totalRaw = essayPercentage;
+    }
+    
+    const finalTotal = Math.round(totalRaw * 10) / 10; // keep 1 decimal
+
     try {
-      await gradeTugas(selectedStudent.id, finalTotal);
+      await gradeTugas(selectedStudent.id, finalTotal, essayScores);
       setEditingGrade(prev => ({ ...prev, [selectedStudent.nim]: false }));
       setSelectedStudent(null);
       showToast('Nilai akhir kuis berhasil disimpan!');
@@ -248,36 +268,46 @@ const TugasNilai = () => {
                       </div>
                     ) : (
                       <div className="flex flex-col items-center gap-1">
-                        {isKuis && <span className="text-[10px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full mb-1">Cek Jawaban</span>}
-                        <input 
-                          type="number" 
-                          min="0" max="100"
-                          value={grades[sub.nim] || ''}
-                          onChange={(e) => handleGradeChange(sub.nim, e.target.value)}
-                          className="w-20 border-2 border-slate-200 rounded-lg px-2 py-1.5 text-center text-sm focus:border-primary outline-none transition-colors" 
-                          placeholder="0-100" 
-                        />
+                        {isKuis ? (
+                          <span className="text-[11px] font-medium text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full mb-1">Beri Nilai di Jawaban</span>
+                        ) : (
+                          <input 
+                            type="number" 
+                            min="0" max="100"
+                            value={grades[sub.nim] || ''}
+                            onChange={(e) => handleGradeChange(sub.nim, e.target.value)}
+                            className="w-20 border-2 border-slate-200 rounded-lg px-2 py-1.5 text-center text-sm focus:border-primary outline-none transition-colors" 
+                            placeholder="0-100" 
+                          />
+                        )}
                       </div>
                     )}
                   </td>
                   <td className="px-5 py-3.5 text-center">
                     {sub.status === 'dinilai' && !editingGrade[sub.nim] ? (
                       <button 
-                        onClick={() => handleEditGrade(sub.nim, sub.nilai)}
+                        onClick={() => {
+                          if (isKuis) openAnswerModal(sub);
+                          else handleEditGrade(sub.nim, sub.nilai);
+                        }}
                         className="p-2 text-slate-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors inline-flex"
                         title="Edit Nilai"
                       >
                         <Edit3 size={16} />
                       </button>
                     ) : (
-                      <Button 
-                        size="sm" 
-                        onClick={() => handleSaveGrade(sub.nim, sub.id)}
-                        disabled={!grades[sub.nim]}
-                        className="shadow-sm"
-                      >
-                        Simpan
-                      </Button>
+                      !isKuis ? (
+                        <Button 
+                          size="sm" 
+                          onClick={() => handleSaveGrade(sub.nim, sub.id)}
+                          disabled={!grades[sub.nim]}
+                          className="shadow-sm"
+                        >
+                          Simpan
+                        </Button>
+                      ) : (
+                        <span className="text-slate-400 font-medium">-</span>
+                      )
                     )}
                   </td>
                 </tr>
@@ -327,45 +357,102 @@ const TugasNilai = () => {
               </div>
 
               {/* Hasil Essay */}
-              <div className="border border-slate-200 rounded-xl overflow-hidden">
-                <div className="bg-slate-50 px-4 py-3 border-b border-slate-200">
-                  <h3 className="font-semibold text-slate-700">Jawaban Essay</h3>
+              <div className="border border-slate-200 rounded-xl overflow-hidden bg-slate-50">
+                <div className="bg-slate-100 px-4 py-3 border-b border-slate-200">
+                  <h3 className="font-semibold text-slate-700">Penilaian Essay Per Nomor</h3>
                 </div>
-                <div className="p-4 space-y-5">
+                <div className="p-4 space-y-4">
                   {essaySoalList.map((soal, idx) => (
-                    <div key={soal.id} className="space-y-2">
-                      <p className="text-sm font-medium text-slate-800">{idx + 1}. {soal.pertanyaan}</p>
-                      <div className="bg-amber-50/50 border border-amber-100 p-3 rounded-lg text-sm text-slate-700">
-                        "{studentAnswers[soal.id] || '-'}"
+                    <div key={soal.id} className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm">
+                      <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+                        <div className="flex-1 w-full">
+                          <p className="text-sm font-medium text-slate-800"><span className="text-slate-400 mr-2">{idx + 1}.</span>{soal.pertanyaan}</p>
+                          <div className="mt-2 bg-slate-50 border border-slate-100 p-3 rounded-lg text-sm text-slate-700">
+                            <span className="text-xs text-slate-400 block mb-1 uppercase tracking-wider">Jawaban Mahasiswa:</span>
+                            "{studentAnswers[soal.id] || '-'}"
+                          </div>
+                        </div>
+                        <div className="w-full sm:w-28 shrink-0">
+                          <label className="text-xs font-semibold text-slate-500 block mb-1">Nilai (Maks 100)</label>
+                          <input 
+                            type="number"
+                            min="0" max="100" step="0.1"
+                            value={essayScores[soal.id] !== undefined ? essayScores[soal.id] : ''}
+                            onChange={(e) => {
+                              let text = e.target.value;
+                              if (parseFloat(text) > 100) text = "100";
+                              if (parseFloat(text) < 0) text = "0";
+                              setEssayScores(prev => ({...prev, [soal.id]: text}));
+                            }}
+                            className="w-full text-center text-sm font-bold p-2 border-2 border-blue-200 rounded-lg focus:border-blue-500 outline-none text-blue-700 bg-white transition-all"
+                            placeholder="0"
+                          />
+                        </div>
                       </div>
                     </div>
                   ))}
                   {essaySoalList.length === 0 && (
-                    <p className="text-sm text-slate-500 italic">Tidak ada soal essay pada kuis ini.</p>
+                    <p className="text-sm text-slate-500 italic text-center py-4">Tidak ada soal essay pada kuis ini.</p>
                   )}
                 </div>
               </div>
 
               {/* Input Nilai Akhir */}
-              <div className="bg-blue-50 p-5 rounded-xl border border-blue-100 flex items-center justify-between gap-4">
-                <div>
-                  <h4 className="font-semibold text-blue-900">Berikan Penilaian Essay</h4>
-                  <p className="text-sm text-blue-700 mt-1">Nilai PG ({pgScore}) akan otomatis dijumlahkan dengan nilai Essay ini.</p>
+              <div className="bg-blue-50 p-5 rounded-xl border border-blue-100">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                  <div>
+                    <h4 className="font-semibold text-blue-900">Rata-Rata PG & Essay</h4>
+                    <p className="text-sm text-blue-700 mt-1">Nilai proporsional PG dan proporsional Essay dirata-ratakan.</p>
+                  </div>
+                  <div className="flex flex-col items-end gap-1">
+                    {pgSoalList.length > 0 && (
+                      <span className="text-sm font-semibold text-slate-500">
+                        Rata-rata PG: {(() => {
+                          let pgMax = 0;
+                          pgSoalList.forEach(q => pgMax += (q.skor || 10));
+                          return pgMax > 0 ? Math.round((pgScore / pgMax) * 100) : 0;
+                        })()}
+                      </span>
+                    )}
+                    {essaySoalList.length > 0 && (
+                      <span className="text-sm font-semibold text-slate-500">
+                        Rata-rata Essay: {(() => {
+                          let essayMax = essaySoalList.length * 100;
+                          let essayGained = 0;
+                          Object.values(essayScores).forEach(score => essayGained += (parseFloat(score) || 0));
+                          return essayMax > 0 ? Math.round((essayGained / essayMax) * 100) : 0;
+                        })()}
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-xl font-bold text-slate-400">{pgScore} +</span>
-                  <input 
-                    type="number"
-                    min="0" max="100"
-                    placeholder="Maks 100"
-                    value={essayScore}
-                    onChange={(e) => setEssayScore(e.target.value)}
-                    className="w-24 text-center text-lg font-bold p-2 border-2 border-blue-200 rounded-lg focus:border-blue-500 outline-none text-blue-700 bg-white"
-                  />
-                  <span className="text-xl font-bold text-slate-400">=</span>
-                  <span className="text-2xl font-bold text-blue-700 w-12 text-center">
-                    {pgScore + (parseInt(essayScore) || 0)}
-                  </span>
+                
+                <div className="pt-4 border-t border-blue-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div>
+                    <h4 className="font-semibold text-blue-900">Nilai Akhir (Skala 100)</h4>
+                    <p className="text-sm text-blue-700 mt-1">Nilai keseluruhan kuis yang akan dikirim ke mahasiswa.</p>
+                  </div>
+                  <div className="flex items-center justify-end">
+                    <span className="text-5xl font-black text-blue-700 drop-shadow-sm">
+                      {(() => {
+                        let pgMax = 0;
+                        pgSoalList.forEach(q => pgMax += (q.skor || 10));
+                        const pgPercentage = pgMax > 0 ? (pgScore / pgMax) * 100 : 0;
+
+                        let essayMax = essaySoalList.length * 100;
+                        let essayGained = 0;
+                        Object.values(essayScores).forEach(score => essayGained += (parseFloat(score) || 0));
+                        const essayPercentage = essayMax > 0 ? (essayGained / essayMax) * 100 : 0;
+
+                        let totalRaw = 0;
+                        if (pgMax > 0 && essayMax > 0) totalRaw = (pgPercentage + essayPercentage) / 2;
+                        else if (pgMax > 0) totalRaw = pgPercentage;
+                        else if (essayMax > 0) totalRaw = essayPercentage;
+                        
+                        return Math.round(totalRaw * 10) / 10;
+                      })()}
+                    </span>
+                  </div>
                 </div>
               </div>
 

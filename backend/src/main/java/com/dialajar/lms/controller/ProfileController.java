@@ -51,6 +51,7 @@ public class ProfileController {
         private String nama;
         private String nomorInduk;
         private String email;
+        private String currentPassword;
         private String password;
         
         public String getNama() { return nama; }
@@ -59,6 +60,8 @@ public class ProfileController {
         public void setNomorInduk(String nomorInduk) { this.nomorInduk = nomorInduk; }
         public String getEmail() { return email; }
         public void setEmail(String email) { this.email = email; }
+        public String getCurrentPassword() { return currentPassword; }
+        public void setCurrentPassword(String currentPassword) { this.currentPassword = currentPassword; }
         public String getPassword() { return password; }
         public void setPassword(String password) { this.password = password; }
     }
@@ -75,6 +78,9 @@ public class ProfileController {
             
             // Validate and encode new password if provided
             if (request.getPassword() != null && !request.getPassword().isEmpty()) {
+                if (request.getCurrentPassword() == null || !passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+                    return ResponseEntity.badRequest().body("Password saat ini salah.");
+                }
                 String pw = request.getPassword();
                 if (pw.length() < 6 || !pw.matches(".*[A-Z].*") || !pw.matches(".*[a-z].*") || !pw.matches(".*[^a-zA-Z0-9].*")) {
                     return ResponseEntity.badRequest().body("Password tidak memenuhi syarat keamanan.");

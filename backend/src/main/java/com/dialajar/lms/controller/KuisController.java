@@ -71,7 +71,7 @@ public class KuisController {
         }
 
         // Create Notifications for all enrolled Mahasiswa
-        String message = "Kuis baru: " + request.getJudul() + " telah ditambahkan di mata kuliah " + mk.get().getNama();
+        String message = "Kuis Baru: " + request.getJudul() + " - " + mk.get().getNama();
         for (Mahasiswa mhs : mk.get().getMahasiswas()) {
             Notifikasi notif = new Notifikasi(mhs.getId(), message, "KUIS_BARU");
             notifikasiRepository.save(notif);
@@ -117,6 +117,7 @@ public class KuisController {
             map.put("fileJawaban", sub.getFileJawaban());
             map.put("status", sub.getStatus());
             map.put("nilai", sub.getNilai());
+            map.put("detailNilai", sub.getDetailNilai());
             map.put("dikumpulkan", sub.getDikumpulkan());
             result.add(map);
         }

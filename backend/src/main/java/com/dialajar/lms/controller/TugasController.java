@@ -105,6 +105,7 @@ public class TugasController {
                 if (sub.isPresent()) {
                     map.put("status", sub.get().getStatus().equals("SUDAH_DINILAI") ? "dinilai" : "dikumpulkan");
                     map.put("nilai", sub.get().getNilai());
+                    map.put("detailNilai", sub.get().getDetailNilai());
                     map.put("fileJawaban", sub.get().getFileJawaban());
                     map.put("dikumpulkan", sub.get().getDikumpulkan());
                 } else {
@@ -185,7 +186,7 @@ public class TugasController {
         tugasRepository.save(tugas);
 
         // Create Notifications for all enrolled Mahasiswa
-        String message = "Tugas baru: " + judul + " telah ditambahkan di mata kuliah " + mk.get().getNama();
+        String message = "Tugas Baru: " + judul + " - " + mk.get().getNama();
         for (Mahasiswa mhs : mk.get().getMahasiswas()) {
             Notifikasi notif = new Notifikasi(mhs.getId(), message, "TUGAS_BARU");
             notifikasiRepository.save(notif);
@@ -353,6 +354,7 @@ public class TugasController {
             map.put("fileJawaban", sub.getFileJawaban());
             map.put("status", sub.getStatus());
             map.put("nilai", sub.getNilai());
+            map.put("detailNilai", sub.getDetailNilai());
             map.put("dikumpulkan", sub.getDikumpulkan());
             result.add(map);
         }
@@ -369,6 +371,9 @@ public class TugasController {
 
         PengumpulanTugas submission = submissionOpt.get();
         submission.setNilai(nilai);
+        if (request.containsKey("detailNilai")) {
+            submission.setDetailNilai(request.get("detailNilai"));
+        }
         submission.setStatus("SUDAH_DINILAI");
         pengumpulanTugasRepository.save(submission);
 

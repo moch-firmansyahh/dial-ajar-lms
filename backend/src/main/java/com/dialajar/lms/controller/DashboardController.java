@@ -87,9 +87,13 @@ public class DashboardController {
             List<Tugas> tugasList = tugasRepository.findByMataKuliahId(mk.getId());
             for (Tugas t : tugasList) {
                 if (t.getDeadline() != null && t.getDeadline().isAfter(LocalDateTime.now())) {
+                    Optional<PengumpulanTugas> sub = pengumpulanTugasRepository.findByTugasIdAndMahasiswaId(t.getId(), userId);
+                    if (sub.isPresent()) continue;
+                    
                     tugasMendatang++;
                     Map<String, Object> deadline = new HashMap<>();
                     deadline.put("id", t.getId());
+                    deadline.put("realId", t.getId());
                     deadline.put("courseId", mk.getId());
                     deadline.put("type", "tugas");
                     deadline.put("title", t.getJudul());
@@ -104,9 +108,13 @@ public class DashboardController {
             List<Kuis> kuisList = kuisRepository.findByMataKuliahId(mk.getId());
             for (Kuis k : kuisList) {
                 if (k.getDeadline() != null && k.getDeadline().isAfter(LocalDateTime.now())) {
+                    Optional<PengumpulanTugas> sub = pengumpulanTugasRepository.findByKuisIdAndMahasiswaId(k.getId(), userId);
+                    if (sub.isPresent()) continue;
+
                     kuisMendatang++;
                     Map<String, Object> deadline = new HashMap<>();
                     deadline.put("id", k.getId() + 1000); // offset id for unique key in UI
+                    deadline.put("realId", k.getId());
                     deadline.put("courseId", mk.getId());
                     deadline.put("type", "kuis");
                     deadline.put("title", k.getJudul());

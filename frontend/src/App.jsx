@@ -7,6 +7,11 @@ import ProtectedRoute from './components/shared/ProtectedRoute';
 
 const Login = lazy(() => import('./pages/Login'));
 
+// Public Pages
+const Bantuan = lazy(() => import('./pages/public/Bantuan'));
+const FAQ = lazy(() => import('./pages/public/FAQ'));
+const Service = lazy(() => import('./pages/public/Service'));
+
 // Dosen
 const DashboardDosen = lazy(() => import('./pages/dosen/Dashboard'));
 const MataKuliahForm = lazy(() => import('./pages/dosen/MataKuliahForm'));
@@ -49,6 +54,9 @@ function App() {
       <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/bantuan" element={<Bantuan />} />
+          <Route path="/faq" element={<FAQ />} />
+          <Route path="/service" element={<Service />} />
       
           {/* Fallback route */}
           <Route path="/" element={

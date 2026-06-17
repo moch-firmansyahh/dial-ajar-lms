@@ -240,7 +240,7 @@ const DashboardMahasiswa = () => {
                 <Button 
                   size="sm" 
                   variant="outline"
-                  onClick={() => navigate(`/tugas/${item.courseId}/${item.id}`)} 
+                  onClick={() => navigate(`/tugas/${item.courseId}/${item.realId || item.id}?type=${item.type}`)} 
                   className="w-full sm:w-auto shrink-0 font-medium hover:!bg-primary hover:!text-white hover:!border-primary shadow-sm transition-all"
                 >
                   Kerjakan <ArrowRight size={16} />

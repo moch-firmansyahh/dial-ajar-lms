@@ -5,22 +5,29 @@ export const useAuthStore = create((set) => ({
   user: null,       // { nama, nomorInduk, role: 'DOSEN' | 'MAHASISWA' }
   isLoggedIn: false,
 
-  login: (token, user) => {
-    localStorage.setItem('token', token)
-    localStorage.setItem('user', JSON.stringify(user))
+  login: (token, user, rememberMe = false) => {
+    const storage = rememberMe ? localStorage : sessionStorage
+    storage.setItem('token', token)
+    storage.setItem('user', JSON.stringify(user))
     set({ token, user, isLoggedIn: true })
   },
   
   logout: () => {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
+    sessionStorage.removeItem('token')
+    sessionStorage.removeItem('user')
     set({ token: null, user: null, isLoggedIn: false })
   },
   
   // Hydrate state on load
   initAuth: () => {
-    const token = localStorage.getItem('token')
-    const userStr = localStorage.getItem('user')
+    let token = localStorage.getItem('token')
+    let userStr = localStorage.getItem('user')
+    if (!token || !userStr) {
+      token = sessionStorage.getItem('token')
+      userStr = sessionStorage.getItem('user')
+    }
     if (token && userStr) {
       try {
         const user = JSON.parse(userStr)
@@ -28,6 +35,8 @@ export const useAuthStore = create((set) => ({
       } catch (e) {
         localStorage.removeItem('token')
         localStorage.removeItem('user')
+        sessionStorage.removeItem('token')
+        sessionStorage.removeItem('user')
       }
     }
   }

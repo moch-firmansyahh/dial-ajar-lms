@@ -25,7 +25,6 @@ public class AuthController {
         }
     }
 
-    // Optional endpoint for logout if needed (stateless so usually frontend clears token)
     @PostMapping("/logout")
     public ResponseEntity<?> logout() {
         return ResponseEntity.ok("Logout berhasil");

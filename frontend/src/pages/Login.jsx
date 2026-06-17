@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
 import { login } from "../api/auth.api";
 import InputField from "../components/ui/InputField";
@@ -25,7 +25,7 @@ const Login = () => {
 
     try {
       const response = await login({ nomorInduk, password, role });
-      setLoginState(response.data.token, response.data.user);
+      setLoginState(response.data.token, response.data.user, rememberMe);
       navigate("/dashboard");
     } catch (err) {
       setError(err.message || "Login gagal. Periksa kembali kredensial Anda.");
@@ -169,17 +169,17 @@ const Login = () => {
       {/* Footer Links */}
       <div className="w-full flex flex-col items-center gap-3 shrink-0 mt-2">
         <div className="flex items-center justify-center gap-4 sm:gap-5 text-[12px] sm:text-[13px] font-medium text-slate-500">
-          <a href="#" className="hover:text-slate-800 transition-colors">
+          <Link to="/bantuan" className="hover:text-slate-800 transition-colors">
             Bantuan
-          </a>
+          </Link>
           <span className="text-slate-300">|</span>
-          <a href="#" className="hover:text-slate-800 transition-colors">
+          <Link to="/faq" className="hover:text-slate-800 transition-colors">
             FAQ
-          </a>
+          </Link>
           <span className="text-slate-300">|</span>
-          <a href="#" className="hover:text-slate-800 transition-colors">
+          <Link to="/service" className="hover:text-slate-800 transition-colors">
             Service
-          </a>
+          </Link>
         </div>
         <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium mt-1">
           Copyright @wework 2026 | Privacy Policy

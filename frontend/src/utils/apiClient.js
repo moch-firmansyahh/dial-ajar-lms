@@ -2,7 +2,7 @@
 const API_URL = import.meta.env.VITE_API_URL || "";
 
 const getAuthHeaders = (isFormData = false) => {
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem("token") || sessionStorage.getItem("token");
   const headers = {};
   if (!isFormData) {
     headers["Content-Type"] = "application/json";

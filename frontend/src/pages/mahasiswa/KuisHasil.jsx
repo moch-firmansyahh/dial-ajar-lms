@@ -37,7 +37,7 @@ const KuisHasil = () => {
           // Jika tidak ada di state (misal buka dari detail tugas langsung), fetch dari backend
           if (Object.keys(answersToUse).length === 0 && tugasRes.data.fileJawaban) {
             try {
-              const token = localStorage.getItem('token');
+              const token = localStorage.getItem('token') || sessionStorage.getItem('token');
               const res = await axios.get(`http://localhost:8080${tugasRes.data.fileJawaban}`, {
                   headers: { Authorization: `Bearer ${token}` }
               });
@@ -45,6 +45,11 @@ const KuisHasil = () => {
             } catch (err) {
               console.error("Gagal mengambil file jawaban dari backend", err);
             }
+          }
+
+          let detailNilai = {};
+          if (tugasRes.data.detailNilai) {
+             try { detailNilai = JSON.parse(tugasRes.data.detailNilai); } catch (e) {}
           }
 
           if (soalRes.data) {
@@ -55,6 +60,10 @@ const KuisHasil = () => {
               if (isPg) {
                 isCorrect = ans === q.kunciJawaban;
               }
+              let essayScore = null;
+              if (!isPg && detailNilai[q.id] !== undefined) {
+                 essayScore = detailNilai[q.id];
+              }
               return {
                 id: q.id,
                 text: q.pertanyaan,
@@ -63,7 +72,8 @@ const KuisHasil = () => {
                 explanation: '-',
                 answer: ans,
                 isCorrect,
-                skor: q.skor || 10
+                skor: q.skor || 10,
+                essayScore
               };
             });
             setEvaluatedQuestions(evaluated);
@@ -91,8 +101,9 @@ const KuisHasil = () => {
     }
   });
   
-  const score = totalMaxScore > 0 ? Math.round((totalPgScore / totalMaxScore) * 100) : 0;
+  const score = kuisDetail?.status === 'dinilai' ? kuisDetail.nilai : (totalMaxScore > 0 ? Math.round((totalPgScore / totalMaxScore) * 100) : 0);
   const totalEssay = evaluatedQuestions.filter(q => q.type === 'essay').length;
+  const essayGraded = evaluatedQuestions.filter(q => q.type === 'essay' && q.essayScore !== null).length;
 
   return (
     <div className="max-w-4xl mx-auto pb-10">
@@ -155,8 +166,8 @@ const KuisHasil = () => {
                 <div className="text-[11px] font-medium text-slate-400 uppercase">Salah</div>
               </div>
               <div className="bg-white rounded-xl p-3 border border-slate-100 shadow-sm">
-                <div className="text-2xl font-medium text-blue-500">{totalEssay}</div>
-                <div className="text-[11px] font-medium text-slate-400 uppercase">Esai Menunggu</div>
+                <div className="text-2xl font-medium text-blue-500">{kuisDetail?.status === 'dinilai' ? essayGraded : totalEssay}</div>
+                <div className="text-[11px] font-medium text-slate-400 uppercase">{kuisDetail?.status === 'dinilai' ? 'Esai Dinilai' : 'Esai Menunggu'}</div>
               </div>
             </div>
           </Card>
@@ -173,8 +184,8 @@ const KuisHasil = () => {
                     <p className="font-semibold text-slate-800 mt-1 leading-snug">{q.text}</p>
                   </div>
                   <Badge 
-                    type={q.type === 'pg' ? (q.isCorrect ? 'sukses' : 'bahaya') : 'info'} 
-                    label={q.type === 'pg' ? (q.isCorrect ? 'Benar' : 'Salah') : 'Menunggu Nilai'}
+                    type={q.type === 'pg' ? (q.isCorrect ? 'sukses' : 'bahaya') : (q.essayScore !== null ? 'sukses' : 'info')} 
+                    label={q.type === 'pg' ? (q.isCorrect ? 'Benar' : 'Salah') : (q.essayScore !== null ? `Nilai: ${q.essayScore}` : 'Menunggu Nilai')}
                   />
                 </div>
                 

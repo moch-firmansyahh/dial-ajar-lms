@@ -140,7 +140,7 @@ const Profile = () => {
     }
 
     try {
-      await updateProfile(user.id, { password: newPassword });
+      await updateProfile(user.id, { currentPassword, password: newPassword });
       setPwdSuccess("Password berhasil diubah!");
       setCurrentPassword("");
       setNewPassword("");

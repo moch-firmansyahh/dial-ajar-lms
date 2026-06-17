@@ -10,7 +10,7 @@ Ibu Putri Nurika Adila, S.Kom., M.Kom
 2. Listianto Hilmi Fauzaan - 103012400094
 3. Muhammad Daffa - 103012400110
 4. Muhammad Lutfi Fitriansyah - 103012400237
-5. Junior Mourits Hotty - 1030124174
+5. Junior Mourits Hotty - 103012400174
 
 ## Deskripsi Aplikasi
 
@@ -61,9 +61,6 @@ Ibu Putri Nurika Adila, S.Kom., M.Kom
 5. **Forum Diskusi**
    - Pembuatan utas (_thread_) baru per mata kuliah.
    - Sistem komentar dan balasan diskusi terpadu antar pengguna.
-6. **Kalender Akademik Pintar**
-   - Secara dinamis menarik semua data Tenggat Waktu (_Deadline_) Tugas & Kuis dari _database_.
-   - Terintegrasi secara otomatis dengan **Hari Libur Nasional Indonesia** (Tanggal Merah).
 
 ## Class Diagram
 

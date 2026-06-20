@@ -25,7 +25,7 @@ const KuisHasil = () => {
     const fetchData = async () => {
       try {
         const [tugasRes, soalRes] = await Promise.all([
-          getTugasDetail(id, tugasId, user?.id),
+          getTugasDetail(id, tugasId, user?.id, 'kuis'),
           getSoalKuis(tugasId)
         ]);
 
@@ -41,7 +41,11 @@ const KuisHasil = () => {
               const res = await axios.get(`http://localhost:8080${tugasRes.data.fileJawaban}`, {
                   headers: { Authorization: `Bearer ${token}` }
               });
-              answersToUse = res.data;
+              let fetchedAnswers = res.data;
+              if (typeof fetchedAnswers === 'string') {
+                  try { fetchedAnswers = JSON.parse(fetchedAnswers); } catch(e){}
+              }
+              answersToUse = fetchedAnswers;
             } catch (err) {
               console.error("Gagal mengambil file jawaban dari backend", err);
             }

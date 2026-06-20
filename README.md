@@ -7,7 +7,7 @@ Ibu Putri Nurika Adila, S.Kom., M.Kom
 ## Anggota Kelompok
 
 1. Moch Firmansyah - 103012400137
-2. Listianto Hilmi Fauzaan - 103012400094
+2. Listianto Hilmi Fauzaan - 103012400094 
 3. Muhammad Daffa - 103012400110
 4. Muhammad Lutfi Fitriansyah - 103012400237
 5. Junior Mourits Hotty - 103012400174

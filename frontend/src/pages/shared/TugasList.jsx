@@ -78,17 +78,19 @@ const TugasList = () => {
     if (statusFilter !== "semua") {
       filtered = filtered.filter((t) => {
         const isCompleted = t.status === "dikumpulkan" || t.status === "dinilai";
-        const isOverdue = !isDosen && new Date() > new Date(t.deadline) && !isCompleted;
-        const isLocked = t.status === "terkunci" || (!isDosen && new Date() > new Date(t.deadline) && !isCompleted);
+        const isOverdue = !isDosen && t.deadline && new Date() > new Date(t.deadline) && !isCompleted;
+        const isLocked = t.status === "terkunci" || (!isDosen && t.deadline && new Date() > new Date(t.deadline) && !isCompleted);
         
         if (statusFilter === "selesai") {
-          return isCompleted;
+          // Untuk dosen, kita butuh data submissions untuk tahu apakah semua sudah dinilai. 
+          // Saat ini backend mengembalikan status "belum" untuk dosen.
+          return isDosen ? false : isCompleted; 
         }
         if (statusFilter === "overdue") {
-          return isOverdue || isLocked;
+          return isDosen ? (t.deadline && new Date() > new Date(t.deadline)) : (isOverdue || isLocked);
         }
         if (statusFilter === "belum") {
-          return t.status === "belum" && !isOverdue && !isLocked;
+          return isDosen ? (!t.deadline || new Date() <= new Date(t.deadline)) : (t.status === "belum" && !isOverdue && !isLocked);
         }
         return true;
       });
@@ -220,9 +222,9 @@ const TugasList = () => {
                 <Filter size={16} className="text-primary" />
                 <span>
                   {statusFilter === "semua" && "Semua Status"}
-                  {statusFilter === "selesai" && "Sudah Selesai"}
-                  {statusFilter === "belum" && (isDosen ? "Tersedia (Aktif)" : "Belum Dikerjakan")}
-                  {statusFilter === "overdue" && "Terlewat (Overdue)"}
+                  {statusFilter === "selesai" && (isDosen ? "Selesai Dinilai" : "Sudah Selesai")}
+                  {statusFilter === "belum" && (isDosen ? "Belum Dinilai (On Going)" : "Belum Dikerjakan")}
+                  {statusFilter === "overdue" && (isDosen ? "Sudah Lewat Deadline" : "Terlewat (Overdue)")}
                 </span>
               </div>
               <ChevronDown size={16} className={`text-slate-400 transition-transform duration-300 ${isDropdownOpen ? "rotate-180" : ""}`} />
@@ -246,7 +248,7 @@ const TugasList = () => {
                   <div className={`p-1 rounded-md ${statusFilter === "selesai" ? "bg-white shadow-sm" : "bg-slate-100"}`}>
                     <CheckCircle2 size={14} className={statusFilter === "selesai" ? "text-emerald-500" : "text-slate-400"} />
                   </div>
-                  Sudah Selesai
+                  {isDosen ? "Selesai Dinilai" : "Sudah Selesai"}
                 </button>
                 <button
                   onClick={() => { setStatusFilter("belum"); setIsDropdownOpen(false); }}
@@ -255,7 +257,7 @@ const TugasList = () => {
                   <div className={`p-1 rounded-md ${statusFilter === "belum" ? "bg-white shadow-sm" : "bg-slate-100"}`}>
                     <FileText size={14} className={statusFilter === "belum" ? "text-blue-500" : "text-slate-400"} />
                   </div>
-                  {isDosen ? "Tersedia (Aktif)" : "Belum Dikerjakan"}
+                  {isDosen ? "Belum Dinilai (On Going)" : "Belum Dikerjakan"}
                 </button>
                 <button
                   onClick={() => { setStatusFilter("overdue"); setIsDropdownOpen(false); }}
@@ -264,7 +266,7 @@ const TugasList = () => {
                   <div className={`p-1 rounded-md ${statusFilter === "overdue" ? "bg-white shadow-sm" : "bg-slate-100"}`}>
                     <Clock size={14} className={statusFilter === "overdue" ? "text-red-500" : "text-slate-400"} />
                   </div>
-                  Terlewat (Overdue)
+                  {isDosen ? "Sudah Lewat Deadline" : "Terlewat (Overdue)"}
                 </button>
               </div>
             </div>

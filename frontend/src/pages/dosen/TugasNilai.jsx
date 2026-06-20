@@ -105,7 +105,11 @@ const TugasNilai = ({ tugasDetail }) => {
         const res = await axios.get(`http://localhost:8080${student.file}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        answers = res.data;
+        let fetchedAnswers = res.data;
+        if (typeof fetchedAnswers === 'string') {
+            try { fetchedAnswers = JSON.parse(fetchedAnswers); } catch(e){}
+        }
+        answers = fetchedAnswers;
         setStudentAnswers(answers);
       }
     } catch (e) {

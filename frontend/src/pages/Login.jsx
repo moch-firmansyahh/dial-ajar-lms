@@ -176,14 +176,8 @@ const Login = () => {
           <Link to="/faq" className="hover:text-slate-800 transition-colors">
             FAQ
           </Link>
-          <span className="text-slate-300">|</span>
-          <Link to="/service" className="hover:text-slate-800 transition-colors">
-            Service
-          </Link>
+
         </div>
-        <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium mt-1">
-          Copyright @wework 2026 | Privacy Policy
-        </p>
       </div>
     </div>
   );

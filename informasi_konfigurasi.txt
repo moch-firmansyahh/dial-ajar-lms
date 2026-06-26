@@ -1,0 +1,78 @@
+# INFORMASI APLIKASI DAN KONFIGURASI (TUGAS PBO)
+
+## 1. Deskripsi Aplikasi
+**Dial Ajar** adalah sebuah platform _Learning Management System (LMS)_ modern yang memfasilitasi interaksi belajar mengajar antara Dosen dan Mahasiswa. Aplikasi ini menyediakan sistem manajemen mata kuliah, materi ajar, evaluasi (tugas & kuis otomatis), hingga fitur AI terintegrasi menggunakan Google Gemini.
+
+## 2. Framework & Teknologi Utama
+- **Frontend**: React (Vite) + Tailwind CSS
+- **Backend**: Java Spring Boot
+- **Database**: MySQL
+
+---
+
+## 3. Konfigurasi Database
+Aplikasi ini menggunakan MySQL sebagai DBMS relasional.
+- **Nama Database**: `lms_pbo`
+- **Username**: `root`
+- **Password**: `(dikosongkan / tanpa password)`
+
+*Catatan: Dosen/Penilai tidak perlu membuat tabel atau menginput data manual. Sistem Spring Boot akan otomatis membuat tabel dan mengisi data awal (seeder) saat backend pertama kali dijalankan.*
+
+---
+
+## 4. Konfigurasi Tambahan (API Key Gemini)
+Aplikasi ini terintegrasi dengan Google Gemini AI. Agar fitur AI dapat berjalan dengan normal saat di-review, lakukan langkah berikut:
+1. Masuk ke dalam folder `frontend`.
+2. Buat file baru dengan nama `.env`.
+3. Masukkan baris kode berikut ke dalam file `.env` tersebut:
+   VITE_GEMINI_API_KEY=AIzaSyCwrxjhnjM2InYoIlbtcWTEeFZmvew3Y20
+
+---
+
+## 5. Cara Menjalankan Aplikasi
+
+### [Backend - Spring Boot]
+1. Buka aplikasi Terminal / Command Prompt.
+2. Arahkan ke dalam folder `backend` (`cd backend`).
+3. Pastikan **JDK 21** sudah terinstal.
+4. Jalankan perintah berikut untuk menyalakan server:
+   `.\mvnw spring-boot:run`  (Untuk Windows)
+   `./mvnw spring-boot:run`  (Untuk Mac/Linux)
+5. Tunggu hingga backend sukses berjalan di `http://localhost:8080`.
+
+### [Frontend - React/Vite]
+1. Buka Terminal baru, arahkan ke dalam folder `frontend` (`cd frontend`).
+2. Instal semua dependensi Node.js dengan perintah:
+   `npm install`
+3. Pastikan konfigurasi API Key (langkah ke-4 di atas) sudah Anda lakukan.
+4. Jalankan server antarmuka dengan perintah:
+   `npm run dev`
+5. Aplikasi dapat diakses melalui browser pada alamat `http://localhost:5173`.
+
+---
+
+## 6. Username dan Password (Daftar Akun Lengkap)
+Sistem telah menyediakan data uji coba otomatis (seeder) sebanyak 5 akun Dosen dan 10 akun Mahasiswa. Anda dapat menggunakan salah satu dari akun berikut:
+
+### 🎓 Daftar Akun Dosen (Role: DOSEN)
+**Password untuk semua akun Dosen:** `dosen123`
+
+- **Dosen Demo 1** | NIP: `101` | Email: `dosen1@dialajar.com`
+- **Dosen Demo 2** | NIP: `102` | Email: `dosen2@dialajar.com`
+- **Dosen Demo 3** | NIP: `103` | Email: `dosen3@dialajar.com`
+- **Dosen Demo 4** | NIP: `104` | Email: `dosen4@dialajar.com`
+- **Dosen Demo 5** | NIP: `105` | Email: `dosen5@dialajar.com`
+
+### 👨‍🎓 Daftar Akun Mahasiswa (Role: MAHASISWA)
+**Password untuk semua akun Mahasiswa:** `mhs123`
+
+- **Mahasiswa Demo 1**  | NIM: `201` | Email: `mhs1@student.dialajar.com`
+- **Mahasiswa Demo 2**  | NIM: `202` | Email: `mhs2@student.dialajar.com`
+- **Mahasiswa Demo 3**  | NIM: `203` | Email: `mhs3@student.dialajar.com`
+- **Mahasiswa Demo 4**  | NIM: `204` | Email: `mhs4@student.dialajar.com`
+- **Mahasiswa Demo 5**  | NIM: `205` | Email: `mhs5@student.dialajar.com`
+- **Mahasiswa Demo 6**  | NIM: `206` | Email: `mhs6@student.dialajar.com`
+- **Mahasiswa Demo 7**  | NIM: `207` | Email: `mhs7@student.dialajar.com`
+- **Mahasiswa Demo 8**  | NIM: `208` | Email: `mhs8@student.dialajar.com`
+- **Mahasiswa Demo 9**  | NIM: `209` | Email: `mhs9@student.dialajar.com`
+- **Mahasiswa Demo 10** | NIM: `210` | Email: `mhs10@student.dialajar.com`
